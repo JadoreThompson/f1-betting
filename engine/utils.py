@@ -1,7 +1,14 @@
 import numpy as np
 import os
 import pandas as pd
-from .config import DPATH
+
+from typing import Iterable
+from collections import namedtuple
+from .config import DPATH, TRAINED_MODEL_CLASSES, TRAINED_MODEL_FEATURES, TRAINED_MODEL
+
+
+# prediction value, decimal representation of percentage
+Prediction = namedtuple("Predictions", ["pred", "perc"])
 
 
 def apply_types(df: pd.DataFrame) -> pd.DataFrame:
@@ -28,12 +35,7 @@ def prepare_train_dataset(min_year: int = 2023) -> pd.DataFrame:
     ]
     races_df = races_df[races_df["year"] >= min_year]
 
-    qualifying_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
-        ["raceId", "driverId", "position"]
-    ]
-
     df = races_df.merge(results_df, on=["raceId"], suffixes=("_race", "_result"))
-    df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
     df.columns = [
         col.replace("Id", "_id").replace("Text", "_text") for col in df.columns
     ]
@@ -69,3 +71,19 @@ def sma(s: pd.Series, df: pd.DataFrame, column: str, window: int = 5) -> float:
 
     nums = [df.loc[s.name - i][column] for i in range(1, window + 1)]
     return sum(nums) / len(nums)
+
+
+def interact(data: pd.DataFrame | Iterable) -> tuple[Prediction, ...]:
+    if isinstance(data, Iterable):
+        d = pd.DataFrame(data, columns=TRAINED_MODEL_FEATURES)
+    else:
+        d = data
+
+    preds: list[list[float]] = TRAINED_MODEL.predict(d).tolist()
+    results: list[str] = []
+
+    for row in preds:
+        per = max(row)
+        results.append(Prediction(TRAINED_MODEL_CLASSES[row.index(per)], per))
+
+    return tuple(results)
