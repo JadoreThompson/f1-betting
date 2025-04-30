@@ -24,7 +24,7 @@ def evaluate(model=None, df=None, *, save: bool = False) -> None:
     for i, preds in enumerate(predictions):
         pred_index = preds.tolist().index(max(preds))
         pred = model.label_classes()[pred_index]
-        # print("Pred:", pred, " Actual:", df.iloc[i][TARGET_LABEL])
+
         if pred == df.iloc[i][TARGET_LABEL]:
             success += 1
 
@@ -35,18 +35,19 @@ def evaluate(model=None, df=None, *, save: bool = False) -> None:
         model.save(os.path.join(MPATH, "model_x"))
 
     print(f"Succes Rate: {success:.2%}")
+    print(f"\nDF Types:\n{df.dtypes}")
 
 
 def rt() -> None:
-    train_df, test_df, size = get_train_test(2016)
+    train_df, test_df, size = get_train_test(2017, 5)
+    # print(train_df.dtypes)
     model = LEARNER.train(train_df)
     evaluate(model, test_df, save=True)
 
 
 if __name__ == "__main__":
-    # rt()
-    
-    evaluate(df=drop_columns(get_df(2024)))
+    rt()
+    # evaluate(df=drop_columns(get_df(2024)))
 
     # races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))
     # races_df[races_df["year"] <= 2023].to_csv(

@@ -21,73 +21,9 @@ Prediction = namedtuple("Prediction", ["prediction", "percentage"])
 
 def drop_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(
-        ["position", "raceId", "driverId", "year"],
+        ["raceId", "driverId", "constructorId", "position", "year"],
         axis=1,
     )
-
-
-def split_df(
-    # df: pd.DataFrame, split_size: float = 0.7
-    df: pd.DataFrame,
-    year: int,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Returns a test and train split of a dataset
-
-    Args:
-        df (pd.DataFrame): _description_
-        split_size (float): percentage of dataset to be trained on
-
-    Returns:
-        pd.DataFrame: _description_
-    """
-
-    train_df, test_df = (
-        df[df["year"] <= year],
-        df[df["year"] > year],
-    )
-
-    train_df, test_df = drop_columns(train_df), drop_columns(test_df)
-    return train_df, test_df
-
-
-def get_df(min_year: int, sma_length: int = 4) -> pd.DataFrame:
-    """Returns the dataframe without the dropped columns."""
-
-    qualifying_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
-        ["driverId", "raceId"]
-    ]
-
-    results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
-        [
-            "raceId",
-            "driverId",
-            "position",
-            "positionText",
-        ]
-    ]
-    results_df["position"] = (
-        pd.to_numeric(results_df["position"], errors="coerce").fillna(0).astype("int")
-    )
-
-    races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[["raceId", "year"]]
-    races_df = races_df[races_df["year"] >= min_year]
-
-    df = races_df.merge(results_df, on=["raceId"], suffixes=("_race", "_result"))
-    df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
-    df["sma"] = df.apply(lambda x: sma(x, df, "position", sma_length), axis=1)
-    df = df.dropna().reset_index().drop("index", axis=1)
-    return df
-
-
-def get_train_test(
-    min_year: int, sma_length: int = 4
-) -> tuple[pd.DataFrame, pd.DataFrame, int]:
-    df = get_df(min_year=min_year, sma_length=sma_length)
-    train_df, test_df = split_df(df, 2020)
-    train_df.to_csv(os.path.join(DPATH, "train.csv"), index=False)
-    test_df.to_csv(os.path.join(DPATH, "test.csv"), index=False)
-    return train_df, test_df, len(df["raceId"].unique())
 
 
 def parse_quali_times(s: str) -> int:
@@ -118,6 +54,25 @@ def sma(s: pd.Series, df: pd.DataFrame, column: str, window: int = 5) -> float:
     return sum(nums) / len(nums)
 
 
+def get_position_category(value: str) -> str:
+    # categores:
+    # 0 - top 3
+    # 1 - top 5
+    # 2 - top 10
+    # 3 - top 20 / retired
+
+    if not value.isdigit():
+        return "3"
+
+    val = int(value)
+
+    if val <= 3:
+        return "0"
+    if val <= 5:
+        return "1"
+    return "2"
+
+
 def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
     """Add last n race results for each driver to the dataset."""
     for i in range(1, lookback + 1):
@@ -127,6 +82,80 @@ def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
     df = df.sort_values("raceId")
     df["raceId"] = df["raceId"].astype("str")
     return df
+
+
+def get_df(min_year: int, sma_length: int = 4) -> pd.DataFrame:
+    """Returns the dataframe without the dropped columns."""
+    constructors_df = pd.read_csv(os.path.join(DPATH, "constructors.csv"))[
+        ["constructorId", "constructorRef"]
+    ]
+
+    qualifying_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
+        ["driverId", "raceId", "position"]
+    ]
+    # qualifying_df["position"] = qualifying_df["position"].astype("str")
+
+    results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
+        [
+            "raceId",
+            "driverId",
+            "constructorId",
+            # "grid",
+            "position",
+            "positionText",
+        ]
+    ]
+    results_df["position"] = (
+        pd.to_numeric(results_df["position"], errors="coerce").fillna(0).astype("int")
+    )
+
+    races_df = pd.read_csv(os.path.join(DPATH, "races-2023.csv"))[["raceId", "year"]]
+    races_df = races_df[races_df["year"] >= min_year]
+
+    df = races_df.merge(results_df, on=["raceId"], suffixes=("_race", "_result"))
+    # df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
+    # df = df.merge(constructors_df, on=["constructorId"])
+
+    # df["sma"] = df.apply(lambda x: sma(x, df, "position", sma_length), axis=1)
+    df = add_last_n_races(df, sma_length)
+    df["positionText"] = df["positionText"].apply(lambda x: get_position_category(x))
+
+    return df.dropna().reset_index().drop("index", axis=1)
+
+
+def split_df(
+    # df: pd.DataFrame, split_size: float = 0.7
+    df: pd.DataFrame,
+    year: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Returns a test and train split of a dataset
+
+    Args:
+        df (pd.DataFrame): _description_
+        split_size (float): percentage of dataset to be trained on
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+
+    train_df, test_df = (
+        df[df["year"] <= year],
+        df[df["year"] > year],
+    )
+
+    train_df, test_df = drop_columns(train_df), drop_columns(test_df)
+    return train_df, test_df
+
+
+def get_train_test(
+    min_year: int, sma_length: int = 4
+) -> tuple[pd.DataFrame, pd.DataFrame, int]:
+    df = get_df(min_year=min_year, sma_length=sma_length)
+    train_df, test_df = split_df(df, 2022)
+    train_df.to_csv(os.path.join(DPATH, "train.csv"), index=False)
+    test_df.to_csv(os.path.join(DPATH, "test.csv"), index=False)
+    return train_df, test_df, len(df["raceId"].unique())
 
 
 def save_model(model, name: str) -> None:
