@@ -1,5 +1,7 @@
 venv
 __pycache__
 
-rec.py
 .env
+
+rec.py
+**.xml
