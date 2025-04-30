@@ -40,7 +40,7 @@ A win/loss binary classifier:
 
 
 # **Models**
-#### <u>loss_1</u>
+### **loss_1**
 This is the first model implemented for the loose classification mentioned prior. Implemented with a random forest, this model achieves a 50% success rate on the 2024 season on which it was evaluated on.
 
 Features used:
