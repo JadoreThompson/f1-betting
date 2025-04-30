@@ -48,41 +48,14 @@ async def build_qualifying_dataset(
         i: await fetch_quali_results(year, i) for i in range(first_round, last_round)
     }
 
-    # quali_data: dict[int, dict[str, str]] = {
-    #     i: await fetch_quali_results(year, i) for i in range(first_round, last_round)
-    # }
-    # return quali_data
-
-    # datasets: dict[int, dict[str, str]] = {}
-
-    # for r in quali_data:
-    #     datasets[r] = {}
-    #     for name in quali_data[r]:
-    #         datasets[r][name] = {"data": quali_data[r][name]}
-
-    # return datasets
-
 
 def parse_race_results(
-    # s: str, key: Literal["positionText", "grid"] = "positionText"
     s: str,
 ) -> dict[str, ParsedRaceData]:
-    # with open("file.xml", "w") as f:
-    #     f.write(s)
     root = ET.fromstring(s)
     results: dict[str, str] = {}
 
     for result in root.findall(".//mrd:Result", ERGAST_NS):
-        # if key == "positionText":
-        #     val = result.attrib[key]
-        # else:
-        #     val = result.findtext("mrd://Grid", ERGAST_NS)
-
-        # results[result.find("mrd:Driver", ERGAST_NS).attrib["driverId"]] = val
-        # results[result.find("mrd:Driver", ERGAST_NS).attrib["driverId"]] = {
-        #     "grid": result.findtext("mrd://Grid", ERGAST_NS),
-        #     "position": result.attrib[key]
-        # }
         results[result.find("mrd:Driver", ERGAST_NS).attrib["driverId"]] = (
             ParsedRaceData(
                 grid=result.findtext("mrd:Grid", namespaces=ERGAST_NS),
@@ -94,10 +67,6 @@ def parse_race_results(
         )
 
     return results
-    # return {
-    #     result.find("mrd:Driver", ERGAST_NS).attrib["driverId"]: result.attrib[key]
-    #     for result in root.findall(".//mrd:Result", ERGAST_NS)
-    # }
 
 
 async def fetch_race_results(
@@ -108,16 +77,6 @@ async def fetch_race_results(
             ERGAST_BASE + f"/{year}/{f"{round_}/" if round_ is not None else ""}results"
         )
         return parse_race_results(rsp.text)
-
-
-# async def fetch_grid_positions(
-#     year: int, round_: int | None = None
-# ) -> dict[str, RawRaceData]:
-#     async with AsyncClient() as c:
-#         rsp = await c.get(
-#             ERGAST_BASE + f"/{year}/{f"{round_}/" if round_ is not None else ""}results"
-#         )
-#         return parse_race_results(rsp.text, "grid")
 
 
 async def build_last_races_dataset(
@@ -138,14 +97,6 @@ async def build_last_races_dataset(
         datasets[r] = {}
 
         for name in race_data[r]:
-            # datasets[r][name] = {
-            #     "data": [
-            #         race_data[r - i].get(name, "") for i in range(1, last_n_races + 1)
-            #     ],
-            #     "real": race_data[r][name],
-            # }
-            # datasets[r][name] = ParsedRaceData()
-
             prev_positions: list[str] = []
 
             for i in range(1, last_n_races + 1):
@@ -160,33 +111,4 @@ async def build_last_races_dataset(
                 real=race_data[r][name].position,
                 constructor_name=race_data[r][name].constructor_name,
             )
-
-    # json.dump(datasets, open("file.json", "w"), indent=4)
     return datasets
-
-
-# def merge_last_n_races_and_quali(
-#     last_n_races_data: dict[int, dict[int, dict[str, list[str]]]],
-#     quali_data: dict[int, dict[int, dict[str, str]]],
-# ) -> None:
-#     """
-#     Adds the qualifying data to the last n races data. Note: it's up to the developer
-#     to ensure each dataset of the same year and contain the same rounds.
-
-#     Args:
-#         last_n_races_data (dict[int, dict[int, dict[str, list  |  str]]])
-#         quali_data (dict[int, dict[int, dict[str, str]]])
-
-#     Raises:
-#         ValueError: Datasets have different lengths
-#     """
-#     if len(last_n_races_data) != len(quali_data):
-#         raise ValueError(
-#             f"Both datasets must be of the same length {len(last_n_races_data)}, {len(quali_data)}"
-#         )
-
-#     for r in last_n_races_data:
-#         for driver in last_n_races_data[r]:
-#             last_n_races_data[r][driver]["data"].insert(
-#                 0, quali_data[r].get(driver, {}).get("data")
-#             )

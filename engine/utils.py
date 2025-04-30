@@ -55,24 +55,13 @@ def sma(s: pd.Series, df: pd.DataFrame, column: str, window: int = 5) -> float:
 
 
 def get_position_category(value: str) -> str:
-    # # categores:
+    # # categories:
     # # 0 - top 3
     # # 1 - top 5
     # # 2 - top 10
     # # 3 - top 20 / retired
 
-    # if not value.isdigit():
-    #     return "3"
-
-    # val = int(value)
-
-    # if val <= 3:
-    #     return "0"
-    # if val <= 5:
-    #     return "1"
-    # return "2"
-
-    # categores:
+    # categories:
     # 0 - top 1
     # 1 - top 3
     # 2 - top 5
@@ -123,7 +112,7 @@ def get_df(min_year: int, sma_length: int = 4) -> pd.DataFrame:
             "raceId",
             "driverId",
             "constructorId",
-            # "grid",
+            "grid",
             "position",
             "positionText",
         ]
@@ -140,14 +129,13 @@ def get_df(min_year: int, sma_length: int = 4) -> pd.DataFrame:
     # df = df.merge(constructors_df, on=["constructorId"])
 
     # df["sma"] = df.apply(lambda x: sma(x, df, "position", sma_length), axis=1)
-    df = add_last_n_races(df, sma_length)
     df["positionText"] = df["positionText"].apply(lambda x: get_position_category(x))
+    df = add_last_n_races(df, sma_length)
 
     return df.dropna().reset_index().drop("index", axis=1)
 
 
 def split_df(
-    # df: pd.DataFrame, split_size: float = 0.7
     df: pd.DataFrame,
     year: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:

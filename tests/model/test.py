@@ -3,17 +3,8 @@ import json
 import pandas as pd
 
 from engine import interact, evaluate, get_position_category
-from engine.config import TRAINED_MODEL_FEATURES
-
-# from .models import ConstructedRaceData
 from .typing import ConstructedRaceData, Dataset, ParsedQualiData
-from .utils import (
-    build_last_races_dataset,
-    build_qualifying_dataset,
-    fetch_quali_results,
-    fetch_race_results,
-    # merge_last_n_races_and_quali,
-)
+from .utils import build_last_races_dataset, build_qualifying_dataset
 
 
 async def test_predictions(
@@ -26,15 +17,6 @@ async def test_predictions(
     quali_data: Dataset[ParsedQualiData] = await build_qualifying_dataset(
         year, last_n_races, rounds
     )
-
-    # print(quali_data)
-
-    # grid
-    # print(last_n_data)
-    # json.dump(last_n_data, open("file.json", "w"), indent=4)
-
-    # if True:
-    #     return
 
     results: list[float] = []
     for r in last_n_data:
@@ -52,7 +34,7 @@ async def test_predictions(
                 sma_value /= last_n_races
 
             # Constructing dataset
-            # dataset.append(int(driver_data.grid))
+            dataset.append(int(driver_data.grid))
 
             # if quali := quali_data[r].get(name):
             #     dataset.append(int(quali.position))
@@ -61,10 +43,10 @@ async def test_predictions(
 
             # dataset.append(driver_data.constructor_name)
             # dataset.append(sma_value)
-            dataset.extend(driver_data.prev_positions)
-            # dataset.extend(
-            #     [get_position_category(p) for p in driver_data.prev_positions]
-            # )
+            # dataset.extend(driver_data.prev_positions)
+            dataset.extend(
+                [get_position_category(p) for p in driver_data.prev_positions]
+            )
 
             # Handling prediction
             pred = interact([dataset])[0]
@@ -83,47 +65,7 @@ async def test_predictions(
     )
 
 
-# async def test_predictions_fixed(
-#     year: int = 2024, rounds: int = 20, last_n_races: int = 5
-# ) -> None:
-#     """
-#     Fix the external test to properly match the format expected by the model
-#     """
-#     last_n_data = await build_last_races_dataset(
-#         year, rounds=rounds, last_n_races=last_n_races
-#     )
-#     print(f"Model features: {TRAINED_MODEL_FEATURES}")
-
-#     for r in last_n_data:
-#         success = 0
-#         total = 0
-
-#         for driver_id in last_n_data[r]:
-#             row_data = {}
-
-#             past_positions = [
-#                 int(p) if p.isdigit() else 0
-#                 for p in last_n_data[r][driver_id]["data"][:4]
-#             ]
-#             sma_value = (
-#                 sum(past_positions) / len(past_positions) if past_positions else 0
-#             )
-
-#             row_data["sma"] = sma_value
-#             test_df = pd.DataFrame([row_data], columns=TRAINED_MODEL_FEATURES)
-
-#             pred = interact(test_df)[0]
-#             actual = last_n_data[r][driver_id]["real"]
-
-#             if pred.prediction == actual:
-#                 success += 1
-
-#             total += 1
-#             # print(f"Driver: {driver_id}, Predicted: {pred.prediction}, Actual: {actual}")
-
-#         print(f"Round: {r}, Success Rate: {success / total if total else 0:.2%}")
-
-
+# Ignore.
 def test_json():
     data = json.load(open("file.json", "r"))
 
@@ -144,7 +86,6 @@ def test_json():
             row_data["sma"] = sma_value
             row_data["positionText"] = data[r][driver_id]["real"]
             test_df = pd.DataFrame([row_data], columns=["sma", "positionText"])
-            # print(test_df)
             evaluate(df=test_df)
 
 

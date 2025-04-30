@@ -39,7 +39,7 @@ def evaluate(model=None, df=None, *, save: bool = False) -> None:
 
 
 def rt() -> None:
-    train_df, test_df, size = get_train_test(2017, 5)
+    train_df, test_df, size = get_train_test(2017, 3)
     # print(train_df.dtypes)
     model = LEARNER.train(train_df)
     evaluate(model, test_df, save=True)
