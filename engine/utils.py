@@ -55,22 +55,45 @@ def sma(s: pd.Series, df: pd.DataFrame, column: str, window: int = 5) -> float:
 
 
 def get_position_category(value: str) -> str:
+    # # categores:
+    # # 0 - top 3
+    # # 1 - top 5
+    # # 2 - top 10
+    # # 3 - top 20 / retired
+
+    # if not value.isdigit():
+    #     return "3"
+
+    # val = int(value)
+
+    # if val <= 3:
+    #     return "0"
+    # if val <= 5:
+    #     return "1"
+    # return "2"
+
     # categores:
-    # 0 - top 3
-    # 1 - top 5
-    # 2 - top 10
-    # 3 - top 20 / retired
+    # 0 - top 1
+    # 1 - top 3
+    # 2 - top 5
+    # 3 - top 10
+    # 4 - top 20
+    # 5 - retired
 
     if not value.isdigit():
-        return "3"
+        return "5"
 
     val = int(value)
 
-    if val <= 3:
+    if val == 1:
         return "0"
-    if val <= 5:
+    if val < 3:
         return "1"
-    return "2"
+    if val < 5:
+        return "2"
+    if val < 10:
+        return "3"
+    return "4"
 
 
 def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
