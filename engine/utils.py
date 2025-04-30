@@ -1,48 +1,93 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
 
-from typing import Iterable
 from collections import namedtuple
-from .config import DPATH, TRAINED_MODEL_CLASSES, TRAINED_MODEL_FEATURES, TRAINED_MODEL
+from datetime import date, datetime
+from typing import Iterable
+from .config import (
+    DPATH,
+    MPATH,
+    TRAINED_MODEL_CLASSES,
+    TRAINED_MODEL_FEATURES,
+    TRAINED_MODEL,
+)
 
 
 # prediction value, decimal representation of percentage
-Prediction = namedtuple("Predictions", ["pred", "perc"])
+Prediction = namedtuple("Prediction", ["prediction", "percentage"])
 
 
-def apply_types(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply types to the dataset."""
-    df["race_id"] = df["race_id"].astype("str")
-    df["driver_id"] = df["driver_id"].astype("str")
-    df["year"] = df["year"].astype("str")
-    return df
+def drop_columns(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop(
+        ["position", "raceId", "driverId", "year"],
+        axis=1,
+    )
 
 
-def prepare_train_dataset(min_year: int = 2023) -> pd.DataFrame:
+def split_df(
+    # df: pd.DataFrame, split_size: float = 0.7
+    df: pd.DataFrame,
+    year: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Returns a test and train split of a dataset
+
+    Args:
+        df (pd.DataFrame): _description_
+        split_size (float): percentage of dataset to be trained on
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+
+    train_df, test_df = (
+        df[df["year"] <= year],
+        df[df["year"] > year],
+    )
+
+    train_df, test_df = drop_columns(train_df), drop_columns(test_df)
+    return train_df, test_df
+
+
+def get_df(min_year: int, sma_length: int = 4) -> pd.DataFrame:
+    """Returns the dataframe without the dropped columns."""
+
+    qualifying_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
+        ["driverId", "raceId"]
+    ]
+
     results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
-        ["raceId", "driverId", "position", "positionText"]
+        [
+            "raceId",
+            "driverId",
+            "position",
+            "positionText",
+        ]
     ]
     results_df["position"] = (
         pd.to_numeric(results_df["position"], errors="coerce").fillna(0).astype("int")
     )
 
-    races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[
-        [
-            "raceId",
-            "year",
-        ]
-    ]
+    races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[["raceId", "year"]]
     races_df = races_df[races_df["year"] >= min_year]
 
     df = races_df.merge(results_df, on=["raceId"], suffixes=("_race", "_result"))
-    df.columns = [
-        col.replace("Id", "_id").replace("Text", "_text") for col in df.columns
-    ]
-
-    df = apply_types(df)
-    df = df.dropna()
+    df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
+    df["sma"] = df.apply(lambda x: sma(x, df, "position", sma_length), axis=1)
+    df = df.dropna().reset_index().drop("index", axis=1)
     return df
+
+
+def get_train_test(
+    min_year: int, sma_length: int = 4
+) -> tuple[pd.DataFrame, pd.DataFrame, int]:
+    df = get_df(min_year=min_year, sma_length=sma_length)
+    train_df, test_df = split_df(df, 2020)
+    train_df.to_csv(os.path.join(DPATH, "train.csv"), index=False)
+    test_df.to_csv(os.path.join(DPATH, "test.csv"), index=False)
+    return train_df, test_df, len(df["raceId"].unique())
 
 
 def parse_quali_times(s: str) -> int:
@@ -62,7 +107,7 @@ def parse_times(s: str) -> int:
         return np.nan
 
     hour, minute, second = s.split(":")
-    return hour * 3600 + minute * 60 + second
+    return int(hour) * 3600 + int(minute) * 60 + int(second)
 
 
 def sma(s: pd.Series, df: pd.DataFrame, column: str, window: int = 5) -> float:
@@ -73,6 +118,29 @@ def sma(s: pd.Series, df: pd.DataFrame, column: str, window: int = 5) -> float:
     return sum(nums) / len(nums)
 
 
+def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
+    """Add last n race results for each driver to the dataset."""
+    for i in range(1, lookback + 1):
+        df[f"last_{i}"] = df.groupby("driverId")["positionText"].shift(i)
+
+    df["raceId"] = df["raceId"].astype("int")
+    df = df.sort_values("raceId")
+    df["raceId"] = df["raceId"].astype("str")
+    return df
+
+
+def save_model(model, name: str) -> None:
+    fpath = os.path.join(MPATH, name)
+
+    if not os.path.exists(MPATH):
+        os.makedirs(MPATH)
+
+    if os.path.exists(fpath):
+        os.remove(fpath)
+
+    model.save(fpath)
+
+
 def interact(data: pd.DataFrame | Iterable) -> tuple[Prediction, ...]:
     if isinstance(data, Iterable):
         d = pd.DataFrame(data, columns=TRAINED_MODEL_FEATURES)
@@ -80,10 +148,24 @@ def interact(data: pd.DataFrame | Iterable) -> tuple[Prediction, ...]:
         d = data
 
     preds: list[list[float]] = TRAINED_MODEL.predict(d).tolist()
-    results: list[str] = []
 
-    for row in preds:
-        per = max(row)
-        results.append(Prediction(TRAINED_MODEL_CLASSES[row.index(per)], per))
+    return tuple(
+        Prediction(TRAINED_MODEL_CLASSES[row.index(m := max(row))], m) for row in preds
+    )
 
-    return tuple(results)
+
+def plot_heatmap(df: pd.DataFrame) -> None:
+    corr = df.corr(numeric_only=True)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    cax = ax.matshow(corr, cmap="coolwarm")
+    fig.colorbar(cax)
+
+    ax.set_xticks(range(len(corr.columns)))
+    ax.set_yticks(range(len(corr.columns)))
+    ax.set_xticklabels(corr.columns, rotation=90)
+    ax.set_yticklabels(corr.columns)
+
+    plt.title("Correlation Heatmap", pad=20)
+    plt.tight_layout()
+    plt.show()
