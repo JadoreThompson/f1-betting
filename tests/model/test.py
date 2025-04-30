@@ -124,7 +124,7 @@ async def test_driver_predictions():
 async def test_predictions() -> None:
     year = 2024
     last_n_races = 5
-    rounds = 20
+    rounds = 24
 
     last_n_data: Dataset[ConstructedRaceData] = await build_last_races_dataset(
         year, rounds, last_n_races

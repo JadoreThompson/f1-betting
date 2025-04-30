@@ -4,8 +4,7 @@ import os
 import pandas as pd
 
 from collections import namedtuple
-from datetime import date, datetime
-from typing import Iterable
+from typing import Iterable, Literal
 from .config import (
     DPATH,
     MPATH,
@@ -46,47 +45,77 @@ def parse_times(s: str) -> int:
     return int(hour) * 3600 + int(minute) * 60 + int(second)
 
 
-def sma(s: pd.Series, df: pd.DataFrame, column: str, window: int = 5) -> float:
-    if s.name < window:
-        return np.nan
+def add_sma(df: pd.DataFrame, window: int) -> pd.DataFrame:
+    df = df.copy()
+    df["raceId"] = pd.to_numeric(df["raceId"])
+    df["driverId"] = pd.to_numeric(df["driverId"], errors="coerce").fillna(0)
+    df["position"] = pd.to_numeric(df["position"], errors="coerce")
 
-    nums = [df.loc[s.name - i][column] for i in range(1, window + 1)]
-    return sum(nums) / len(nums)
+    df = df.sort_values(["driverId", "raceId"])
+
+    df["sma_position"] = (
+        df.groupby("driverId")["position"]
+        .rolling(window=window, min_periods=1)
+        .mean()
+        .reset_index(level=0, drop=True)
+    )
+
+    df = df.sort_values(["raceId"])
+    return df
 
 
-def get_position_category(value: str) -> str:
-    # # categories:
-    # # 0 - top 3
-    # # 1 - top 5
-    # # 2 - top 10
-    # # 3 - top 20 / retired
-
-    # categories:
-    # 0 - top 1
-    # 1 - top 3
-    # 2 - top 5
-    # 3 - top 10
-    # 4 - top 20
-    # 5 - retired
+def get_position_category(
+    value: str, type_: Literal["tight", "loose", "binary"] = "tight"
+) -> str:
+    if type_ == "binary":
+        if value == "1":
+            return "win"
+        return "lose"
 
     if not value.isdigit():
-        return "5"
+        return "0"
 
     val = int(value)
 
-    if val == 1:
-        return "0"
-    if val < 3:
+    if type_ == "tight":
+        if val == 1:
+            return "1"
+        if val == 2:
+            return "2"
+        if val == 3:
+            return "3"
+        if val <= 5:
+            return "4"
+        if val <= 10:
+            return "5"
+        return "6"
+
+    if val <= 3:
         return "1"
-    if val < 5:
+    if val <= 5:
         return "2"
-    if val < 10:
+    if val <= 10:
         return "3"
     return "4"
 
 
+def get_avg_position_move(df: pd.DataFrame) -> pd.Series:
+    """
+    Returns a Series of average position change per driver.
+    """
+    df = df.copy()
+    df["grid"] = pd.to_numeric(df["grid"])
+    df["position"] = pd.to_numeric(df["position"], errors="coerce")
+
+    df = df.dropna(subset=["grid", "position"])
+    df["position_change"] = df["grid"] - df["position"]
+    return df.groupby("driverId")["position_change"].mean()
+
+
 def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
     """Add last n race results for each driver to the dataset."""
+    df = df.copy()
+
     for i in range(1, lookback + 1):
         df[f"last_{i}"] = df.groupby("driverId")["positionText"].shift(i)
 
@@ -96,16 +125,11 @@ def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
     return df
 
 
-def get_df(min_year: int, sma_length: int = 4) -> pd.DataFrame:
+def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataFrame:
     """Returns the dataframe without the dropped columns."""
-    constructors_df = pd.read_csv(os.path.join(DPATH, "constructors.csv"))[
-        ["constructorId", "constructorRef"]
-    ]
-
     qualifying_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
         ["driverId", "raceId", "position"]
     ]
-    # qualifying_df["position"] = qualifying_df["position"].astype("str")
 
     results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
         [
@@ -121,18 +145,18 @@ def get_df(min_year: int, sma_length: int = 4) -> pd.DataFrame:
         pd.to_numeric(results_df["position"], errors="coerce").fillna(0).astype("int")
     )
 
-    races_df = pd.read_csv(os.path.join(DPATH, "races-2023.csv"))[["raceId", "year"]]
-    races_df = races_df[races_df["year"] >= min_year]
+    races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[["raceId", "year"]]
+    races_df = races_df[(max_year >= races_df["year"]) & (races_df["year"] >= min_year)]
 
     df = races_df.merge(results_df, on=["raceId"], suffixes=("_race", "_result"))
-    # df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
-    # df = df.merge(constructors_df, on=["constructorId"])
+    df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
 
-    # df["sma"] = df.apply(lambda x: sma(x, df, "position", sma_length), axis=1)
-    df["positionText"] = df["positionText"].apply(lambda x: get_position_category(x))
-    df = add_last_n_races(df, sma_length)
-
-    return df.dropna().reset_index().drop("index", axis=1)
+    df = add_sma(df, sma_length)
+    df["positionText"] = df["positionText"].apply(
+        lambda x: get_position_category(x, "loose")
+    )
+    df["avg_pos_move"] = get_avg_position_move(df)
+    return df
 
 
 def split_df(
@@ -149,6 +173,8 @@ def split_df(
     Returns:
         pd.DataFrame: _description_
     """
+    df = df.copy()
+    df["year"] = df["year"].astype("int")
 
     train_df, test_df = (
         df[df["year"] <= year],
@@ -160,10 +186,10 @@ def split_df(
 
 
 def get_train_test(
-    min_year: int, sma_length: int = 4
+    min_year: int, max_year: int = 2026, sma_length: int = 4
 ) -> tuple[pd.DataFrame, pd.DataFrame, int]:
-    df = get_df(min_year=min_year, sma_length=sma_length)
-    train_df, test_df = split_df(df, 2022)
+    df = get_df(min_year, max_year, sma_length)
+    train_df, test_df = split_df(df, 2020)
     train_df.to_csv(os.path.join(DPATH, "train.csv"), index=False)
     test_df.to_csv(os.path.join(DPATH, "test.csv"), index=False)
     return train_df, test_df, len(df["raceId"].unique())
@@ -181,16 +207,25 @@ def save_model(model, name: str) -> None:
     model.save(fpath)
 
 
-def interact(data: pd.DataFrame | Iterable) -> tuple[Prediction, ...]:
+def interact(
+    data: pd.DataFrame | Iterable, type_: Literal["multi", "binary"] = "multi"
+) -> tuple[Prediction, ...]:
     if isinstance(data, Iterable):
         d = pd.DataFrame(data, columns=TRAINED_MODEL_FEATURES)
     else:
         d = data
 
-    preds: list[list[float]] = TRAINED_MODEL.predict(d).tolist()
+    preds: list[list[float] | float] = TRAINED_MODEL.predict(d).tolist()
+
+    if type_ == "multi":
+        return tuple(
+            Prediction(TRAINED_MODEL_CLASSES[row.index(m := max(row))], m)
+            for row in preds
+        )
 
     return tuple(
-        Prediction(TRAINED_MODEL_CLASSES[row.index(m := max(row))], m) for row in preds
+        Prediction(TRAINED_MODEL_CLASSES[0 if prob < 0.5 else 1], prob)
+        for prob in preds
     )
 
 

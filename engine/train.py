@@ -1,17 +1,14 @@
-import json
 import os
-import numpy as np
 import pandas as pd
 
-from typing import Tuple, TypedDict
-from .config import BPATH, DPATH, LEARNER_TYPE, MPATH, TRAINED_MODEL
-from .utils import drop_columns, get_df, get_train_test, sma
+from .config import DPATH, LEARNER_TYPE, MPATH, TRAINED_MODEL
+from .utils import drop_columns, get_df, get_train_test, split_df
 
 TARGET_LABEL = "positionText"
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(label=TARGET_LABEL)
 
 
-def evaluate(model=None, df=None, *, save: bool = False) -> None:
+def evaluate(model=None, df=None, *, save: bool = False, name: str = "model_x") -> None:
     if model is None:
         model = TRAINED_MODEL
 
@@ -22,7 +19,11 @@ def evaluate(model=None, df=None, *, save: bool = False) -> None:
     success = 0
 
     for i, preds in enumerate(predictions):
-        pred_index = preds.tolist().index(max(preds))
+        if len(model.label_classes()) == 2:
+            pred_index = 0 if preds < 0.5 else 1
+        else:
+            pred_index = preds.tolist().index(max(preds))
+
         pred = model.label_classes()[pred_index]
 
         if pred == df.iloc[i][TARGET_LABEL]:
@@ -32,24 +33,24 @@ def evaluate(model=None, df=None, *, save: bool = False) -> None:
         success /= len(predictions)
 
     if save:
-        model.save(os.path.join(MPATH, "model_x"))
+        model.save(os.path.join(MPATH, name))
 
-    print(f"Succes Rate: {success:.2%}")
+    print(f"{"*" * 20}\nSuccess Rate: {success:.2%}\n{"*" * 20}")
     print(f"\nDF Types:\n{df.dtypes}")
 
 
 def rt() -> None:
-    train_df, test_df, size = get_train_test(2017, 3)
-    # print(train_df.dtypes)
-    model = LEARNER.train(train_df)
-    evaluate(model, test_df, save=True)
+    train_df, test_df, size = get_train_test(2017, 2023, 5)
+
+    if test_df.empty:
+        print("Empty test dataset")
+        print(test_df)
+    else:
+        model = LEARNER.train(train_df)
+        evaluate(model, test_df, save=True)
 
 
 if __name__ == "__main__":
     rt()
-    # evaluate(df=drop_columns(get_df(2024)))
-
-    # races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))
-    # races_df[races_df["year"] <= 2023].to_csv(
-    #     os.path.join(DPATH, "races-2023.csv"), index=False
-    # )
+    # evaluate(df=split_df(get_df(2024, 2024, 5), 2024)[0])
+    # evaluate()
