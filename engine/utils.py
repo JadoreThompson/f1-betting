@@ -45,16 +45,16 @@ def parse_times(s: str) -> int:
     return int(hour) * 3600 + int(minute) * 60 + int(second)
 
 
-def add_sma(df: pd.DataFrame, window: int) -> pd.DataFrame:
+def add_sma(df: pd.DataFrame, window: int, col: int = "position") -> pd.DataFrame:
     df = df.copy()
     df["raceId"] = pd.to_numeric(df["raceId"])
     df["driverId"] = pd.to_numeric(df["driverId"], errors="coerce").fillna(0)
-    df["position"] = pd.to_numeric(df["position"], errors="coerce")
+    df[col] = pd.to_numeric(df[col], errors="coerce")
 
     df = df.sort_values(["driverId", "raceId"])
 
-    df["sma_position"] = (
-        df.groupby("driverId")["position"]
+    df[f"sma_{window}"] = (
+        df.groupby("driverId")[col]
         .rolling(window=window, min_periods=1)
         .mean()
         .reset_index(level=0, drop=True)
@@ -72,7 +72,7 @@ def get_position_category(
             return "win"
         return "lose"
 
-    if not value.isdigit():
+    if not value.isdigit() or value == "0":
         return "0"
 
     val = int(value)
@@ -99,12 +99,35 @@ def get_position_category(
     return "4"
 
 
-def get_avg_position_move(df: pd.DataFrame) -> pd.Series:
+def add_rolling_position_move(
+    df: pd.DataFrame, window: int, min_periods: int = 1
+) -> pd.DataFrame:
     """
     Returns a Series of average position change per driver.
     """
     df = df.copy()
-    df["grid"] = pd.to_numeric(df["grid"])
+    df["grid"] = pd.to_numeric(df["grid"], errors="coerce")
+    df["position"] = pd.to_numeric(df["position"], errors="coerce")
+    df["raceId"] = df["raceId"].astype("int")
+    df = df.dropna(subset=["grid", "position"])
+
+    df = df.sort_values(["raceId"])
+    df["rolling_pos_change"] = (
+        (df["grid"] - df["position"])
+        .rolling(window=window, min_periods=min_periods)
+        .mean()
+    )
+    return df
+
+
+def get_avg_position_move(df: pd.DataFrame) -> pd.Series:
+    """
+    Returns a Series of average position change per driver.
+    Negative values indicate a decline in position and positive
+    the opposite.
+    """
+    df = df.copy()
+    df["grid"] = pd.to_numeric(df["grid"], errors="coerce")
     df["position"] = pd.to_numeric(df["position"], errors="coerce")
 
     df = df.dropna(subset=["grid", "position"])
@@ -112,12 +135,15 @@ def get_avg_position_move(df: pd.DataFrame) -> pd.Series:
     return df.groupby("driverId")["position_change"].mean()
 
 
-def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
-    """Add last n race results for each driver to the dataset."""
+def add_last_n_races(
+    df: pd.DataFrame, lookback: int = 5, col: str = "positionText"
+) -> pd.DataFrame:
+    """Inserts and returns last n values for positionText for each driver
+    to the dataset."""
     df = df.copy()
 
     for i in range(1, lookback + 1):
-        df[f"last_{i}"] = df.groupby("driverId")["positionText"].shift(i)
+        df[f"last_{i}"] = df.groupby("driverId")[col].shift(i)
 
     df["raceId"] = df["raceId"].astype("int")
     df = df.sort_values("raceId")
@@ -128,8 +154,12 @@ def add_last_n_races(df: pd.DataFrame, lookback: int = 5) -> pd.DataFrame:
 def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataFrame:
     """Returns the dataframe without the dropped columns."""
     qualifying_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
-        ["driverId", "raceId", "position"]
+        ["driverId", "raceId", "q3", "q2", "q1"]
     ]
+    qualifying_df["q3"] = qualifying_df["q3"].apply(lambda x: parse_quali_times(x))
+    qualifying_df["q2"] = qualifying_df["q2"].apply(lambda x: parse_quali_times(x))
+    qualifying_df["q1"] = qualifying_df["q1"].apply(lambda x: parse_quali_times(x))
+    qualifying_df = qualifying_df.drop(["q3", "q2", "q1"], axis=1)
 
     results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
         [
@@ -141,21 +171,21 @@ def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataF
             "positionText",
         ]
     ]
-    results_df["position"] = (
-        pd.to_numeric(results_df["position"], errors="coerce").fillna(0).astype("int")
-    )
+    results_df["grid"] = results_df["grid"].astype("int")
 
     races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[["raceId", "year"]]
     races_df = races_df[(max_year >= races_df["year"]) & (races_df["year"] >= min_year)]
 
+    # Merging
     df = races_df.merge(results_df, on=["raceId"], suffixes=("_race", "_result"))
     df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
 
-    df = add_sma(df, sma_length)
+    # Feature construction
     df["positionText"] = df["positionText"].apply(
         lambda x: get_position_category(x, "loose")
     )
-    df["avg_pos_move"] = get_avg_position_move(df)
+    df = add_last_n_races(df, sma_length, "positionText")
+
     return df
 
 
@@ -186,10 +216,10 @@ def split_df(
 
 
 def get_train_test(
-    min_year: int, max_year: int = 2026, sma_length: int = 4
+    *, min_year: int, max_year: int, split_year: int, sma_length: int = 4
 ) -> tuple[pd.DataFrame, pd.DataFrame, int]:
     df = get_df(min_year, max_year, sma_length)
-    train_df, test_df = split_df(df, 2020)
+    train_df, test_df = split_df(df, split_year)
     train_df.to_csv(os.path.join(DPATH, "train.csv"), index=False)
     test_df.to_csv(os.path.join(DPATH, "test.csv"), index=False)
     return train_df, test_df, len(df["raceId"].unique())

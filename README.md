@@ -40,7 +40,7 @@ A win/loss binary classifier:
 
 
 # **Models**
-### **loss_1**
+### **loose_1.0**
 This is the first model implemented for the loose classification mentioned prior. Implemented with a random forest, this model achieves a 50% success rate on the 2024 season on which it was evaluated on.
 
 Features used:
@@ -48,5 +48,12 @@ Features used:
 - `position_quali` (*int*): The final position achieved after Q3.
 - `sma_position` (*float*): The simple moving average of the last 5 races. 
 - `avg_pos_move` (*float*): The average amount of positions the driver moves from their starting grid position.
+
+### **loose_2.0**
+Implemented with a random forest, this model achieves an average success rate of 61.51% and a median of 65%.
+
+Features used:
+- `grid` (*int*): The starting grid position.
+- `last 1-2 (loose)` (*str*): The last 1 and last 2 race finish positions normalised into the loose category
 # **Requirements**
 - Python 3.12

@@ -21,8 +21,11 @@ class ParsedRaceData:
 
 @dataclass
 class ParsedQualiData:
-    position: str
-    name: str
+    position: str = "0"
+    name: str = ""
+    q3_secs: int = 0
+    q2_secs: int = 0
+    q1_secs: int = 0
 
 
 @dataclass
@@ -32,16 +35,13 @@ class ConstructedRaceData:
     constructor_name: str
     name: str
     real: str
-    # sma: float | None
 
-
-def default_constructed_race_data(last_n_races: int, name: str) -> ConstructedRaceData:
-    return (
-        ConstructedRaceData(
+    @classmethod
+    def construct(cls, last_n_races: int, name: str) -> "ConstructedRaceData":
+        return cls(
             prev_positions=["0"] * last_n_races,
             grid="0",
             constructor_name="",
             name=name,
             real="0",
-        ),
-    )
+        )

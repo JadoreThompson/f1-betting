@@ -1,52 +1,168 @@
-import json
+import asyncio
+import os
+import time
+import pandas as pd
 import xml.etree.ElementTree as ET
 
 from collections import defaultdict
 from httpx import AsyncClient
+from typing import Iterable, Literal
+
+from config import BPATH
+from engine import parse_quali_times, get_position_category
 from .typing import Dataset, ParsedQualiData, ParsedRaceData, ConstructedRaceData
 
 ERGAST_BASE = "https://ergast.com/api/f1"
 ERGAST_NS = {"mrd": "http://ergast.com/mrd/1.5"}
-
+DPATH = os.path.join(BPATH, "engine", "datasets")
 
 # with open("file.xml", "w") as f:
 #     f.write(s)
 
 
-def parse_quali_reuslts(s: str) -> dict[str, ParsedQualiData]:
+def parse_quali_results_v1(s: str) -> dict[str, ParsedQualiData]:
+    """
+    Parses a qualifying XML string into a dictionary of ParsedQualiData objects.
+
+    Args:
+        s (str): XML string containing qualifying results.
+
+    Returns:
+        dict[str, ParsedQualiData]: Mapping of driver ID to ParsedQualiData.
+    """
+
     root = ET.fromstring(s)
     return {
         result.find("mrd:Driver", ERGAST_NS).attrib["driverId"]: ParsedQualiData(
             position=result.attrib["position"],
             name=result.find("mrd:Driver", ERGAST_NS).attrib["driverId"],
+            q3_secs=parse_quali_times(result.findtext("mrd:Q3", namespaces=ERGAST_NS)),
+            q2_secs=parse_quali_times(result.findtext("mrd:Q2", namespaces=ERGAST_NS)),
+            q1_secs=parse_quali_times(result.findtext("mrd:Q1", namespaces=ERGAST_NS)),
         )
         for result in root.findall(".//mrd:QualifyingResult", ERGAST_NS)
     }
 
 
-async def fetch_quali_results(
-    year: int = 2024, round_: int | None = None
+def parse_quali_results_v2(df: pd.DataFrame) -> dict[str, ParsedQualiData]:
+    """
+    Parses a qualifying DataFrame into a dictionary of ParsedQualiData objects.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing qualifying data.
+
+    Returns:
+        dict[str, ParsedQualiData]: Mapping of driver ID to ParsedQualiData.
+    """
+
+    return {
+        row["driverId"]: ParsedQualiData(
+            position=row["position"],
+            name=row["driverId"],
+            q3_secs=parse_quali_times(row["q3"]),
+            q2_secs=parse_quali_times(row["q2"]),
+            q1_secs=parse_quali_times(row["q1"]),
+        )
+        for _, row in df.iterrows()
+    }
+
+
+async def fetch_quali_results_v1(
+    year: int = 2020, round_: int | None = None
 ) -> dict[str, ParsedQualiData]:
+    """
+    Fetches qualifying results from the Ergast API and parses them using XML.
+
+    Args:
+        year (int): Season year. Defaults to 2020.
+        round_ (int | None): Race round number. If None, fetches latest round.
+
+    Returns:
+        dict[str, ParsedQualiData]: Parsed qualifying data.
+    """
+
+    print(f"Fetching qualfying data - Year: {year} Round: {round_}")
     async with AsyncClient() as c:
         rsp = await c.get(
             ERGAST_BASE
             + f"/{year}/{f"{round_}/" if round_ is not None else ""}qualifying"
         )
-        return parse_quali_reuslts(rsp.text)
+        return parse_quali_results_v1(rsp.text)
+
+
+def fetch_quali_results_v2(
+    year: int = 2020, round_: int = 1
+) -> dict[str, ParsedQualiData]:
+    """
+    Fetches qualifying results from local CSV datasets and parses them.
+
+    Args:
+        year (int): Season year.
+        round_ (int): Race round number.
+
+    Returns:
+        dict[str, ParsedQualiData]: Parsed qualifying data.
+    """
+
+    quali_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))
+
+    races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[
+        ["raceId", "round", "year"]
+    ]
+
+    df = quali_df.merge(races_df, on=["raceId"])
+    df = df[df["year"] == year]
+    df = df[df["round"] == round_]
+    return parse_quali_results_v2(df)
 
 
 async def build_qualifying_dataset(
-    year: int = 2024, first_round: int = 5, last_round: int = 20
+    rounds: int, years: Iterable[int] = None, version: Literal["v1", "v2"] = "v2"
 ) -> Dataset[ParsedQualiData]:
-    return {
-        i: await fetch_quali_results(year, i)
-        for i in range(first_round, last_round + 1)
-    }
+    """
+    Builds a dataset of qualifying results for multiple years and rounds.
+
+    Args:
+        rounds (int): Number of rounds per year.
+        years (Iterable[int] | None): List of years. Defaults to [2020].
+        version (Literal["v1", "v2"]): Whether to use v1 (API) or v2 (CSV) fetcher.
+
+    Returns:
+        Dataset[ParsedQualiData]: A dataset of qualifying results keyed by round index.
+    """
+
+    async def helper(year: int) -> Dataset[ParsedRaceData]:
+        if version == "v1":
+            return {j: await fetch_quali_results_v1(year, j + 1) for j in range(rounds)}
+        else:
+            return {j: fetch_quali_results_v2(year, j + 1) for j in range(rounds)}
+
+    if years is None:
+        years = [2020]
+
+    result = await asyncio.gather(*[helper(years[i]) for i in range(len(years))])
+
+    rtn_value: Dataset[ParsedQualiData] = {}
+    for i in range(len(result)):
+        for key in result[i]:
+            rtn_value[key + (i * (rounds))] = result[i][key]
+
+    return rtn_value
 
 
-def parse_race_results(
+def parse_race_results_v1(
     s: str,
 ) -> dict[str, ParsedRaceData]:
+    """
+    Parses a race XML string into a dictionary of ParsedRaceData objects.
+
+    Args:
+        s (str): XML string containing race results.
+
+    Returns:
+        dict[str, ParsedRaceData]: Mapping of driver ID to ParsedRaceData.
+    """
+
     root = ET.fromstring(s)
     results: dict[str, str] = {}
 
@@ -64,28 +180,121 @@ def parse_race_results(
     return results
 
 
-async def fetch_race_results(
+def parse_race_results_v2(df: pd.DataFrame) -> dict[str, ParsedRaceData]:
+    """
+    Parses a race results DataFrame into a dictionary of ParsedRaceData objects.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing race results.
+
+    Returns:
+        dict[str, ParsedRaceData]: Mapping of driver ID to ParsedRaceData.
+    """
+
+    return {
+        row["driverId"]: ParsedRaceData(
+            position=row["position"],
+            grid=row["grid"],
+            constructor_name=row["constructorRef"],
+            name=row["driverId"],
+        )
+        for _, row in df.iterrows()
+    }
+
+
+async def fetch_race_results_v1(
     year: int, round_: int | None = None
 ) -> dict[str, ParsedRaceData]:
+    """
+    Fetches race results from the Ergast API and parses them using XML.
+
+    Args:
+        year (int): Season year.
+        round_ (int | None): Race round number. If None, fetches latest round.
+
+    Returns:
+        dict[str, ParsedRaceData]: Parsed race data.
+    """
+
+    print(f"Fetching last races data", locals())
     async with AsyncClient() as c:
         rsp = await c.get(
             ERGAST_BASE + f"/{year}/{f"{round_}/" if round_ is not None else ""}results"
         )
-        return parse_race_results(rsp.text)
+        return parse_race_results_v1(rsp.text)
+
+
+def fetch_race_results_v2(
+    year: int = 2020, round_: int = 1
+) -> dict[str, ParsedRaceData]:
+    """
+    Fetches race results from local CSV datasets and parses them.
+
+    Args:
+        year (int): Season year. Defaults to 2020.
+        round_ (int): Race round number.
+
+    Returns:
+        dict[str, ParsedRaceData]: Parsed race data.
+    """
+
+    constructors_df = pd.read_csv(os.path.join(DPATH, "constructors.csv"))[
+        ["constructorId", "constructorRef"]
+    ]
+
+    races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[
+        ["raceId", "round", "year"]
+    ]
+
+    results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))
+
+    df = results_df.merge(constructors_df, on=["constructorId"])
+    df = df.merge(races_df, on=["raceId"])
+    df = df[df["year"] == year]
+    df = df[df["round"] == round_]
+    return parse_race_results_v2(df)
 
 
 async def build_last_races_dataset(
-    year: int = 2024,
-    rounds: int = 20,
-    last_n_races: int = 5,
+    rounds: int,
+    last_n_races: int,
+    years: Iterable[int] = None,
+    version: Literal["v1", "v2"] = "v2",
 ) -> Dataset[ConstructedRaceData]:
-    race_data: Dataset[ParsedRaceData] = {
-        i: await fetch_race_results(year, i + 1)
-        for i in range(rounds)
-    }
+    """
+    Builds a dataset that includes information about the previous N races for each driver.
+
+    Args:
+        rounds (int): Number of rounds per year.
+        last_n_races (int): Number of previous races to include.
+        years (Iterable[int] | None): List of years. Defaults to [2020].
+        version (Literal["v1", "v2"]): Whether to use v1 (API) or v2 (CSV) fetcher.
+
+    Returns:
+        Dataset[ConstructedRaceData]: Dataset including historical performance.
+    """
+
+    async def helper(year: int) -> Dataset[ParsedRaceData]:
+        if version == "v1":
+            return {j: await fetch_race_results_v1(year, j + 1) for j in range(rounds)}
+        else:
+            return {j: fetch_race_results_v2(year, j + 1) for j in range(rounds)}
+
+    if years is None:
+        years = [2020]
+
+    result = await asyncio.gather(*[helper(years[i]) for i in range(len(years))])
+
+    race_data: Dataset[ParsedRaceData] = {}
+
+    for i in range(len(result)):
+        for key in result[i]:
+            race_data[key + (i * rounds)] = result[i][key]
 
     datasets: Dataset[ConstructedRaceData] = defaultdict(dict)
 
+    print("Constructing last races dataset")
+    s = time.time()
     for r in race_data:
         if r < last_n_races:
             continue
@@ -99,40 +308,112 @@ async def build_last_races_dataset(
                 else:
                     prev_positions.append("0")
 
+            d = race_data[r][name]
             datasets[r][name] = ConstructedRaceData(
                 prev_positions=prev_positions,
-                grid=race_data[r][name].grid,
-                real=race_data[r][name].position,
-                constructor_name=race_data[r][name].constructor_name,
-                name=race_data[r][name].name,
+                grid=d.grid,
+                real=d.position,
+                constructor_name=d.constructor_name,
+                name=d.name,
             )
-
+    print(
+        f"Finished constructing last races dataset - Time taken {time.time() - s:.4f} seconds"
+    )
     return datasets
 
 
-def get_avg_position_move(data: Dataset[ConstructedRaceData]) -> dict[str, float]:
+def get_sma(
+    data: ConstructedRaceData,
+    last_n_races: int,
+    type_: Literal["real", "normalised"] = "real",
+    category: str = "loose",
+) -> float:
     """
-    Compute the average position change from grid to real finish for each driver.
+    Calculates the simple moving average (SMA) of a driver's positions over the past N races.
 
-    Positive value = gained positions on average.
-    Negative value = lost positions on average.
+    Args:
+        data (ConstructedRaceData): Driver's historical race data.
+        last_n_races (int): Number of races to average over.
+        type_ (Literal["real", "normalised"]): Whether to use raw positions or normalised categories.
+        category (str): Normalisation category to use (if applicable).
+
+    Returns:
+        float: Simple moving average of the driver's positions.
     """
 
-    totals = defaultdict(int)
-    counts = defaultdict(int)
+    if type_ == "real":
+        sma_value: float = sum(
+            float(p) if p.isdigit() else 0 for p in data.prev_positions
+        )
+    else:
+        sma_value: float = sum(
+            float(p) if p.isdigit() else 0
+            for p in [
+                get_position_category(pos, category) for pos in data.prev_positions
+            ]
+        )
+
+    if sma_value:
+        sma_value /= last_n_races
+
+    return sma_value
+
+
+def get_avg_position_move(data: Dataset[ConstructedRaceData], name: str) -> float:
+    """
+    Computes the average position change (grid vs finish) across races for a given driver.
+
+    Args:
+        data (Dataset[ConstructedRaceData]): Dataset of races.
+        name (str): Driver's name.
+
+    Returns:
+        float: Average number of positions gained (positive) or lost (negative).
+    """
+
+    total = 0
+    count = 0
 
     for round_data in data.values():
-        for driver, race_data in round_data.items():
-            try:
-                grid = int(race_data.grid)
-                finish = int(race_data.real)
-                change = grid - finish
-                totals[driver] += change
-                counts[driver] += 1
-            except ValueError:
-                continue
+        race_data = round_data.get(name, ConstructedRaceData.construct(1, name))
+        total += int(race_data.grid) - int(
+            race_data.real if race_data.real.isdigit() else 0
+        )
+        count += 1
 
-    return {
-        driver: totals[driver] / counts[driver] if counts[driver] else 0.0
-        for driver in totals
-    }
+    if total and count:
+        total /= count
+
+    return total
+
+
+def get_rolling_pos_move(
+    data: Dataset[ConstructedRaceData], window: int, round: int, name: str
+) -> float:
+    """
+    Calculates rolling average of position gains/losses over a window of races for a driver.
+
+    Args:
+        data (Dataset[ConstructedRaceData]): Dataset of race data.
+        window (int): Number of races in the rolling window.
+        round (int): Current race round.
+        name (str): Driver's name.
+
+    Returns:
+        float: Average position change over the window.
+    """
+
+    if window < 1:
+        raise ValueError("window must be greater than or equal to 1.")
+
+    total = 0.0
+
+    for i in range(1, window + 1):
+        prev = data.get(round - i, {}).get(name, ConstructedRaceData.construct(1, name))
+        gain = int(prev.grid) - int(prev.real if prev.real.isdigit() else 0)
+        total += gain
+
+    if total:
+        total /= window
+
+    return total

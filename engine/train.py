@@ -33,6 +33,7 @@ def evaluate(model=None, df=None, *, save: bool = False, name: str = "model_x") 
         success /= len(predictions)
 
     if save:
+        df.to_csv(os.path.join(DPATH, f"{name}_dataset.csv"), index=False)
         model.save(os.path.join(MPATH, name))
 
     print(f"{"*" * 20}\nSuccess Rate: {success:.2%}\n{"*" * 20}")
@@ -40,14 +41,16 @@ def evaluate(model=None, df=None, *, save: bool = False, name: str = "model_x") 
 
 
 def rt() -> None:
-    train_df, test_df, size = get_train_test(2017, 2023, 5)
+    train_df, test_df, size = get_train_test(
+        min_year=2017, max_year=2022, split_year=2021, sma_length=2
+    )
 
     if test_df.empty:
         print("Empty test dataset")
         print(test_df)
     else:
         model = LEARNER.train(train_df)
-        evaluate(model, test_df, save=True)
+        evaluate(model, test_df, save=True,)
 
 
 if __name__ == "__main__":
