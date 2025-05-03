@@ -1,3 +1,1 @@
-from .utils import *
-
-__all__ = [s for s in globals() if not s.startswith("__")]
+from .train.utils import interact

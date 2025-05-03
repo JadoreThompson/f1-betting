@@ -1,11 +1,23 @@
+import asyncio
 import os
 import pandas as pd
 
-from .config import DPATH, LEARNER_TYPE, MPATH, TRAINED_MODEL
+from .trainer_evaluator import TrainerEvaluator
 from .utils import drop_columns, get_df, get_train_test, split_df
+from ..config import DPATH, LEARNER_TYPE, MPATH, TRAINED_MODEL
 
 TARGET_LABEL = "positionText"
-LEARNER: LEARNER_TYPE = LEARNER_TYPE(label=TARGET_LABEL)
+LEARNER_PARAMS = {
+    "label": TARGET_LABEL,
+    "max_depth": 5,
+    "num_trees": 25,
+    # "max_num_nodes": 9,
+    # "growing_strategy": "BEST_FIRST_GLOBAL",
+}
+
+LEARNER: LEARNER_TYPE = LEARNER_TYPE(
+    **LEARNER_PARAMS,
+)
 
 
 def evaluate(model=None, df=None, *, save: bool = False, name: str = "model_x") -> None:
@@ -40,7 +52,8 @@ def evaluate(model=None, df=None, *, save: bool = False, name: str = "model_x") 
     print(f"\nDF Types:\n{df.dtypes}")
 
 
-def rt() -> None:
+def run_train() -> None:
+    global LEARNER
     train_df, test_df, size = get_train_test(
         min_year=2017, max_year=2022, split_year=2021, sma_length=2
     )
@@ -50,10 +63,26 @@ def rt() -> None:
         print(test_df)
     else:
         model = LEARNER.train(train_df)
-        evaluate(model, test_df, save=True,)
+        evaluate(
+            model,
+            test_df,
+            save=True,
+        )
+
+
+def use_trainer_evaluator():
+    t = TrainerEvaluator(TARGET_LABEL, LEARNER_TYPE)
+    t.test_hyperparameters(
+        rounds=24,
+        last_n_races=2,
+        params={
+            "shrinkage": {"min": 0.01, "max": 1, "step": 0.01},
+            "focal_loss_alpha": {"min": 0.01, "max": 1, "step": 0.01},
+        },
+    )
 
 
 if __name__ == "__main__":
-    rt()
+    run_train()
+    # use_trainer_evaluator()
     # evaluate(df=split_df(get_df(2024, 2024, 5), 2024)[0])
-    # evaluate()
