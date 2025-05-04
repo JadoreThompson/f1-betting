@@ -345,7 +345,7 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df = append_rolling_position_move(df, 5)
     df = append_avg_position(df, rolling=True, window=5)
     df = append_position_propensity(df, "top3")
-    df = append_sma(df, 3, "position")    
+    df = append_sma(df, 3, "position")
     return df
 
 
@@ -356,7 +356,11 @@ def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataF
     ]
     driver_standings_df["points"] = driver_standings_df["points"].shift(1)
     driver_standings_df = driver_standings_df.rename(
-        columns={"position": "current_position", "wins": "current_wins"}
+        columns={
+            "position": "current_position",
+            "wins": "current_wins",
+            "points": "current_points",
+        }
     )
 
     results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
@@ -528,9 +532,9 @@ def plot_heatmap(df: pd.DataFrame) -> None:
 
 
 if __name__ == "__main__":
-    # pass
     df = get_df(2010, 2024, 10)
     # df["position"] = pd.to_numeric(df["position"], errors="coerce").fillna(0)
-    df["positionText"] = df["positionText"].astype("int")
+    # df["positionText"] = df["positionText"].astype("int")
     df = drop_columns(df)
-    plot_heatmap(df)
+    print(df.dtypes)
+    # plot_heatmap(df)

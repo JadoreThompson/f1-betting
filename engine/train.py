@@ -28,13 +28,6 @@ SMA_LENGTH = 10
 TOP_RANGE = False
 
 
-# def get_sma_length():
-#     return 10
-
-
-# def get_top_range():
-#     return False
-
 
 def train_model(
     save_model: bool = False, model_name: str = "model_x"
@@ -146,7 +139,7 @@ def func() -> None:
     global TOP_RANGE
 
     TOP_RANGE = False
-    model, whole_test_success = train_model()
+    model, whole_test_success = train_model(save_model=True)
     whole_2024_success = evaluate_2024(model)
 
     TOP_RANGE = True
