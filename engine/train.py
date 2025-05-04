@@ -10,8 +10,8 @@ from .config import DPATH, LEARNER_TYPE, MODEL_TYPE, MPATH, TRAINED_MODEL
 TARGET_LABEL = "positionText"
 LEARNER_PARAMS = {
     "label": TARGET_LABEL,
-    "max_depth": 3,
-    "num_trees": 25,
+    "max_depth": 5,
+    "num_trees": 100,
     # "max_num_nodes": 50,
     "growing_strategy": "BEST_FIRST_GLOBAL",
     # "compute_permutation_variable_importance": True,
@@ -68,7 +68,7 @@ def train_model(
         test_df.to_csv(
             os.path.join(DPATH, f"{model_name}_test_dataset.csv"), index=False
         )
-        
+
     return model, success_rate
 
 
@@ -133,7 +133,7 @@ def save_train_configs(
         json.dump(content, open(fname, "w"), indent=4)
     else:
         print(
-            f"No gain. Configs are the same. Results - Top Range: {top_range_2024_success} , Whole: {whole_2024_success}"
+            f"No gain. Configs are the same. Results - Top Range: {top_range_2024_success:.2%} , Whole: {whole_2024_success:.2%}"
         )
 
 
@@ -150,7 +150,7 @@ def func() -> None:
 
     save_train_configs(
         model,
-        "loose",
+        "top3",
         top_range_test_success,
         top_range_2024_success,
         whole_test_success,
@@ -161,7 +161,10 @@ def func() -> None:
 if __name__ == "__main__":
     # train_model(True, "loose")
     func()
-
+    # get_df(
+    #     2020,
+    #     2024,
+    # )
     # get_df(2010).to_csv("file.csv", index=False)
 
     # model, _ = train_model()
