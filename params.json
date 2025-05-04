@@ -1,7 +1,0 @@
-{
-    "average": 0.5510204081632653,
-    "params": {
-        "shrinkage": 0.01,
-        "focal_loss_alpha": 0.01
-    }
-}

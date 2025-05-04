@@ -4,4 +4,6 @@ __pycache__
 .env
 
 rec.py
+file.csv
 **.xml
+**.json

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import pandas as pd
 
@@ -22,17 +23,25 @@ LEARNER: LEARNER_TYPE = LEARNER_TYPE(
 )
 
 
-def get_sma_length():
-    return 10
+SMA_LENGTH = 10
+TOP_RANGE = False
 
 
-def get_top_range():
-    return False
+# def get_sma_length():
+#     return 10
 
 
-def train_model() -> MODEL_TYPE:
+# def get_top_range():
+#     return False
+
+
+def train_model(
+    save_model: bool = False, model_name: str = "model_x"
+) -> tuple[MODEL_TYPE, float]:
+    global TOP_RANGE, SMA_LENGTH
+
     train_df, test_df, _ = get_train_test(
-        min_year=2017, max_year=2023, split_year=2021, sma_length=get_sma_length()
+        min_year=2017, max_year=2022, split_year=2021, sma_length=SMA_LENGTH, save=True
     )
 
     if test_df.empty:
@@ -40,21 +49,27 @@ def train_model() -> MODEL_TYPE:
         return
 
     train_df = pd.concat(
-        [train_df, *[train_df[train_df["positionText"].isin(["1", "2"])]]],
+        [train_df, train_df[train_df["positionText"].isin(["1", "2"])]],
         ignore_index=True,
     )
 
     model: MODEL_TYPE = LEARNER.train(train_df)
     print("Features:", model.input_feature_names())
-    success_rate = compute_success_rate(test_df, TARGET_LABEL, model, get_top_range())
+
+    success_rate = compute_success_rate(test_df, TARGET_LABEL, model, TOP_RANGE)
     print(f"Training success rate: {success_rate:.2%}")
     print(LEARNER_PARAMS)
-    return model
 
-    # if input("Save? (y/n)").lower() == "y":
-    #     model.save(os.path.join(MPATH, "model_x"))
-    #     train_df.to_csv(os.path.join(DPATH, "model_x_train_dataset.csv"), index=False)
-    #     test_df.to_csv(os.path.join(DPATH, "model_x_test_dataset.csv"), index=False)
+    if save_model:
+        model.save(os.path.join(MPATH, model_name))
+        train_df.to_csv(
+            os.path.join(DPATH, f"{model_name}_train_dataset.csv"), index=False
+        )
+        test_df.to_csv(
+            os.path.join(DPATH, f"{model_name}_test_dataset.csv"), index=False
+        )
+        
+    return model, success_rate
 
 
 def test_hyperparams():
@@ -69,15 +84,90 @@ def test_hyperparams():
     )
 
 
-def func(model=None):
-    df = get_df(2024, 2024, get_sma_length())
+def evaluate_2024(model=None) -> float:
+    global TOP_RANGE, SMA_LENGTH
+
+    df = get_df(2024, 2024, SMA_LENGTH)
     df = drop_columns(df)
-    success = compute_success_rate(df, TARGET_LABEL, model, get_top_range())
+    success = compute_success_rate(df, TARGET_LABEL, model, TOP_RANGE)
     print(f"2024 success rate: {success:.2%}")
+    return success
+
+
+def save_train_configs(
+    model,
+    category: str,
+    top_range_test_success: float,
+    top_range_2024_success: float,
+    whole_test_success: float,
+    whole_2024_success: float,
+) -> None:
+
+    top_range_test_success = round(top_range_test_success, 2)
+    top_range_2024_success = round(top_range_2024_success, 2)
+    whole_test_success = round(whole_test_success, 2)
+    whole_2024_success = round(whole_2024_success, 2)
+
+    fname = f"param_tracker_{category}.json"
+
+    try:
+        content = json.load(open(fname, "r"))
+    except FileNotFoundError:
+        content = {}
+
+    if top_range_2024_success > (
+        old_top_range := content.get("top_range", {}).get("2024", 0.0)
+    ) and whole_2024_success > (old_whole := content.get("whole", {}).get("2024", 0.0)):
+        print(
+            f"Overall improvement - Top Range: + {top_range_2024_success - old_top_range:.2%}, Whole {whole_2024_success - old_whole:.2%}."
+        )
+        content = {
+            "features": model.input_feature_names(),
+            "learner_params": LEARNER_PARAMS,
+            "top_range": {
+                "test": top_range_test_success,
+                "2024": top_range_2024_success,
+            },
+            "whole": {"test": whole_test_success, "2024": whole_2024_success},
+        }
+        json.dump(content, open(fname, "w"), indent=4)
+    else:
+        print(
+            f"No gain. Configs are the same. Results - Top Range: {top_range_2024_success} , Whole: {whole_2024_success}"
+        )
+
+
+def func() -> None:
+    global TOP_RANGE
+
+    TOP_RANGE = False
+    model, whole_test_success = train_model()
+    whole_2024_success = evaluate_2024(model)
+
+    TOP_RANGE = True
+    model, top_range_test_success = train_model()
+    top_range_2024_success = evaluate_2024(model)
+
+    save_train_configs(
+        model,
+        "loose",
+        top_range_test_success,
+        top_range_2024_success,
+        whole_test_success,
+        whole_2024_success,
+    )
 
 
 if __name__ == "__main__":
-    model = train_model()
-    func(model)
+    # train_model(True, "loose")
+    func()
+
+    # get_df(2010).to_csv("file.csv", index=False)
+
+    # model, _ = train_model()
+    # evaluate_2024(model)
+
+    # save_train_configs(model)
+
     # test_hyperparams()
     # evaluate(df=split_df(get_df(2024, 2024, 5), 2024)[0])
