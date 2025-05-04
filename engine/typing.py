@@ -15,3 +15,7 @@ class TightPositionCategory(str, Enum):
     TOP_5 = "4"
     TOP_10 = "5"
     TOP_20 = "6"
+    
+class Top3PositionCategory(str, Enum):
+    TOP3 = "1"
+    NOT_TOP_3 = "0"

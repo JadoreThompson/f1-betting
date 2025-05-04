@@ -15,6 +15,7 @@ from .config import (
 from .typing import (
     LoosePositionCategory,
     TightPositionCategory,
+    Top3PositionCategory,
 )
 
 
@@ -44,7 +45,16 @@ def parse_times(s: str) -> int:
 
 def drop_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(
-        ["raceId", "driverId", "constructorId", "position", "year"],
+        [
+            "raceId",
+            "driverId",
+            "constructorId",
+            "position",
+            "year",
+            "circuitId",
+            "current_position",
+            # "points"
+        ],
         axis=1,
     )
 
@@ -59,8 +69,8 @@ def get_position_category(
 
     if pos_cat == "top3":
         if not value.isdigit() or value > "3":
-            return "0"
-        return "1"
+            return Top3PositionCategory.NOT_TOP_3.value
+        return Top3PositionCategory.TOP3.value
 
     if not value.isdigit() or value == "0":
         return "0"
@@ -80,7 +90,6 @@ def get_position_category(
             return TightPositionCategory.TOP_10.value
         return TightPositionCategory.TOP_20.value
 
-    # if pos_cat == "loose":
     if val <= 3:
         return LoosePositionCategory.TOP_3.value
     if val <= 5:
@@ -131,9 +140,7 @@ def append_sma(df: pd.DataFrame, window: int, col: int = "position") -> pd.DataF
     return df.drop([col for col in df.columns if col.startswith("tmp_")], axis=1)
 
 
-def append_rolling_position_move(
-    df: pd.DataFrame, window: int, min_periods: int = 0
-) -> pd.DataFrame:
+def append_rolling_position_move(df: pd.DataFrame, window: int) -> pd.DataFrame:
     """
     Returns a Series of average position change per driver.
     """
@@ -145,12 +152,12 @@ def append_rolling_position_move(
     df = df.drop_duplicates(subset=["raceId", "driverId"])
 
     df = df.sort_values("raceId")
-    df[f"temp"] = df["grid"] - df["position"]
+    df["tmp"] = df["grid"] - df["position"]
 
-    df[f"rolling_avg_pos_move_{window}"] = df.groupby("driverId")["temp"].transform(
+    df[f"rolling_avg_pos_move_{window}"] = df.groupby("driverId")["tmp"].transform(
         lambda x: x.shift(1).rolling(window=window).mean()
     )
-    return df.drop("temp", axis=1)
+    return df.drop("tmp", axis=1)
 
 
 def append_avg_position(
@@ -225,7 +232,7 @@ def append_last_n_races(
     return df.drop([col for col in df.columns if col.startswith("tmp_")], axis=1)
 
 
-def append_std(df: pd.DataFrame) -> pd.DataFrame:
+def append_std_progressive(df: pd.DataFrame) -> pd.DataFrame:
     def helper(values: list) -> float:
         try:
             avg = sum(values) / len(values)
@@ -235,51 +242,123 @@ def append_std(df: pd.DataFrame) -> pd.DataFrame:
             return 0.0
 
     df = df.copy()
-    df["position"] = (
+    df["tmp_position"] = (
         pd.to_numeric(df["position"], errors="coerce").fillna(0).astype("int")
     )
+
+    std_dfs = []
+    for _, group in df.groupby(["driverId", "year"]):
+        group = group.sort_values("raceId")
+        group["tmp_position"] = group["tmp_position"].shift(1)
+        values = []
+        stds = []
+
+        for _, row in group.iterrows():
+            values.append(0 if pd.isna(row["tmp_position"]) else row["tmp_position"])
+            stds.append(helper(values))
+
+        group["position_std"] = stds
+        std_dfs.append(group)
+
+    df = pd.concat(std_dfs, ignore_index=True)
+    return df.drop("tmp_position", axis=1)
+
+
+def append_std_whole(df: pd.DataFrame) -> pd.DataFrame:
+    def helper(values: list) -> float:
+        try:
+            avg = sum(values) / len(values)
+            diffs = [(v - avg) ** 2 for v in values]
+            return math.sqrt(sum(diffs) / len(diffs))
+        except ZeroDivisionError:
+            return 0.0
+
+    df = df.copy()
+    df["tmp_position"] = (
+        pd.to_numeric(df["position"], errors="coerce").fillna(0).astype("int")
+    )
+
     df = df.merge(
-        df.groupby("driverId")["position"]
+        df.groupby("driverId")["tmp_position"]
         .agg(list)
         .rename("std")
         .apply(lambda x: helper(x)),
         on=["driverId"],
     )
     df = df.sort_values("raceId")
+    df = df.drop("tmp_position", axis=1)
     return df
 
 
 def append_position_propensity(
-    df: pd.DataFrame, pos_cat: Literal["loose", "tight"]
+    df: pd.DataFrame, pos_cat: Literal["loose", "tight", "top3"]
 ) -> pd.DataFrame:
-    df["position"] = df["position"].astype("str")
-    df["temp_position"] = df["position"].apply(
-        lambda x: get_position_category(x, pos_cat)
-    )
-    pos_props = (
-        df.groupby("driverId")["temp_position"]
-        .agg(list)
-        .rename("position")
-        .apply(lambda x: pd.Series(x).value_counts().apply(lambda y: 1 / (len(x) / y)))
-    )
-    pos_props = pos_props[list(sorted(pos_props.columns))]
-    pos_props.columns = [f"propensity_{pos_cat}_{col}" for col in pos_props.columns]
-    df = df.merge(pos_props, on="driverId")
-    return df.drop("temp_position", axis=1)
-
-
-def append_cur_points(df: pd.DataFrame):
     df = df.copy()
-    df = df.sort_values("raceId").reset_index(drop=True)
+    df["tmp_position"] = (
+        df["position"]
+        .apply(lambda x: str(int(x)))
+        .apply(lambda x: get_position_category(x, pos_cat))
+    )
 
-    # s = df.groupby()
-    # df["tmp_race__id"] =
-    # return df.drop([col for col in df.columns if col.startswith("tmp_")], axis=1)
+    prop_dfs = []
+    for _, group in df.groupby(["driverId", "year"]):
+        props = {
+            "loose": {k: 0 for k in LoosePositionCategory._value2member_map_},
+            "tight": {k: 0 for k in TightPositionCategory._value2member_map_},
+            "top3": {k: 0 for k in Top3PositionCategory._value2member_map_},
+        }[pos_cat]
+        vals = props.values()
+        props_series = {k: [] for k in props}
+
+        group = group.sort_values("raceId")
+        group["tmp_position"] = (
+            group["tmp_position"]
+            .shift(1)
+            .apply(lambda x: x if x is not None else pd.NA)
+        )
+        group = group.dropna(subset=["tmp_position"])
+
+        for _, g in group.iterrows():
+            props[g["tmp_position"]] += 1
+            s = sum(vals)
+
+            for k in props:
+                if props[k] and s:
+                    val = props[k] / s
+                else:
+                    val = 0
+
+                props_series[k].append(val)
+
+        for k, v in props_series.items():
+            group[f"propensity_{k}"] = v
+
+        prop_dfs.append(group)
+
+    df = pd.concat(prop_dfs, ignore_index=True)
+    df = df.sort_values("raceId", axis=0)
+    return df.drop("tmp_position", axis=1)
+
+
+def add_features(df: pd.DataFrame) -> pd.DataFrame:
+    df = append_last_n_races(df, 5, "positionText")
+    df = append_rolling_position_move(df, 5)
+    df = append_avg_position(df, rolling=True, window=5)
+    df = append_position_propensity(df, "top3")
+    df = append_sma(df, 3, "position")    
+    return df
 
 
 def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataFrame:
     """Returns the dataframe without the dropped columns."""
-    # circuits_df =
+    driver_standings_df = pd.read_csv(os.path.join(DPATH, "driver_standings.csv"))[
+        ["raceId", "driverId", "points", "position", "wins"]
+    ]
+    driver_standings_df["points"] = driver_standings_df["points"].shift(1)
+    driver_standings_df = driver_standings_df.rename(
+        columns={"position": "current_position", "wins": "current_wins"}
+    )
+
     results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
         [
             "raceId",
@@ -299,15 +378,15 @@ def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataF
     races_df["circuitId"] = races_df["circuitId"].astype("str")
 
     df = races_df.merge(results_df, on=["raceId"])
+    df = df.merge(
+        driver_standings_df, on=["raceId", "driverId"], suffixes=("", "_standings")
+    )
 
     df["positionText"] = df["positionText"].apply(
         lambda x: get_position_category(x, "top3")
     )
-    df = append_last_n_races(df, 3, "positionText")
-    df = append_rolling_position_move(df, 10, 1)
-    df = append_avg_position(df, rolling=True, window=10)
-    append_cur_points(df)
-    return df
+
+    return add_features(df)
 
 
 def split_df(
@@ -440,14 +519,18 @@ def plot_heatmap(df: pd.DataFrame) -> None:
     ax.set_xticklabels(corr.columns, rotation=90)
     ax.set_yticklabels(corr.columns)
 
+    for (i, j), val in np.ndenumerate(corr.values):
+        ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=8)
+
     plt.title("Correlation Heatmap", pad=20)
     plt.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
-    pass
-    # df = get_df(2010, 2024, 10)
+    # pass
+    df = get_df(2010, 2024, 10)
     # df["position"] = pd.to_numeric(df["position"], errors="coerce").fillna(0)
-    # # print(df.columns)
-    # plot_heatmap(df)
+    df["positionText"] = df["positionText"].astype("int")
+    df = drop_columns(df)
+    plot_heatmap(df)

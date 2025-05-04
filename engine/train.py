@@ -3,9 +3,10 @@ import json
 import os
 import pandas as pd
 
+
 from .hyperparam_tester import HyperParamTester
 from .utils import compute_success_rate, drop_columns, get_df, get_train_test, split_df
-from .config import DPATH, LEARNER_TYPE, MODEL_TYPE, MPATH, TRAINED_MODEL
+from .config import BPATH, DPATH, LEARNER_TYPE, MODEL_TYPE, MPATH, TRAINED_MODEL
 
 TARGET_LABEL = "positionText"
 LEARNER_PARAMS = {
@@ -102,16 +103,19 @@ def save_train_configs(
     whole_test_success: float,
     whole_2024_success: float,
 ) -> None:
-
     top_range_test_success = round(top_range_test_success, 2)
     top_range_2024_success = round(top_range_2024_success, 2)
     whole_test_success = round(whole_test_success, 2)
     whole_2024_success = round(whole_2024_success, 2)
 
-    fname = f"param_tracker_{category}.json"
+    folder = os.path.join(BPATH, "params")
+    old_fname = f"param_tracker_{category}_{len(os.listdir(folder)) - 1}.json"
+    new_fname = f"param_tracker_{category}_{len(os.listdir(folder))}.json"
+    if not os.path.exists(folder):
+        os.mkdir(folder)
 
     try:
-        content = json.load(open(fname, "r"))
+        content = json.load(open(os.path.join(folder, old_fname), "r"))
     except FileNotFoundError:
         content = {}
 
@@ -119,7 +123,7 @@ def save_train_configs(
         old_top_range := content.get("top_range", {}).get("2024", 0.0)
     ) and whole_2024_success > (old_whole := content.get("whole", {}).get("2024", 0.0)):
         print(
-            f"Overall improvement - Top Range: + {top_range_2024_success - old_top_range:.2%}, Whole {whole_2024_success - old_whole:.2%}."
+            f"Overall improvement - Top Range: + {top_range_2024_success - old_top_range:.2%}, Whole + {whole_2024_success - old_whole:.2%}."
         )
         content = {
             "features": model.input_feature_names(),
@@ -130,7 +134,8 @@ def save_train_configs(
             },
             "whole": {"test": whole_test_success, "2024": whole_2024_success},
         }
-        json.dump(content, open(fname, "w"), indent=4)
+
+        json.dump(content, open(os.path.join(folder, new_fname), "w"), indent=4)
     else:
         print(
             f"No gain. Configs are the same. Results - Top Range: {top_range_2024_success:.2%} , Whole: {whole_2024_success:.2%}"
@@ -159,18 +164,5 @@ def func() -> None:
 
 
 if __name__ == "__main__":
-    # train_model(True, "loose")
     func()
-    # get_df(
-    #     2020,
-    #     2024,
-    # )
-    # get_df(2010).to_csv("file.csv", index=False)
 
-    # model, _ = train_model()
-    # evaluate_2024(model)
-
-    # save_train_configs(model)
-
-    # test_hyperparams()
-    # evaluate(df=split_df(get_df(2024, 2024, 5), 2024)[0])
