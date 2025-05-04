@@ -16,7 +16,8 @@ for p in (
 
 LEARNER_TYPE = ydf.GradientBoostedTreesLearner
 MODEL_TYPE = ydf.GradientBoostedTreesModel
-
+# LEARNER_TYPE = ydf.RandomForestLearner
+# MODEL_TYPE = ydf.RandomForestModel
 
 TRAINED_MODEL: MODEL_TYPE = None
 TRAINED_MODEL_FEATURES: tuple[str] | None = None

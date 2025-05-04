@@ -119,7 +119,7 @@ def append_sma(df: pd.DataFrame, window: int, col: int = "position") -> pd.DataF
 
 
 def append_rolling_position_move(
-    df: pd.DataFrame, window: int, min_periods: int = 1
+    df: pd.DataFrame, window: int, min_periods: int = 0
 ) -> pd.DataFrame:
     """
     Returns a Series of average position change per driver.
@@ -129,14 +129,15 @@ def append_rolling_position_move(
     df["position"] = pd.to_numeric(df["position"], errors="coerce")
     df["raceId"] = df["raceId"].astype("int")
     df = df.dropna(subset=["grid", "position"])
+    df = df.drop_duplicates(subset=["raceId", "driverId"])
 
-    df = df.sort_values(["raceId"])
-    df[f"rolling_pos_change_{window}"] = (
-        (df["grid"] - df["position"])
-        .rolling(window=window, min_periods=min_periods)
-        .mean()
+    df = df.sort_values("raceId")
+    df[f"temp"] = df["grid"] - df["position"]
+
+    df[f"rolling_avg_pos_move_{window}"] = df.groupby("driverId")["temp"].transform(
+        lambda x: x.shift(1).rolling(window=window).mean()
     )
-    return df
+    return df.drop("temp", axis=1)
 
 
 def append_avg_position(
@@ -250,7 +251,12 @@ def append_position_propensity(
         df.groupby("driverId")["temp_position"]
         .agg(list)
         .rename("position")
-        .apply(lambda x: pd.Series(x).value_counts().apply(lambda y: 1 / (len(x) / y)))
+        .apply(
+            lambda x: pd.Series(x)
+            .value_counts()
+            .apply(lambda y: 1 / (len(x) / y))
+            # .astype(astype)
+        )
     )
     pos_props = pos_props[list(sorted(pos_props.columns))]
     pos_props.columns = [f"propensity_{type_}_{col}" for col in pos_props.columns]
@@ -296,14 +302,10 @@ def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataF
             "positionText",
         ]
     ]
-    # results_df["position"] = (
-    #     pd.to_numeric(results_df["position"], errors="coerce").fillna(0).astype("int")
-    # )
     results_df["grid"] = results_df["grid"].astype("int")
 
     races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[["raceId", "year"]]
     races_df = races_df[(max_year >= races_df["year"]) & (races_df["year"] >= min_year)]
-    # races_df = races_df.sort_values(["raceId"])
 
     df = races_df.merge(results_df, on=["raceId"], suffixes=("_race", "_result"))
     df = df.merge(qualifying_df, on=["raceId", "driverId"], suffixes=("", "_quali"))
@@ -313,16 +315,10 @@ def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataF
     df["positionText"] = df["positionText"].apply(
         lambda x: get_position_category(x, "loose")
     )
-    # df = add_sma(df, sma_length, "position")
     df = append_last_n_races(df, sma_length, "positionText")
-    # df["avg_pos_move"] = get_avg_position_move(df)
-    # df = add_rolling_position_move(df, sma_length)
-    df = append_avg_position(df, "real")
-    # df = append_avg_position(df, "tight")
-    # df = append_std(df)
-    # df = append_avg_position(df, "real", rolling=True, window=sma_length)
-    # df = append_position_propensity(df, "loose")
-    df = df.drop_duplicates(subset=["raceId", "driverId"])
+    df = append_rolling_position_move(df, 1)
+    # df = append_avg_position(df,)
+    # df = df.drop_duplicates(subset=["raceId", "driverId"])
     return df
 
 
@@ -352,12 +348,20 @@ def split_df(
 
 
 def get_train_test(
-    *, min_year: int, max_year: int, split_year: int, sma_length: int = 4
+    *,
+    min_year: int,
+    max_year: int,
+    split_year: int,
+    sma_length: int = 4,
+    save: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, int]:
     df = get_df(min_year, max_year, sma_length)
     train_df, test_df = split_df(df, split_year)
-    train_df.to_csv(os.path.join(DPATH, "train.csv"), index=False)
-    test_df.to_csv(os.path.join(DPATH, "test.csv"), index=False)
+
+    if save:
+        train_df.to_csv(os.path.join(DPATH, "train.csv"), index=False)
+        test_df.to_csv(os.path.join(DPATH, "test.csv"), index=False)
+
     return train_df, test_df, len(df["raceId"].unique())
 
 
@@ -395,9 +399,17 @@ def interact(data: pd.DataFrame | Iterable, model=None) -> tuple[Prediction, ...
         )
 
 
-def compute_success_rate(dataset: pd.DataFrame, target_label: str, model) -> float:
-    predictions = model.predict(dataset)
+def compute_success_rate(
+    dataset: pd.DataFrame, target_label: str, model=None, top_range: bool = False
+) -> float:
     success = 0.0
+    count = 0
+
+    if model is None:
+        model = TRAINED_MODEL
+
+    predictions = model.predict(dataset)
+    pred_values = []
 
     for i, preds in enumerate(predictions):
         if len(model.label_classes()) == 2:
@@ -406,17 +418,24 @@ def compute_success_rate(dataset: pd.DataFrame, target_label: str, model) -> flo
             pred_index = preds.tolist().index(max(preds))
 
         pred = model.label_classes()[pred_index]
+        pred_values.append(pred)
 
-        if pred == dataset.at[i, target_label]:
-            success += 1
+        if top_range:
+            if "1" <= pred < "3" or "1" <= dataset.iloc[i][target_label] < "3":
+                count += 1
+                if pred == dataset.iloc[i][target_label]:
+                    success += 1
+        else:
+            if pred == dataset.iloc[i][target_label]:
+                success += 1
 
-        # if "1" <= pred < "3" or "1" <= dataset.at[i, TARGET_LABEL] < "3":
-        #     total += 1
-        #     if pred == dataset.at[i, TARGET_LABEL]:
-        #         success += 1
+    dataset["predictions"] = pred_values
 
     if success:
-        success /= len(predictions)
+        if top_range:
+            success /= count
+        else:
+            success /= len(predictions)
 
     return success
 
