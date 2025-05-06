@@ -1,22 +1,19 @@
-import asyncio
 import json
 import os
 import pandas as pd
 
-
 from .hyperparam_tester import HyperParamTester
-from .utils import compute_success_rate, drop_columns, get_df, get_train_test, split_df
-from .config import BPATH, DPATH, LEARNER_TYPE, MODEL_TYPE, MPATH, TRAINED_MODEL
+from .utils import compute_success_rate, drop_features, get_df, get_train_test
+from .config import BPATH, LEARNER_TYPE, MDPATH, MODEL_TYPE, MPATH
 
 TARGET_LABEL = "positionText"
 LEARNER_PARAMS = {
     "label": TARGET_LABEL,
     "max_depth": 5,
-    "num_trees": 100,
-    # "max_num_nodes": 50,
+    "num_trees": 25,
     "growing_strategy": "BEST_FIRST_GLOBAL",
     # "compute_permutation_variable_importance": True,
-    "focal_loss_alpha": 0.01,
+    "focal_loss_alpha": 0.2,
 }
 
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(
@@ -26,7 +23,6 @@ LEARNER: LEARNER_TYPE = LEARNER_TYPE(
 
 SMA_LENGTH = 10
 TOP_RANGE = False
-
 
 
 def train_model(
@@ -52,15 +48,14 @@ def train_model(
 
     success_rate = compute_success_rate(test_df, TARGET_LABEL, model, TOP_RANGE)
     print(f"Training success rate: {success_rate:.2%}")
-    print(LEARNER_PARAMS)
 
     if save_model:
         model.save(os.path.join(MPATH, model_name))
         train_df.to_csv(
-            os.path.join(DPATH, f"{model_name}_train_dataset.csv"), index=False
+            os.path.join(MDPATH, f"{model_name}_train_dataset.csv"), index=False
         )
         test_df.to_csv(
-            os.path.join(DPATH, f"{model_name}_test_dataset.csv"), index=False
+            os.path.join(MDPATH, f"{model_name}_test_dataset.csv"), index=False
         )
 
     return model, success_rate
@@ -82,57 +77,110 @@ def evaluate_2024(model=None) -> float:
     global TOP_RANGE, SMA_LENGTH
 
     df = get_df(2024, 2024, SMA_LENGTH)
-    df = drop_columns(df)
+    df = drop_features(df)
     success = compute_success_rate(df, TARGET_LABEL, model, TOP_RANGE)
     print(f"2024 success rate: {success:.2%}")
     return success
 
 
+def get_files(category: str) -> tuple[str, str, str]:
+    folder = os.path.join(BPATH, "params", category)
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+        
+    old_fname = f"param_tracker_{category}_{len(os.listdir(folder)) - 1}.json"
+    new_fname = f"param_tracker_{category}_{len(os.listdir(folder))}.json"
+
+    return folder, old_fname, new_fname
+
+
 def save_train_configs(
     model,
     category: str,
-    top_range_test_success: float,
-    top_range_2024_success: float,
-    whole_test_success: float,
-    whole_2024_success: float,
+    top_range_test_success: float = None,
+    top_range_2024_success: float = None,
+    whole_test_success: float = None,
+    whole_2024_success: float = None,
 ) -> None:
-    top_range_test_success = round(top_range_test_success, 2)
-    top_range_2024_success = round(top_range_2024_success, 2)
-    whole_test_success = round(whole_test_success, 2)
-    whole_2024_success = round(whole_2024_success, 2)
+    print(f"\n\n{"*" * 20}")
+    params = {k: v for k, v in locals().items() if k != "model" and k != "category"}
+    
+    if top_range_test_success is not None:
+        top_range_test_success = round(top_range_test_success, 2)
+    if top_range_2024_success is not None:
+        top_range_2024_success = round(top_range_2024_success, 2)
+    if whole_test_success is not None:
+        whole_test_success = round(whole_test_success, 2)
+    if whole_2024_success is not None:
+        whole_2024_success = round(whole_2024_success, 2)
 
-    folder = os.path.join(BPATH, "params")
-    old_fname = f"param_tracker_{category}_{len(os.listdir(folder)) - 1}.json"
-    new_fname = f"param_tracker_{category}_{len(os.listdir(folder))}.json"
-    if not os.path.exists(folder):
-        os.mkdir(folder)
+    folder, old_fname, new_fname = get_files(category)
 
     try:
         content = json.load(open(os.path.join(folder, old_fname), "r"))
     except FileNotFoundError:
         content = {}
 
-    if top_range_2024_success > (
-        old_top_range := content.get("top_range", {}).get("2024", 0.0)
-    ) and whole_2024_success > (old_whole := content.get("whole", {}).get("2024", 0.0)):
+    new_content = {
+        "features": model.input_feature_names(),
+        "learner_params": LEARNER_PARAMS,
+    }
+
+    gain = False
+    old_top_range = old_whole = 0.0
+
+    if (
+        top_range_2024_success is not None
+        and top_range_test_success is not None
+        and whole_2024_success is not None
+        and whole_test_success is not None
+    ):
+        gain = top_range_2024_success > (
+            old_top_range := content.get("top_range", {}).get("2024", 0.0)
+        ) and whole_2024_success > (
+            old_whole := content.get("whole", {}).get("2024", 0.0)
+        )
+
+        if gain:
+            new_content["top_range"] = {
+                "test": top_range_test_success,
+                "2024": top_range_2024_success,
+            }
+            new_content["whole"] = {
+                "test": whole_test_success,
+                "2024": whole_2024_success,
+            }
+
+    elif top_range_2024_success is not None and top_range_test_success is not None:
+        gain = top_range_2024_success > (
+            old_top_range := content.get("top_range", {}).get("2024", 0.0)
+        )
+
+        if gain:
+            new_content["top_range"] = {
+                "test": top_range_test_success,
+                "2024": top_range_2024_success,
+            }
+
+    else:
+        gain = whole_2024_success > (
+            old_whole := content.get("whole", {}).get("2024", 0.0)
+        )
+
+        if gain:
+            new_content["whole"] = {
+                "test": whole_test_success,
+                "2024": whole_2024_success,
+            }
+
+    if gain:
+        json.dump(new_content, open(os.path.join(folder, new_fname), "w"), indent=4)
         print(
             f"Overall improvement - Top Range: + {top_range_2024_success - old_top_range:.2%}, Whole + {whole_2024_success - old_whole:.2%}."
         )
-        content = {
-            "features": model.input_feature_names(),
-            "learner_params": LEARNER_PARAMS,
-            "top_range": {
-                "test": top_range_test_success,
-                "2024": top_range_2024_success,
-            },
-            "whole": {"test": whole_test_success, "2024": whole_2024_success},
-        }
-
-        json.dump(content, open(os.path.join(folder, new_fname), "w"), indent=4)
     else:
-        print(
-            f"No gain. Configs are the same. Results - Top Range: {top_range_2024_success:.2%} , Whole: {whole_2024_success:.2%}"
-        )
+        print(f"No gain. Configs are the same.")
+        print(json.dumps(params, indent=4))
 
 
 def func() -> None:
@@ -148,7 +196,7 @@ def func() -> None:
 
     save_train_configs(
         model,
-        "top3",
+        "tight",
         top_range_test_success,
         top_range_2024_success,
         whole_test_success,
@@ -158,4 +206,8 @@ def func() -> None:
 
 if __name__ == "__main__":
     func()
-
+    # get_train_test(
+    #     min_year=2017, max_year=2022, split_year=2021, sma_length=SMA_LENGTH, save=True
+    # )
+    # df = get_df(2017, 2024)
+    # df.to_csv("file.csv", index=False)

@@ -38,13 +38,13 @@ Binary classification.
 
 ---
 
-### **Binary**
+### **Winner**
 A win/loss binary classifier:
 
 | Position | Category |
 | -------- | -------- |
-| 1st      | `"win"`  |
-| 2nd+     | `"lose"` |
+| 1st      | `"1"`    |
+| 2nd+     | `"0"`    |
 
 
 # **Models**
@@ -77,6 +77,16 @@ Features used:
 - `propensity_1` & `propensity_0` (*float*): The rolling propensity for the driver to finish in top 3 or outside of the group.
 - `sma_3`  (*float*): The rolling simple moving average across a 3 race window on the race finish position.
 
+### **winner_v1**
+Implemented with a random forest, this model achieves an average success rate of 66% predicting the winner of a given grand prix race.
+
+Features used:
+- `grid` (*int*): The starting grid position
+- `current_points` (*int*): Current points within the season
+- `current_wins` (*int*):  Current wins within season
+- `last 1-10 (winner)` (*str*): The last 1 to 5 race finish positions in their winner representation.
+- `rolling_avg_pos_move_10` (*float*): The rolling average difference between the grid and finish position, with 5 representing the window.
+- `propensity_1` & `propensity_0` (*float*): The rolling propensity for the driver to finish win or not.
 
 
 # **Requirements**

@@ -4,7 +4,7 @@ import numpy as np
 from typing import Any, Dict, Generator, TypedDict
 from .utils import (
     compute_success_rate,
-    drop_columns,
+    drop_features,
     get_df,
     get_train_test,
 )
@@ -126,7 +126,7 @@ class HyperParamTester:
             Trains and evaluates multiple models.
             Updates self._best_params with the top-performing configuration.
         """
-        self._dataset = drop_columns(get_df(2024, 2024, 2))
+        self._dataset = drop_features(get_df(2024, 2024, 2))
 
         best_avg_success = 0.0
 

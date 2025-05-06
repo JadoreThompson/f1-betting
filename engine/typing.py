@@ -19,3 +19,8 @@ class TightPositionCategory(str, Enum):
 class Top3PositionCategory(str, Enum):
     TOP3 = "1"
     NOT_TOP_3 = "0"
+
+
+class WinnerPositionCategory(str, Enum):
+    WINNER = "1"
+    NOT_WINNER = "0"
