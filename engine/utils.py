@@ -5,11 +5,13 @@ import os
 import pandas as pd
 
 from collections import namedtuple
-from typing import Iterable, Literal
+from typing import Iterable, Literal, Optional
+
 
 from .config import (
     DPATH,
     MPATH,
+    TARGET_LABEL,
     TRAINED_MODEL,
 )
 from .typing import (
@@ -22,6 +24,7 @@ from .typing import (
 
 # prediction value, decimal representation of percentage
 Prediction = namedtuple("Prediction", ["prediction", "percentage"])
+PosCat = Literal["tight", "loose", "winner", "top3"]
 
 
 def parse_quali_times(s: str) -> int:
@@ -57,15 +60,14 @@ def drop_features(df: pd.DataFrame) -> pd.DataFrame:
             "position",
             "year",
             "circuitId",
-            "current_standings_position",
+            # "current_standings_position",
+            # "current_points"
         ],
         axis=1,
     )
 
 
-def get_position_category(
-    value: str, pos_cat: Literal["tight", "loose", "winner", "top3"] = "tight"
-) -> str:
+def get_position_category(value: str, pos_cat: PosCat = "tight") -> str:
     """
     Categorizes a race finishing position string into a predefined class based on the selected mode.
 
@@ -108,28 +110,30 @@ def get_position_category(
         return "0"
 
     if pos_cat == "top3":
-        if not value.isdigit() or value > "3":
+        if not value.isdigit() or int(value) > 3:
             return Top3PositionCategory.NOT_TOP_3.value
         return Top3PositionCategory.TOP3.value
 
+    if pos_cat == "tight":
+        if not value.isdigit() or int(value) > 3:
+            return TightPositionCategory.DNF.value
+        if value == "1":
+            return TightPositionCategory.FIRST.value
+        if value == "2":
+            return TightPositionCategory.SECOND.value
+        if value == "3":
+            return TightPositionCategory.THIRD.value
+        # print(value, type(value), value > "3")
+        # if val <= 5:
+        #     return TightPositionCategory.TOP_5.value
+        # if val <= 10:
+        #     return TightPositionCategory.TOP_10.value
+        # return TightPositionCategory.TOP_20.value
+
     if not value.isdigit() or value == "0":
-        return "0"
+        return LoosePositionCategory.DNF.value
 
     val = int(value)
-
-    if pos_cat == "tight":
-        if val == 1:
-            return TightPositionCategory.FIRST.value
-        if val == 2:
-            return TightPositionCategory.SECOND.value
-        if val == 3:
-            return TightPositionCategory.THIRD.value
-        if val <= 5:
-            return TightPositionCategory.TOP_5.value
-        if val <= 10:
-            return TightPositionCategory.TOP_10.value
-        return TightPositionCategory.TOP_20.value
-
     if val <= 3:
         return LoosePositionCategory.TOP_3.value
     if val <= 5:
@@ -152,10 +156,10 @@ def append_avg_position_move(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
 
-    df["tmp_grid"] = pd.to_numeric(df["grid"], errors="coerce")
-    df["tmp_position"] = pd.to_numeric(df["position"], errors="coerce")
-    df["tmp_race_id"] = pd.to_numeric(df["raceId"], errors="coerce")
-    df = df.dropna(subset=["tmp_grid", "tmp_position"])
+    df["tmp_grid"] = pd.to_numeric(df["grid"], errors="coerce").fillna(0)
+    df["tmp_position"] = pd.to_numeric(df["position"], errors="coerce").fillna(0)
+    df["tmp_race_id"] = pd.to_numeric(df["raceId"])
+    # df = df.dropna(subset=["tmp_grid", "tmp_position"])
 
     df = df.sort_values("tmp_race_id", axis=0)
     df = df.reset_index(drop=True)
@@ -187,9 +191,9 @@ def append_rolling_position_move(df: pd.DataFrame, window: int) -> pd.DataFrame:
     """
     df = df.copy()
     df["tmp_grid"] = pd.to_numeric(df["grid"], errors="coerce")
-    df["tmp_position"] = pd.to_numeric(df["position"], errors="coerce")
+    df["tmp_position"] = pd.to_numeric(df["position"], errors="coerce").fillna(0)
     df["tmp_raceId"] = df["raceId"].astype("int")
-    df = df.dropna(subset=["tmp_grid", "tmp_position"])
+    # df = df.dropna(subset=["tmp_grid", "tmp_position"])
     df = df.drop_duplicates(subset=["tmp_raceId", "driverId"])
 
     df = df.sort_values("tmp_raceId")
@@ -445,19 +449,28 @@ def append_current_wins(df: pd.DataFrame):
 
 
 def add_features(df: pd.DataFrame) -> pd.DataFrame:
-    df = append_last_n_races(df, 10, "positionText")
-    df = append_rolling_position_move(df, 10)
-    # # df = append_avg_position(df, rolling=True, window=5)
-    # df = append_position_propensity(df, "top3")
-    df = append_position_propensity(df, "winner")
+    df = append_last_n_races(df, 5, "positionText")
+    df = append_rolling_position_move(df, 5)
+    df = append_avg_position(df, rolling=True, window=5)
+    df = append_position_propensity(df, "top3")
+    # df = append_position_propensity(df, "winner")
+    # df = append_std_progressive(df)
+    df = append_sma(df, 3, "positionText")
     return df
 
 
-def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataFrame:
+def get_df(
+    min_year: int,
+    max_year: int = 2026,
+    sma_length: int = 4,
+) -> pd.DataFrame:
     """
     Fetches all datasets needed to for composition.
 
     Args:
+        pos_cat (PosCat): The category to be applied upon the positionText value
+        for each race finish within the dataset. Failure to pass results in no
+        function being applied.
         min_year (int)
         max_year (int, optional) Defaults to 2026.
         sma_length (int, optional). Redundant. Defaults to 4.
@@ -468,7 +481,10 @@ def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataF
     driver_standings_df = pd.read_csv(os.path.join(DPATH, "driver_standings.csv"))[
         ["raceId", "driverId", "points", "position", "wins"]
     ]
-    driver_standings_df["points"] = driver_standings_df["points"].shift(1)
+    driver_standings_df = driver_standings_df.sort_values("raceId")
+    driver_standings_df["points"] = driver_standings_df.groupby("driverId")[
+        "points"
+    ].shift(1)
     driver_standings_df = driver_standings_df.rename(
         columns={
             "position": "current_standings_position",
@@ -501,7 +517,7 @@ def get_df(min_year: int, max_year: int = 2026, sma_length: int = 4) -> pd.DataF
     )
 
     df["positionText"] = df["positionText"].apply(
-        lambda x: get_position_category(x, "winner")
+        lambda x: get_position_category(x, "top3")
     )
 
     return add_features(df)
@@ -585,8 +601,14 @@ def interact(data: pd.DataFrame | Iterable, model=None) -> tuple[Prediction, ...
 
 
 def compute_success_rate(
-    dataset: pd.DataFrame, target_label: str, model=None, top_range: bool = False
+    dataset: pd.DataFrame,
+    model=None,
+    top_range: bool = False,
+    pos_cat: PosCat = None,
 ) -> float:
+    if top_range and pos_cat is None:
+        raise ValueError("pos_cat must be passed if top_range is True.")
+
     success = 0.0
     count = 0
 
@@ -594,7 +616,7 @@ def compute_success_rate(
         model = TRAINED_MODEL
 
     predictions = model.predict(dataset)
-    pred_values = []
+    pred_values = []  # To be added as a series
 
     for i, preds in enumerate(predictions):
         if len(model.label_classes()) == 2:
@@ -606,12 +628,21 @@ def compute_success_rate(
         pred_values.append(pred)
 
         if top_range:
-            if "1" <= pred < "3" or "1" <= dataset.iloc[i][target_label] < "3":
+            elibible = False
+
+            if pos_cat == "tight":
+                if pred > "0" or dataset.iloc[i][TARGET_LABEL] > "0":
+                    elibible = True
+            else:
+                if "1" <= pred < "3" or "1" <= dataset.iloc[i][TARGET_LABEL] < "3":
+                    elibible = True
+
+            if elibible:
                 count += 1
-                if pred == dataset.iloc[i][target_label]:
+                if pred == dataset.iloc[i][TARGET_LABEL]:
                     success += 1
         else:
-            if pred == dataset.iloc[i][target_label]:
+            if pred == dataset.iloc[i][TARGET_LABEL]:
                 success += 1
 
     dataset["predictions"] = pred_values

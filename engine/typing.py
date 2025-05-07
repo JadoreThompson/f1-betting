@@ -12,9 +12,9 @@ class TightPositionCategory(str, Enum):
     FIRST = "1"
     SECOND = "2"
     THIRD = "3"
-    TOP_5 = "4"
-    TOP_10 = "5"
-    TOP_20 = "6"
+    # TOP_5 = "4"
+    # TOP_10 = "5"
+    # TOP_20 = "6"
     
 class Top3PositionCategory(str, Enum):
     TOP3 = "1"

@@ -4,16 +4,23 @@ import pandas as pd
 
 from .hyperparam_tester import HyperParamTester
 from .utils import compute_success_rate, drop_features, get_df, get_train_test
-from .config import BPATH, LEARNER_TYPE, MDPATH, MODEL_TYPE, MPATH
+from .config import (
+    BPATH,
+    LEARNER_TYPE,
+    MDPATH,
+    MODEL_TYPE,
+    MPATH,
+    TRAINED_MODEL,
+    TARGET_LABEL,
+)
 
-TARGET_LABEL = "positionText"
 LEARNER_PARAMS = {
     "label": TARGET_LABEL,
     "max_depth": 5,
-    "num_trees": 25,
+    "num_trees": 100,
     "growing_strategy": "BEST_FIRST_GLOBAL",
     # "compute_permutation_variable_importance": True,
-    "focal_loss_alpha": 0.2,
+    "focal_loss_alpha": 0.01,
 }
 
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(
@@ -38,15 +45,15 @@ def train_model(
         print("Empty test dataset")
         return
 
-    train_df = pd.concat(
-        [train_df, train_df[train_df["positionText"].isin(["1", "2"])]],
-        ignore_index=True,
-    )
+    # train_df = pd.concat(
+    #     [train_df, train_df[train_df["positionText"].isin(["1", "2"])]],
+    #     ignore_index=True,
+    # )
 
     model: MODEL_TYPE = LEARNER.train(train_df)
     print("Features:", model.input_feature_names())
 
-    success_rate = compute_success_rate(test_df, TARGET_LABEL, model, TOP_RANGE)
+    success_rate = compute_success_rate(test_df, model, TOP_RANGE, "tight")
     print(f"Training success rate: {success_rate:.2%}")
 
     if save_model:
@@ -78,7 +85,7 @@ def evaluate_2024(model=None) -> float:
 
     df = get_df(2024, 2024, SMA_LENGTH)
     df = drop_features(df)
-    success = compute_success_rate(df, TARGET_LABEL, model, TOP_RANGE)
+    success = compute_success_rate(df, model, TOP_RANGE, "tight")
     print(f"2024 success rate: {success:.2%}")
     return success
 
@@ -87,7 +94,7 @@ def get_files(category: str) -> tuple[str, str, str]:
     folder = os.path.join(BPATH, "params", category)
     if not os.path.exists(folder):
         os.mkdir(folder)
-        
+
     old_fname = f"param_tracker_{category}_{len(os.listdir(folder)) - 1}.json"
     new_fname = f"param_tracker_{category}_{len(os.listdir(folder))}.json"
 
@@ -104,7 +111,7 @@ def save_train_configs(
 ) -> None:
     print(f"\n\n{"*" * 20}")
     params = {k: v for k, v in locals().items() if k != "model" and k != "category"}
-    
+
     if top_range_test_success is not None:
         top_range_test_success = round(top_range_test_success, 2)
     if top_range_2024_success is not None:
@@ -179,7 +186,7 @@ def save_train_configs(
             f"Overall improvement - Top Range: + {top_range_2024_success - old_top_range:.2%}, Whole + {whole_2024_success - old_whole:.2%}."
         )
     else:
-        print(f"No gain. Configs are the same.")
+        print(f"No gain. Configs are the same. Achievied:")
         print(json.dumps(params, indent=4))
 
 
@@ -205,9 +212,11 @@ def func() -> None:
 
 
 if __name__ == "__main__":
-    func()
+    # func()
     # get_train_test(
     #     min_year=2017, max_year=2022, split_year=2021, sma_length=SMA_LENGTH, save=True
     # )
     # df = get_df(2017, 2024)
     # df.to_csv("file.csv", index=False)
+    a = compute_success_rate(drop_features(get_df(2024)), TRAINED_MODEL, True, "top3")
+    print(a)

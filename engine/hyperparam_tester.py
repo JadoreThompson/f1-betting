@@ -145,9 +145,7 @@ class HyperParamTester:
 
                 self._model = self._learner.train(train_df)
 
-                result = compute_success_rate(
-                    self._dataset, self._target_label, self._model
-                )
+                result = compute_success_rate(self._dataset, self._model)
 
                 if result > best_avg_success:
                     self._best_params = param_combination
