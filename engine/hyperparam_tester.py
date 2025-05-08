@@ -1,21 +1,25 @@
 import json
-import numpy as np
+import optuna
+import tqdm  # For optuna
+import ydf
 
-from typing import Any, Dict, Generator, TypedDict
-from .utils import (
-    compute_success_rate,
+from pandas import DataFrame
+from typing import Any, Dict, Type, TypedDict
+
+from .features.build_features import (
     drop_features,
-    get_df,
-    get_train_test,
+    get_dataset,
 )
+from .features.utils import PosCat
+from .train.utils import compute_success_rate, get_train_test
 
 
-class ParamSettings(TypedDict):
-    min: float | None = None
-    max: float | None = None
-    step: float | None = None
-    value: Any | None = None
-    values: list[Any] | None = None
+class ParamSettings(TypedDict, total=False):
+    min: float
+    max: float
+    step: float
+    value: Any
+    values: list[Any]
 
 
 Params = Dict[str, ParamSettings]
@@ -24,137 +28,146 @@ Params = Dict[str, ParamSettings]
 class HyperParamTester:
     """
     Handles dataset construction, model training, hyperparameter tuning, and evaluation
-    for a specified machine learning learner type.
-
-    This class automates training and evaluating models using historical race data,
-    tests multiple hyperparameter configurations, and stores the best-performing
-    configuration based on evaluation success.
-
-    Attributes:
-        _learner_type (type): A callable class/type for the machine learning model to be trained.
-        _learner: An instance of the learner, initialized with current parameters.
-        _model: The trained model object.
-        _target_label (str): The label name used as ground truth during training and evaluation.
-        _best_params (dict): The best hyperparameter combination found during evaluation.
-        _datasets (list[tuple[list, str]]): Feature/label pairs for evaluation.
+    for a specified machine learning learner type, using Optuna for optimization.
     """
 
-    def __init__(self, target_label: str, learner_type) -> None:
+    def __init__(self, target_label: str, learner_type: Type) -> None:
+        self._learner_type: Type = learner_type
+        self._target_label: str = target_label
+
+        self._best_hyperparams: dict = {}
+        self._best_score: float = float("-inf")
+
+        self._train_df: DataFrame | None = None
+        self._eval_df: DataFrame | None = None
+        self._pos_cat: PosCat | None = None
+        self._top_range: bool | None = None
+        self._hparams: Params | None = None  # Not to be mutated once set
+
+    def _objective(self, trial: optuna.trial.Trial) -> float:
         """
-        Initializes the TrainerEvaluator.
-
-        Args:
-            target_label (str): The column name of the target label to predict.
-            learner_type: The learner class or factory used to instantiate models.
+        Objective function for Optuna.
+        A single trial trains and evaluates the model with a set of hyperparameters
+        suggested by Optuna.
         """
-        self._learner_type = learner_type
-        self._learner: learner_type = None
-        self._model = None
-        self._target_label = target_label
-        self._best_params: dict = {}
-        self._datasets: list[tuple[list, str]] = []
-        self._dataset = None
+        current_params = {}
 
-    def _yield_params(self, params: Params) -> Generator[dict[str, Any], None, None]:
-        """
-        Yields all valid hyperparameter combinations based on the search space.
+        for p_name, settings in self._hparams.items():
+            if "value" in settings:
+                current_params[p_name] = settings["value"]
+            elif "values" in settings:
+                current_params[p_name] = trial.suggest_categorical(
+                    p_name, settings["values"]
+                )
+            elif "min" in settings and "max" in settings:
+                if isinstance(settings["min"], float) or isinstance(
+                    settings["max"], float
+                ):
+                    suggest_func = trial.suggest_float
+                elif isinstance(settings["min"], int) and isinstance(
+                    settings["max"], int
+                ):
+                    suggest_func = trial.suggest_int
+                else:
+                    raise ValueError(
+                        f"Parameter '{p_name}' has unsupported min/max types for Optuna suggestion."
+                    )
 
-        Args:
-            params (Params): A dictionary specifying parameter search ranges or values.
-
-        Yields:
-            dict[str, Any]: A single hyperparameter configuration.
-        """
-        var_params = {}
-        constant_params = {}
-
-        for p, settings in params.items():
-            if vals := settings.get("values"):
-                var_params[p] = vals
-            elif val := settings.get("value"):
-                constant_params[p] = val
+                current_params[p_name] = suggest_func(
+                    p_name,
+                    settings["min"],
+                    settings["max"],
+                    step=settings.get("step"),
+                )
             else:
-                var_params[p] = np.arange(
-                    settings.get("min", 0),
-                    settings.get("max", 1),
-                    settings.get("step", 0.1),
+                raise ValueError(
+                    f"Parameter '{p_name}' in params_def is not configured correctly for Optuna."
                 )
 
-        keys = list(var_params.keys())
-        total_combinations = len(var_params[keys[0]])
-
-        for key in keys[1:]:
-            total_combinations *= len(var_params[key])
-
-        print("TC:", total_combinations)
-
-        combinations: list[Any] = []
-        yield_val = {
-            **constant_params,
-            **{key: val[0] for key, val in var_params.items()},
-        }
-
-        for _ in range(total_combinations):
-            for key, vals in var_params.items():
-                for val in vals:
-                    temp_obj = {**yield_val, key: val}
-
-                    if temp_obj in combinations:
-                        continue
-
-                    yield_val[key] = val
-                    yvc = yield_val.copy()
-                    combinations.append(yvc)
-                    yield yvc
+        try:
+            learner = self._learner_type(
+                **current_params, label=self._target_label, task=ydf.Task.CLASSIFICATION
+            )
+            model = learner.train(self._train_df)
+            success_rate = compute_success_rate(
+                self._eval_df, model, self._pos_cat, top_range=self._top_range
+            )
+            return success_rate
+        except Exception as e:
+            print(type(e), str(e))
 
     def run(
         self,
-        *,
-        rounds: int,
-        last_n_races: int,
-        params: Params,
+        pos_cat: PosCat,
+        hparams: Params,
+        top_range: bool,
+        n_trials: int = 100,
+        n_jobs: int = 1,
     ) -> None:
         """
-        Runs a hyperparameter search by training and evaluating models over all combinations.
+        Runs hyperparameter search using Optuna.
 
         Args:
-            rounds (int): Number of race rounds to use in the dataset.
-            last_n_races (int): Number of historical races per driver for feature construction.
-            params (Params): Dictionary defining hyperparameter search space.
-
-        Side Effects:
-            Trains and evaluates multiple models.
-            Updates self._best_params with the top-performing configuration.
+            pos_cat: Position category for data processing.
+            params_definition: Dict defining hyperparameter search space for Optuna.
+            top_range: Passed to compute_success_rate.
+            n_trials: Total number of hyperparameter combinations to test.
+            n_jobs: Number of processes for parallel execution. Use -1 for all CPUs.
         """
-        self._dataset = drop_features(get_df(2024, 2024, 2))
+        self._pos_cat = pos_cat
+        self._top_range = top_range
+        self._hparams = hparams
 
-        best_avg_success = 0.0
+        df = get_dataset(self._pos_cat)
+        self._eval_df = drop_features(df[df["year"] == 2024])
+        self._train_df, _ = get_train_test(self._pos_cat, 2017, 2023, 2022)
 
-        try:
-            for param_combination in self._yield_params(params):
-                self._learner = self._learner_type(
-                    **param_combination, label=self._target_label
-                )
+        if self._train_df.empty:
+            raise ValueError("Training dataset is empty. Check data and date ranges.")
+        if self._eval_df.empty:
+            raise ValueError("Evaluation dataset (for 2024) is empty. Check data.")
 
-                train_df, test_df, _ = get_train_test(
-                    min_year=2017, max_year=2022, split_year=2021, sma_length=2
-                )
+        study = optuna.create_study(direction="maximize")
 
-                if test_df.empty or train_df.empty:
-                    continue
+        print(
+            f"Starting Optuna hyperparameter search for {n_trials} trials using {n_jobs} parallel jobs."
+        )
 
-                self._model = self._learner.train(train_df)
+        study.optimize(
+            self._objective, n_trials=n_trials, n_jobs=n_jobs, show_progress_bar=True
+        )
 
-                result = compute_success_rate(self._dataset, self._model)
+        if study.best_trial:
+            self._best_hyperparams = study.best_params
+            self._best_score = study.best_value
+        else:
+            self._best_hyperparams = {}
+            self._best_score = float("-inf")
+            print("Warning: Optuna study completed without any successful trials.")
 
-                if result > best_avg_success:
-                    self._best_params = param_combination
-                    best_avg_success = result
-                    print("New AVG success:", best_avg_success)
-        finally:
-            self._best_params = {
-                "average": best_avg_success,
-                "params": self._best_params,
-            }
-            json.dump(self._best_params, open("params.json", "w"), indent=4)
-            print(f"Best Average: {best_avg_success} - Params saved to 'params.json'")
+        # self._save_results()
+
+    def _save_results(self) -> None:
+        """Helper method to save the results to a JSON file."""
+        results_to_save = {
+            "best_score": (
+                self._best_score if self._best_score > float("-inf") else None
+            ),
+            "best_params": self._best_hyperparams,
+            "notes": "Optuna search results.",
+        }
+        if self._best_score <= float("-inf") or not self._best_hyperparams:
+            results_to_save["notes"] = (
+                "Optuna search did not find a successful set of parameters or all trials failed."
+            )
+
+        with open("optuna_params.json", "w") as f:
+            json.dump(results_to_save, f, indent=4)
+
+        print("\n--- Optuna Hyperparameter Search Complete ---")
+        if results_to_save["best_score"] is not None:
+            print(f"Best score achieved: {results_to_save['best_score']:.4f}")
+            print(f"Best params: {results_to_save['best_params']}")
+        else:
+            print("No best score found (all trials might have failed).")
+        print(f"Results saved to 'optuna_params.json'")
