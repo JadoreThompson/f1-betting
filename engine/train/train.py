@@ -20,8 +20,8 @@ HYERPARAMS = {
     # "num_trees": 45,
     # "focal_loss_alpha": 0.68,
     "max_depth": 5,
-    "num_trees": 25,
-    "focal_loss_alpha": 0.1,
+    "num_trees": 100,
+    "focal_loss_alpha": 0.8,
 }
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(
     label=TARGET_LABEL, task=ydf.Task.CLASSIFICATION, **HYERPARAMS

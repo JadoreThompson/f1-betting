@@ -69,7 +69,7 @@ def append_avg_position_move(
     *,
     in_season: bool = True,
     progressive: bool = True,
-    window: int = 1,
+    window: int = 3,
 ) -> pd.DataFrame:
     """
     Compute and append the average position change for each driver.
@@ -100,7 +100,9 @@ def append_avg_position_move(
         if window < 1:
             s = pcs.apply(lambda x: x.shift(1).expanding().mean())
         else:
-            s = pcs.apply(lambda x: x.shift(1).rolling(window=window).mean())
+            s = pcs.apply(
+                lambda x: x.shift(1).rolling(window=window).mean()
+            )
         s = s.reset_index(level=group_cols, drop=True)
 
     else:
@@ -116,7 +118,7 @@ def append_sma(
     *,
     in_season: bool = True,
     progressive: bool = True,
-    window: int = 1,
+    window: int = 3,
 ) -> pd.DataFrame:
     """
     Append a simple moving average (SMA) for a given column, grouped by driver and optionally by season.
@@ -143,7 +145,9 @@ def append_sma(
         if window < 1:
             s = gs.apply(lambda x: x.shift(1).expanding().mean())
         else:
-            s = gs.apply(lambda x: x.shift(1).rolling(window=window).mean())
+            s = gs.apply(
+                lambda x: x.shift(1).rolling(window=window, min_periods=1).mean()
+            )
 
         s = s.reset_index(level=group_cols, drop=True)
     else:
@@ -186,7 +190,7 @@ def append_last_n_races(
     col: str,
     *,
     in_season: bool = True,
-    window: int = 5,
+    window: int = 3,
 ) -> pd.DataFrame:
     """
     Appends the last N values of a specified column for each driver as new columns.
@@ -300,7 +304,7 @@ def append_last_season_wins(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def append_dnf_count(df: pd.DataFrame, *, window: int = 0) -> pd.DataFrame:
+def append_dnf_count(df: pd.DataFrame, *, window: int = 3) -> pd.DataFrame:
     df = df.sort_values(by=["year", "driverId"]).copy()
     col = f"dnf_count_{window}"
 
@@ -310,9 +314,10 @@ def append_dnf_count(df: pd.DataFrame, *, window: int = 0) -> pd.DataFrame:
         ).fillna(0)
 
         if window < 1:
-            group[col] = dnf_mask.cumsum()
+            # group[col] = dnf_mask.cumsum()
+            group[col] = dnf_mask.expanding().sum()
         else:
-            group[col] = dnf_mask.rolling(window=window, min_periods=1).sum()
+            group[col] = dnf_mask.rolling(window=window).sum()
         return group
 
     df = (
@@ -321,3 +326,62 @@ def append_dnf_count(df: pd.DataFrame, *, window: int = 0) -> pd.DataFrame:
         .sort_values("raceId", axis=0)
     )
     return df
+
+
+def append_field_pos_delta(
+    df: pd.DataFrame,
+    *,
+    in_season: bool = True,
+    window: int = 3,
+) -> pd.DataFrame:
+    """
+    Appends the delta between a driver's average finishing position and the field's average per race.
+
+    For each driver and race, this function computes a moving or expanding average of their previous
+    finishing positions and compares it to the average of all drivers' averages in that race.
+    The resulting delta indicates whether the driver is performing above or below their peers.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing at least 'position_numeric', 'driverId',
+            'year', and 'raceId' columns.
+        in_season (bool): If True, computes moving averages within each season separately.
+            If False, computes across all available races per driver (default: True).
+        window (int): Size of the rolling window for averaging. If <1, uses expanding average.
+
+    Returns:
+        pd.DataFrame: DataFrame with an added column representing delta difference.
+    """
+    dfs: list[pd.DataFrame] = []
+
+    if in_season:
+        group_cols = "raceId"
+    else:
+        group_cols = ["year", "raceId"]
+
+    if window < 1:
+        lf = lambda x: x.shift(1).expanding().mean()
+    else:
+        lf = lambda x: x.shift(1).rolling(window=window).mean()
+
+    if in_season:  # Calculate average position on year, driverId
+        groups: list[pd.DataFrame] = []
+        for _, ygroup in df.groupby("year"):
+            ygroup["tmp_avg_pos"] = (
+                ygroup.sort_values("raceId")
+                .groupby("driverId")["position_numeric"]
+                .transform(lf)
+            )
+            groups.append(ygroup)
+        df = pd.concat(groups)
+
+    else:  # Calculate averge position only on driverId
+        df["tmp_avg_pos"] = df.groupby("driverId")["position_numeric"].transform(lf)
+
+    for _, rgroup in df.groupby(group_cols):
+        avg = rgroup["tmp_avg_pos"].mean()
+        rgroup[f"avg_pos_delta{"_in_season" if in_season else ""}_{window}"] = rgroup[
+            "tmp_avg_pos"
+        ].apply(lambda x: avg - x)
+        dfs.append(rgroup)
+
+    return drop_temp_cols(pd.concat(dfs).sort_values("raceId"))

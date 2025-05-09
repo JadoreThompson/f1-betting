@@ -25,14 +25,6 @@ def parse_times(s: str) -> int:
 
 
 def merge_datasets() -> pd.DataFrame:
-    constructors_df = pd.read_csv(os.path.join(DPATH, "constructors.csv"))[
-        ["constructorId", "constructorRef"]
-    ]
-
-    constructor_standings_df = pd.read_csv(
-        os.path.join(DPATH, "constructor_standings.csv")
-    )[["raceId", "constructorId", "position"]]
-
     driver_standings_df = pd.read_csv(os.path.join(DPATH, "driver_standings.csv"))[
         ["raceId", "driverId", "points", "position", "wins"]
     ]
@@ -53,23 +45,10 @@ def merge_datasets() -> pd.DataFrame:
         ["raceId", "circuitId", "year"]
     ]
 
-    qualifying_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
-        ["raceId", "driverId", "position"]
-    ]
-
     df = races_df.merge(results_df, on=["raceId"])
     df = df.merge(
         driver_standings_df, on=["raceId", "driverId"], suffixes=("", "_standings")
     )
-    # df = df.merge(
-    #     qualifying_df, on=["raceId", "driverId"], suffixes=("", "_qualifying")
-    # )
-    # df = df.merge(constructors_df, on=["constructorId"])
-    # df = df.merge(
-    #     constructor_standings_df,
-    #     on=["raceId", "constructorId"],
-    #     suffixes=("", "_constructor_standings"),
-    # )
 
     for key in ("points", "wins", "position_standings"):
         df[f"prev_{key}"] = df.groupby("driverId")[key].shift(1)
