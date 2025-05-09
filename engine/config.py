@@ -19,13 +19,13 @@ for p in (
 
 LEARNER_TYPE = ydf.GradientBoostedTreesLearner
 MODEL_TYPE = ydf.GradientBoostedTreesModel
-TARGET_LABEL = "positionText"
+TARGET_LABEL = "target"
 
 TRAINED_MODEL: MODEL_TYPE = None
 TRAINED_MODEL_FEATURES: tuple[str] | None = None
 TRAINED_MODEL_CLASSES: tuple[str] | None = None
 
-mpath = os.path.join(MPATH, "top3_v1")
+mpath = os.path.join(MPATH, "model_x")
 
 if os.path.exists(mpath):
     TRAINED_MODEL = ydf.load_model(mpath)

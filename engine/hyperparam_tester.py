@@ -50,15 +50,13 @@ class HyperParamTester:
         A single trial trains and evaluates the model with a set of hyperparameters
         suggested by Optuna.
         """
-        current_params = {}
+        hparams = {}
 
         for p_name, settings in self._hparams.items():
             if "value" in settings:
-                current_params[p_name] = settings["value"]
+                hparams[p_name] = settings["value"]
             elif "values" in settings:
-                current_params[p_name] = trial.suggest_categorical(
-                    p_name, settings["values"]
-                )
+                hparams[p_name] = trial.suggest_categorical(p_name, settings["values"])
             elif "min" in settings and "max" in settings:
                 if isinstance(settings["min"], float) or isinstance(
                     settings["max"], float
@@ -73,7 +71,7 @@ class HyperParamTester:
                         f"Parameter '{p_name}' has unsupported min/max types for Optuna suggestion."
                     )
 
-                current_params[p_name] = suggest_func(
+                hparams[p_name] = suggest_func(
                     p_name,
                     settings["min"],
                     settings["max"],
@@ -84,17 +82,15 @@ class HyperParamTester:
                     f"Parameter '{p_name}' in params_def is not configured correctly for Optuna."
                 )
 
-        try:
-            learner = self._learner_type(
-                **current_params, label=self._target_label, task=ydf.Task.CLASSIFICATION
-            )
-            model = learner.train(self._train_df)
-            success_rate = compute_success_rate(
-                self._eval_df, model, self._pos_cat, top_range=self._top_range
-            )
-            return success_rate
-        except Exception as e:
-            print(type(e), str(e))
+        learner = self._learner_type(
+            label=self._target_label,
+            task=ydf.Task.CLASSIFICATION,
+            **hparams,
+        )
+        model = learner.train(self._train_df)
+        return compute_success_rate(
+            self._eval_df, model, self._pos_cat, top_range=self._top_range
+        )
 
     def run(
         self,
@@ -145,7 +141,7 @@ class HyperParamTester:
             self._best_score = float("-inf")
             print("Warning: Optuna study completed without any successful trials.")
 
-        # self._save_results()
+        self._save_results()
 
     def _save_results(self) -> None:
         """Helper method to save the results to a JSON file."""

@@ -1,8 +1,8 @@
-from enum import Enum
-from typing import Literal
-
 import numpy as np
 import pandas as pd
+
+from enum import Enum
+from typing import Literal
 from ..typing import (
     LoosePositionCategory,
     TightPositionCategory,
@@ -137,14 +137,13 @@ def append_sma(
     df[tmp_col] = pd.to_numeric(df[col])
 
     group_cols = ["year", "driverId"] if in_season else ["driverId"]
-
     gs = df.groupby(group_cols)[tmp_col]
 
     if progressive:
         if window < 1:
-            s = gs.transform(lambda x: x.shift(1).expanding().mean())
+            s = gs.apply(lambda x: x.shift(1).expanding().mean())
         else:
-            s = gs.transform(lambda x: x.shift(1).rolling(window=window).mean())
+            s = gs.apply(lambda x: x.shift(1).rolling(window=window).mean())
 
         s = s.reset_index(level=group_cols, drop=True)
     else:
@@ -154,50 +153,40 @@ def append_sma(
     return drop_temp_cols(df)
 
 
-def append_avg_position(
+def append_median_race_position(
     df: pd.DataFrame,
-    col: Literal["position_numeric", "positionText"] = "position_numeric",
+    col: str = "position_numeric",
     *,
     in_season: bool = True,
     progressive: bool = True,
-    window: int = 1,
-) -> pd.DataFrame:
-    """
-    Appends the average finishing position for each driver based on the specified position column.
-    Excludes the current race via a one-step shift. Supports per-season grouping and progressive averaging.
-
-    Args:
-        df (pd.DataFrame): DataFrame containing race results with driver and season identifiers.
-        col (str): Column to use for position ("position_numeric" or "positionText").
-        in_season (bool): Whether to compute averages within each season (default: True).
-        progressive (bool): Whether to use a rolling or expanding average (default: True).
-        window (int): Number of races to include in the moving average. If <1, uses expanding mean.
-
-    Returns:
-        pd.DataFrame: DataFrame with an additional column for average position.
-    """
+    window: int = 3,
+):
     tmp_col = f"tmp_{col}"
-    df[tmp_col] = pd.to_numeric(df[col], errors="coerce")
+    df[tmp_col] = pd.to_numeric(df[col])
 
     group_cols = ["year", "driverId"] if in_season else ["driverId"]
     gs = df.groupby(group_cols)[tmp_col]
 
     if progressive:
         if window < 1:
-            s = gs.transform(lambda x: x.shift(1).expanding().mean())
+            s = gs.apply(lambda x: x.shift(1).expanding().median())
         else:
-            s = gs.transform(lambda x: x.shift(1).rolling(window=window).mean())
+            s = gs.apply(lambda x: x.shift(1).rolling(window=window).median())
+
+        s = s.reset_index(level=group_cols, drop=True)
     else:
         s = gs.transform("mean")
 
-    colname = f"avg_{col}{"_progressive" if progressive else ""}_{window}"
-    df[colname] = s
-
+    df[f"median_{col}{"_progressive" if progressive else ""}_{window}"] = s
     return drop_temp_cols(df)
 
 
 def append_last_n_races(
-    df: pd.DataFrame, window: int = 5, col: str = "positionText"
+    df: pd.DataFrame,
+    col: str,
+    *,
+    in_season: bool = True,
+    window: int = 5,
 ) -> pd.DataFrame:
     """
     Appends the last N values of a specified column for each driver as new columns.
@@ -205,13 +194,15 @@ def append_last_n_races(
     Args:
         df (pd.DataFrame): Input DataFrame containing driver race data, including 'raceId' and 'driverId'.
         lookback (int): Number of past races to include. Defaults to 5.
-        col (str): Column name from which to extract historical values. Defaults to "positionText".
+        col (str): Column name from which to extract historical values.
 
     Returns:
         pd.DataFrame: DataFrame with additional columns for each of the last N values.
     """
     for i in range(1, window + 1):
-        df[f"last_{col}_{i}"] = df.groupby("driverId")[col].shift(i)
+        df[f"last_{col}_{i}"] = df.groupby(
+            "driverId" if not in_season else ["year", "driverId"]
+        )[col].shift(i)
 
     return drop_temp_cols(df)
 
@@ -273,9 +264,60 @@ def append_position_propensity(
                 prop_series[k].append(val)
 
         for k, v in prop_series.items():
-            group[f"propensity_{k}"] = v
+            group[f"propensity_{pos_cat}{"_in_season" if in_season else ""}_{k}"] = v
 
         dfs.append(group)
 
     df = pd.concat(dfs, ignore_index=True)
-    return drop_temp_cols(df.sort_values("raceId", axis=0))
+    return drop_temp_cols(df.sort_values("raceId", axis=0).reset_index(drop=True))
+
+
+def append_last_season_wins(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Appends the number of wins from the previous season for each driver.
+
+    For each race entry, this function adds a new column `prev_season_wins` indicating how many races
+    the driver won in the prior season. If no data exists for the previous season, the value is NaN.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame with 'driverId', 'year', 'wins', and 'raceId' columns.
+
+    Returns:
+        pd.DataFrame: DataFrame with an added `prev_season_wins` column, sorted by 'raceId'.
+    """
+    dfs: list[pd.DataFrame] = []
+
+    for _, group in df.groupby("driverId"):
+        for _, group2 in group.groupby("year"):
+            group2["prev_season_wins"] = group[
+                (group["year"] == group2["year"].unique()[0] - 1)
+                & (group["driverId"] == group2["driverId"].unique()[0])
+            ]["wins"].max()
+            dfs.append(group2)
+
+    return (
+        pd.concat(dfs, ignore_index=True).sort_values("raceId").reset_index(drop=True)
+    )
+
+
+def append_dnf_count(df: pd.DataFrame, *, window: int = 0) -> pd.DataFrame:
+    df = df.sort_values(by=["year", "driverId"]).copy()
+    col = f"dnf_count_{window}"
+
+    def calc_rolling(group: pd.DataFrame) -> pd.DataFrame:
+        dnf_mask = pd.to_numeric(
+            (group["statusId"].isin([*range(2, 11)])).shift(1), errors="coerce"
+        ).fillna(0)
+
+        if window < 1:
+            group[col] = dnf_mask.cumsum()
+        else:
+            group[col] = dnf_mask.rolling(window=window, min_periods=1).sum()
+        return group
+
+    df = (
+        df.groupby(["year", "driverId"])
+        .apply(calc_rolling)
+        .sort_values("raceId", axis=0)
+    )
+    return df

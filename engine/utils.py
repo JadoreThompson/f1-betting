@@ -65,8 +65,8 @@ def plot_heatmap(df: DataFrame) -> None:
 
 
 if __name__ == "__main__":
-    df = get_dataset("tight")
-    df = df[df["year"] >= 2017]
+    df = get_dataset("top3")
+    df = df[df["year"] == 2024]
     df = drop_features(df)
-    df["positionText"] = df["positionText"].astype("int")
-    plot_heatmap(df, "tight")
+    df["target"] = df["positionText"].astype("int")
+    plot_heatmap(df)
