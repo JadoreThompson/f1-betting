@@ -94,19 +94,17 @@ def append_avg_position_move(
 
     group_cols = ["year", "driverId"] if in_season else ["driverId"]
 
-    pcs = df.groupby(group_cols)["tmp_position_change"]
+    tpcs = df.groupby(group_cols)["tmp_position_change"]
 
     if progressive:
         if window < 1:
-            s = pcs.apply(lambda x: x.shift(1).expanding().mean())
+            s = tpcs.apply(lambda x: x.shift(1).expanding().mean())
         else:
-            s = pcs.apply(
-                lambda x: x.shift(1).rolling(window=window).mean()
-            )
+            s = tpcs.apply(lambda x: x.shift(1).rolling(window=window).mean())
         s = s.reset_index(level=group_cols, drop=True)
 
     else:
-        s = pcs.transform("mean")
+        s = tpcs.transform("mean")
 
     df[final_key] = s
     return drop_temp_cols(df)
@@ -385,3 +383,8 @@ def append_field_pos_delta(
         dfs.append(rgroup)
 
     return drop_temp_cols(pd.concat(dfs).sort_values("raceId"))
+
+
+def append_category_streak(
+    df: pd.DataFrame, *, in_season: bool = True, window: 3
+) -> pd.DataFrame: ...

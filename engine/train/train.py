@@ -1,8 +1,8 @@
 import json
 import os
 import ydf
+import pandas as pd
 
-from pandas import DataFrame
 from .utils import compute_success_rate, save_train_configs, get_train_test
 from ..config import (
     LEARNER_TYPE,
@@ -60,6 +60,10 @@ def train_model(
         print("Empty test dataset")
         return
 
+    train_df = pd.concat(
+        [train_df, *([train_df[train_df["target"] == "1"]] * 3)], ignore_index=True
+    )
+
     model: MODEL_TYPE = LEARNER.train(train_df)
     print("Features:", model.input_feature_names())
 
@@ -78,7 +82,7 @@ def train_model(
     return model, success_rate
 
 
-def evaluate_2024(pos_cat: PosCat, model=None) -> tuple[float, DataFrame]:
+def evaluate_2024(pos_cat: PosCat, model=None) -> tuple[float, pd.DataFrame]:
     """
     Evaluate model performance on 2024 data.
 
@@ -137,13 +141,13 @@ def test_hyperparams() -> None:
     ht.run(
         "top3",
         {
-            "max_depth": {"min": 3, "max": 25, "step": 1},
+            "max_depth": {"min": 3, "max": 100, "step": 1},
             "num_trees": {"min": 5, "max": 1000, "step": 5},
             "growing_strategy": {"value": "BEST_FIRST_GLOBAL"},
             "focal_loss_alpha": {"min": 0.01, "max": 0.99, "step": 0.01},
         },
         True,
-        1000,
+        10_000,
         1,
     )
 
