@@ -107,6 +107,7 @@ def append_avg_position_move(
         s = tpcs.transform("mean")
 
     df[final_key] = s
+    df = df.dropna(subset=[final_key])
     return drop_temp_cols(df)
 
 
@@ -152,6 +153,7 @@ def append_sma(
         s = gs.transform("mean")
 
     df[f"sma_{col}{"_progressive" if progressive else ""}_{window}"] = s
+    df = df.dropna(subset=[f"sma_{col}{"_progressive" if progressive else ""}_{window}"])
     return drop_temp_cols(df)
 
 
@@ -180,6 +182,7 @@ def append_median_race_position(
         s = gs.transform("mean")
 
     df[f"median_{col}{"_progressive" if progressive else ""}_{window}"] = s
+    df = df.dropna(subset=[f"median_{col}{"_progressive" if progressive else ""}_{window}"])
     return drop_temp_cols(df)
 
 
@@ -206,6 +209,7 @@ def append_last_n_races(
             "driverId" if not in_season else ["year", "driverId"]
         )[col].shift(i)
 
+    df = df.dropna(subset=[col for col in df.columns if col.startswith("last_")])
     return drop_temp_cols(df)
 
 
@@ -271,6 +275,7 @@ def append_position_propensity(
         dfs.append(group)
 
     df = pd.concat(dfs, ignore_index=True)
+    df = df.dropna(subset=[col for col in df.columns if col.startswith("propensity_")])
     return drop_temp_cols(df.sort_values("raceId", axis=0).reset_index(drop=True))
 
 
@@ -364,16 +369,19 @@ def append_field_pos_delta(
     if in_season:  # Calculate average position on year, driverId
         groups: list[pd.DataFrame] = []
         for _, ygroup in df.groupby("year"):
+            ygroup = ygroup.copy()
             ygroup["tmp_avg_pos"] = (
                 ygroup.sort_values("raceId")
                 .groupby("driverId")["position_numeric"]
                 .transform(lf)
             )
+            ygroup = ygroup.dropna(subset=["tmp_avg_pos"])
             groups.append(ygroup)
         df = pd.concat(groups)
 
     else:  # Calculate averge position only on driverId
         df["tmp_avg_pos"] = df.groupby("driverId")["position_numeric"].transform(lf)
+        df = df.dropna(subset=["tmp_avg_pos"])
 
     for _, rgroup in df.groupby(group_cols):
         avg = rgroup["tmp_avg_pos"].mean()
