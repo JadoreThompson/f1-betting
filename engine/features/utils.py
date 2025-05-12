@@ -42,7 +42,6 @@ def get_position_category(value: str, pos_cat: PosCat) -> str:
         return Top3PositionCategory.TOP3.value
 
     if pos_cat == "tight":
-        # print(type(value), value)
         if not value.isdigit() or int(value) > 3:
             return TightPositionCategory.DNF.value
         if value == "1":
@@ -153,7 +152,9 @@ def append_sma(
         s = gs.transform("mean")
 
     df[f"sma_{col}{"_progressive" if progressive else ""}_{window}"] = s
-    df = df.dropna(subset=[f"sma_{col}{"_progressive" if progressive else ""}_{window}"])
+    df = df.dropna(
+        subset=[f"sma_{col}{"_progressive" if progressive else ""}_{window}"]
+    )
     return drop_temp_cols(df)
 
 
@@ -164,7 +165,23 @@ def append_median_race_position(
     in_season: bool = True,
     progressive: bool = True,
     window: int = 3,
-):
+) -> pd.DataFrame:
+    """
+    Calculates the median value for col passed over the last N races
+    provided by window.
+
+    Args:
+        df (pd.DataFrame): Input dataframe containing the race data.
+        col (str, optional): Column used to calculate the median. Defaults to "position_numeric".
+        in_season (bool, optional): Whether to focus on the season or overall
+            . Defaults to True.
+        progressive (bool, optional): Whether to apply mean across the whole season or gradually
+            as races finish. Defaults to True.
+        window (int, optional): Defaults to 3.
+
+    Returns:
+        pd.DataFrame: DataFrame with the median col appended.
+    """
     tmp_col = f"tmp_{col}"
     df[tmp_col] = pd.to_numeric(df[col])
 
@@ -182,7 +199,9 @@ def append_median_race_position(
         s = gs.transform("mean")
 
     df[f"median_{col}{"_progressive" if progressive else ""}_{window}"] = s
-    df = df.dropna(subset=[f"median_{col}{"_progressive" if progressive else ""}_{window}"])
+    df = df.dropna(
+        subset=[f"median_{col}{"_progressive" if progressive else ""}_{window}"]
+    )
     return drop_temp_cols(df)
 
 
@@ -206,7 +225,7 @@ def append_last_n_races(
     """
     for i in range(1, window + 1):
         df[f"last_{col}_{i}"] = df.groupby(
-            "driverId" if not in_season else ["year", "driverId"]
+            ["year", "driverId"] if in_season else "driverId"
         )[col].shift(i)
 
     df = df.dropna(subset=[col for col in df.columns if col.startswith("last_")])
@@ -237,7 +256,7 @@ def append_position_propensity(
         pd.DataFrame: Original DataFrame with added propensity columns (one for each
                      position category value) and temporary columns removed.
     """
-    df["tmp_position"] = df["position"].apply(
+    df["tmp_position"] = df["positionText"].apply(
         lambda x: get_position_category(x, pos_cat)
     )
     category_cls: Enum = {
@@ -246,13 +265,13 @@ def append_position_propensity(
         "top3": Top3PositionCategory,
         "winner": WinnerPositionCategory,
     }[pos_cat]
-    dfs = []  # storing for concatenation
+    dfs: list[pd.DataFrame] = []  # storing for concatenation
 
     for _, group in df.groupby(["driverId", "year"] if in_season else "driverId"):
-        counts = {k: 0 for k in category_cls._value2member_map_}
+        counts: dict[str, int] = {k: 0 for k in category_cls._value2member_map_}
         vals = counts.values()
-        prop_series = {k: [] for k in counts}
-
+        prop_series: dict[str, list[int]] = {k: [] for k in counts}
+        
         group["tmp_position"] = (
             group["tmp_position"].shift(1).apply(lambda x: "0" if x is None else x)
         )
@@ -317,7 +336,6 @@ def append_dnf_count(df: pd.DataFrame, *, window: int = 3) -> pd.DataFrame:
         ).fillna(0)
 
         if window < 1:
-            # group[col] = dnf_mask.cumsum()
             group[col] = dnf_mask.expanding().sum()
         else:
             group[col] = dnf_mask.rolling(window=window).sum()

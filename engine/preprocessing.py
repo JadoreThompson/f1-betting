@@ -42,7 +42,7 @@ def merge_datasets() -> pd.DataFrame:
     ]
 
     races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[
-        ["raceId", "circuitId", "year"]
+        ["raceId", "circuitId", "year", "round"]
     ]
 
     df = races_df.merge(results_df, on=["raceId"])
@@ -52,8 +52,6 @@ def merge_datasets() -> pd.DataFrame:
 
     for key in ("points", "wins", "position_standings"):
         df[f"prev_{key}"] = df.groupby(["year", "driverId"])[key].shift(1)
-
-    df = df.dropna(subset=[col for col in df.columns if col.startswith("prev_")])
 
     for key in ("driverId", "circuitId", "constructorId"):
         df[key] = df[key].astype("str")

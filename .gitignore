@@ -5,6 +5,7 @@ __pycache__
 
 rec.py
 file.csv
-f.csv
+raw.csv
+eval.csv
 **.xml
 **.json

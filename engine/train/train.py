@@ -1,4 +1,3 @@
-import json
 import os
 import ydf
 import pandas as pd
@@ -82,7 +81,9 @@ def train_model(
     return model, success_rate
 
 
-def evaluate_2024(pos_cat: PosCat, model=None) -> tuple[float, pd.DataFrame, pd.DataFrame]:
+def evaluate_2024(
+    pos_cat: PosCat, model=None
+) -> tuple[float, pd.DataFrame, pd.DataFrame]:
     """
     Evaluate model performance on 2024 data.
 
@@ -91,7 +92,7 @@ def evaluate_2024(pos_cat: PosCat, model=None) -> tuple[float, pd.DataFrame, pd.
         model: Model to evaluate (uses TRAINED_MODEL if None)
 
     Returns:
-        tuple[float, DataFrame, DataFrame]: 
+        tuple[float, DataFrame, DataFrame]:
             - Success rate
             - DataFrame used to compute success rate
             - DataFrame retrieved from get_dataset call.
@@ -122,7 +123,7 @@ def train() -> MODEL_TYPE:
 
     TOP_RANGE = True
     model, top_range_test_success = train_model(**kwargs)
-    top_range_2024_success, _, df = evaluate_2024(pos_cat, model)
+    top_range_2024_success, dfa, dfb = evaluate_2024(pos_cat, model)
 
     save_train_configs(
         model,
@@ -134,8 +135,9 @@ def train() -> MODEL_TYPE:
         whole_2024_success,
     )
 
-    df.to_csv("eval.csv", index=False)
-    print(df.dtypes)
+    dfb.to_csv("raw.csv", index=False)
+    dfa.to_csv("eval.csv", index=False)
+    print(dfa.dtypes)
     return model
 
 

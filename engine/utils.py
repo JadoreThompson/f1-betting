@@ -27,10 +27,10 @@ def interact(data: DataFrame | Iterable, model=None) -> tuple[Prediction, ...]:
         model = TRAINED_MODEL
 
     if isinstance(data, Iterable):
-
         d = DataFrame(data, columns=model.input_feature_names())
     else:
         d = data
+        
     preds: list[list[float] | float] = model.predict(d).tolist()
 
     if len(model_classes := model.label_classes()) == 2:
