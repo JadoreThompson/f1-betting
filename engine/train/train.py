@@ -109,7 +109,7 @@ def evaluate_2024(
 def train() -> MODEL_TYPE:
     global TOP_RANGE
 
-    pos_cat = "top3"
+    pos_cat = "loose"
     kwargs = {
         "pos_cat": pos_cat,
         "min_year": 2017,

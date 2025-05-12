@@ -43,4 +43,4 @@ def get_dataset(pos_cat: PosCat) -> DataFrame:
     return df
 
 
-get_dataset("top3").to_csv("file.csv", index=False)
+# get_dataset("loose").to_csv("file.csv", index=False)

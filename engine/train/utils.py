@@ -130,7 +130,7 @@ def save_train_configs(
         )
     else:
         print(f"No gain. Configs are the same. Achievied:")
-        
+
         print(
             json.dumps(
                 {
@@ -196,7 +196,7 @@ def compute_success_rate(
             eligible = False
 
             if pos_cat == "loose" and (
-                "1" <= pred < "3" or "1" <= dataset.iloc[i][TARGET_LABEL] < "3"
+                pred in ("1", "2") or dataset.iloc[i][TARGET_LABEL] in ("1", "2")
             ):
                 eligible = True
             else:
