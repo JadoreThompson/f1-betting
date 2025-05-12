@@ -51,7 +51,9 @@ def merge_datasets() -> pd.DataFrame:
     )
 
     for key in ("points", "wins", "position_standings"):
-        df[f"prev_{key}"] = df.groupby("driverId")[key].shift(1)
+        df[f"prev_{key}"] = df.groupby(["year", "driverId"])[key].shift(1)
+
+    df = df.dropna(subset=[col for col in df.columns if col.startswith("prev_")])
 
     for key in ("driverId", "circuitId", "constructorId"):
         df[key] = df[key].astype("str")

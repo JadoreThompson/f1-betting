@@ -40,5 +40,8 @@ def get_dataset(pos_cat: PosCat) -> DataFrame:
     df = append_last_n_races(df, "target", in_season=False, window=3)
     df = append_position_propensity(df, pos_cat, in_season=True)
     df = append_median_race_position(df, window=1)
-    df = append_avg_position_move(df, window=3)
+    # df = append_avg_position_move(df, window=3)
     return df
+
+
+get_dataset("loose").to_csv("file.csv", index=False)

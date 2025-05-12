@@ -61,7 +61,7 @@ def train_model(
         return
 
     train_df = pd.concat(
-        [train_df, *([train_df[train_df["target"] == "1"]] * 3)], ignore_index=True
+        [train_df, *([train_df[train_df["target"] == "1"]] * 1)], ignore_index=True
     )
 
     model: MODEL_TYPE = LEARNER.train(train_df)
@@ -82,7 +82,7 @@ def train_model(
     return model, success_rate
 
 
-def evaluate_2024(pos_cat: PosCat, model=None) -> tuple[float, pd.DataFrame]:
+def evaluate_2024(pos_cat: PosCat, model=None) -> tuple[float, pd.DataFrame, pd.DataFrame]:
     """
     Evaluate model performance on 2024 data.
 
@@ -91,15 +91,18 @@ def evaluate_2024(pos_cat: PosCat, model=None) -> tuple[float, pd.DataFrame]:
         model: Model to evaluate (uses TRAINED_MODEL if None)
 
     Returns:
-        tupel[float, DataFrame]: Success rate on 2024 data and DataFrame used.
+        tuple[float, DataFrame, DataFrame]: 
+            - Success rate
+            - DataFrame used to compute success rate
+            - DataFrame retrieved from get_dataset call.
     """
     global TOP_RANGE
-    df = get_dataset(pos_cat)
-    df = df[df["year"] == 2024]
-    df = drop_features(df)
+    raw_df = get_dataset(pos_cat)
+    raw_df = raw_df[raw_df["year"] == 2024]
+    df = drop_features(raw_df)
     success = compute_success_rate(df, model, pos_cat, top_range=TOP_RANGE)
     print(f"2024 success rate: {success:.2%}")
-    return success, df
+    return success, df, raw_df
 
 
 def train() -> MODEL_TYPE:
@@ -115,11 +118,11 @@ def train() -> MODEL_TYPE:
 
     TOP_RANGE = False
     model, whole_test_success = train_model(**kwargs)
-    whole_2024_success, _ = evaluate_2024(pos_cat, model)
+    whole_2024_success, _, _ = evaluate_2024(pos_cat, model)
 
     TOP_RANGE = True
     model, top_range_test_success = train_model(**kwargs)
-    top_range_2024_success, df = evaluate_2024(pos_cat, model)
+    top_range_2024_success, _, df = evaluate_2024(pos_cat, model)
 
     save_train_configs(
         model,

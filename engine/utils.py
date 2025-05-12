@@ -67,6 +67,6 @@ def plot_heatmap(df: DataFrame) -> None:
 if __name__ == "__main__":
     df = get_dataset("top3")
     df = df[df["year"] == 2024]
-    df = drop_features(df)
+    # df = drop_features(df)
     df["target"] = df["target"].astype("int")
     plot_heatmap(df)
