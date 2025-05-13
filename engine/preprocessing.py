@@ -49,6 +49,7 @@ def merge_datasets() -> pd.DataFrame:
             "grid",
             "position",
             "positionText",
+            "positionOrder"
             # "statusId",
         ]
     ]

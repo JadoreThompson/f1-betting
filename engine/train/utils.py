@@ -1,15 +1,21 @@
 import json
 import os
+import ydf
 
-from pandas import DataFrame
-from typing import Any
+from pandas import DataFrame, Series
+from typing import Any, Callable, Optional, Protocol, runtime_checkable
 from ..config import (
     BPATH,
     TRAINED_MODEL,
     TARGET_LABEL,
 )
 from ..features.build_features import get_dataset, drop_features
-from ..features.utils import PosCat
+from ..features.utils import PosCat, get_position_category
+
+
+@runtime_checkable
+class SupportsPredict(Protocol):
+    def predict(self, *args, **kwargs) -> Any: ...
 
 
 def get_files(category: str) -> tuple[str, str, str]:
@@ -150,9 +156,125 @@ def save_train_configs(
         )
 
 
+def get_top_range_funcs(pos_cat: PosCat) -> Callable[[str, int, Series], bool]:
+    if pos_cat == "loose":
+
+        def func(pred: str, pred_ind: int, s: Series) -> bool:
+            return pred in ("1", "2") or s.iloc[pred_ind] in ("1", "2")
+
+    else:
+
+        def func(pred: str, pred_ind: int, s: Series) -> bool:
+            return pred > "0" or s.iloc[pred_ind] > "0"
+
+    return func
+
+
+def handle_classification(
+    df: DataFrame, model: SupportsPredict, pos_cat: PosCat, top_range: bool
+) -> tuple[float, list[str]]:
+    target_s = df[TARGET_LABEL]
+    predictions = model.predict(df)
+    pred_values: list[str] = []
+    success = 0.0
+    count = 0
+
+    if top_range:
+        tr_func = get_top_range_funcs(pos_cat)
+
+    for ind, preds in enumerate(predictions):
+        if len(model.label_classes()) == 2:
+            pred_index = 0 if preds < 0.5 else 1
+        else:
+            pred_index = preds.tolist().index(max(preds))
+
+        pred = model.label_classes()[pred_index]
+        pred_values.append(pred)
+
+        if top_range:
+            # eligible = False
+
+            # if pos_cat == "loose" and (
+            #     pred in ("1", "2") or df.iloc[i][TARGET_LABEL] in ("1", "2")
+            # ):
+            #     eligible = True
+            # else:
+            #     if pred > "0" or df.iloc[i][TARGET_LABEL] > "0":
+            #         eligible = True
+
+            # if eligible:
+            #     count += 1
+            #     if pred == df.iloc[i][TARGET_LABEL]:
+            #         success += 1
+            if tr_func(pred, ind, target_s):
+                count += 1
+                if pred == target_s.iloc[ind]:
+                    success += 1
+        else:
+            # if pred == df.iloc[i][TARGET_LABEL]:
+            #     success += 1
+            if pred == target_s.iloc[ind]:
+                success += 1
+
+    if success:
+        if top_range:
+            success /= count
+        else:
+            success /= len(predictions)
+
+    return success, pred_values
+
+
+def handle_regression(
+    df: DataFrame,
+    model: SupportsPredict,
+    top_range: bool,
+    pos_cat: Optional[PosCat] = None,
+) -> tuple[float, list[str]]:
+    target_s = df[TARGET_LABEL]
+    predictions = model.predict(df)
+    pred_values: list[str] = []
+    success = 0.0
+    count = 0
+
+    if top_range:
+        tr_func = get_top_range_funcs(pos_cat)
+        target_s = target_s.apply(lambda x: get_position_category(x, pos_cat))
+
+    if pos_cat is None:
+        for ind, pred in enumerate(predictions):
+            if pred == df.iloc[ind][TARGET_LABEL]:
+                success += 1
+            pred_values.append(pred)
+
+        success /= len(predictions)
+
+    else:
+        for ind, pred in enumerate(predictions):
+            if top_range:
+                pred = get_position_category(str(round(pred)), pos_cat)
+                if tr_func(pred, ind, target_s):
+                    count += 1
+                    if pred == target_s.iloc[ind]:
+                        success += 1
+            else:
+                if pred == target_s.iloc[ind]:
+                    success += 1
+
+            pred_values.append(pred)
+
+        if top_range:
+            if count:
+                success /= count
+        else:
+            success /= len(predictions)
+
+    return success, pred_values
+
+
 def compute_success_rate(
     dataset: DataFrame,
-    model=None,
+    model: Optional[SupportsPredict] = None,
     pos_cat: PosCat = None,
     *,
     top_range: bool = False,
@@ -174,51 +296,59 @@ def compute_success_rate(
     if top_range and pos_cat is None:
         raise ValueError("pos_cat must be passed if top_range is True.")
 
-    success = 0.0
-    count = 0
+    # success = 0.0
+    # count = 0
 
     if model is None:
         model = TRAINED_MODEL
 
-    predictions = model.predict(dataset)
-    pred_values = []  # To be added as a series
+    # predictions = model.predict(dataset)
+    # pred_values = []  # To be added as a series
+    # mtask = model.task()
 
-    for i, preds in enumerate(predictions):
-        if len(model.label_classes()) == 2:
-            pred_index = 0 if preds < 0.5 else 1
-        else:
-            pred_index = preds.tolist().index(max(preds))
+    if (mtask := model.task()) == ydf.Task.CLASSIFICATION:
+        success, pred_values = handle_classification(dataset, model, pos_cat, top_range)
+    elif mtask == ydf.Task.REGRESSION:
+        success, pred_values = handle_regression(dataset, model, pos_cat, top_range)
 
-        pred = model.label_classes()[pred_index]
-        pred_values.append(pred)
+    # for i, preds in enumerate(predictions):
+    #     if len(model.label_classes()) == 2:
+    #         pred_index = 0 if preds < 0.5 else 1
+    #     else:
+    #         pred_index = preds.tolist().index(max(preds))
 
-        if top_range:
-            eligible = False
+    #     pred = model.label_classes()[pred_index]
+    #     pred_values.append(pred)
 
-            if pos_cat == "loose" and (
-                pred in ("1", "2") or dataset.iloc[i][TARGET_LABEL] in ("1", "2")
-            ):
-                eligible = True
-            else:
-                if pred > "0" or dataset.iloc[i][TARGET_LABEL] > "0":
-                    eligible = True
+    #     if top_range:
+    #         eligible = False
 
-            if eligible:
-                count += 1
-                if pred == dataset.iloc[i][TARGET_LABEL]:
-                    success += 1
-        else:
-            if pred == dataset.iloc[i][TARGET_LABEL]:
-                success += 1
+    #         if pos_cat == "loose" and (
+    #             pred in ("1", "2") or dataset.iloc[i][TARGET_LABEL] in ("1", "2")
+    #         ):
+    #             eligible = True
+    #         else:
+    #             if pred > "0" or dataset.iloc[i][TARGET_LABEL] > "0":
+    #                 eligible = True
 
+    #         if eligible:
+    #             count += 1
+    #             if pred == dataset.iloc[i][TARGET_LABEL]:
+    #                 success += 1
+    #     else:
+    #         if pred == dataset.iloc[i][TARGET_LABEL]:
+    #             success += 1
+
+    # dataset["prediction"] = pred_values
+
+    # if success:
+    #     if top_range:
+    #         success /= count
+    #     else:
+    #         success /= len(predictions)
+
+    # return success
     dataset["prediction"] = pred_values
-
-    if success:
-        if top_range:
-            success /= count
-        else:
-            success /= len(predictions)
-
     return success
 
 

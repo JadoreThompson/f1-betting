@@ -28,10 +28,12 @@ HYERPARAMS = {
     # "max_depth": 5,
     "max_depth": 90,
     "num_trees": 500,
+    "min_examples": 1,
+    "growing_strategy": "BEST_FIRST_GLOBAL"
     # "focal_loss_alpha": 0.8,
 }
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(
-    label=TARGET_LABEL, task=ydf.Task.CLASSIFICATION, **HYERPARAMS
+    label=TARGET_LABEL, task=ydf.Task.REGRESSION, **HYERPARAMS
 )
 TOP_RANGE = False
 
@@ -81,7 +83,20 @@ def train_model(
     model: MODEL_TYPE = LEARNER.train(train_df)
     print("Features:", model.input_feature_names())
 
+    # for ind, pred in enumerate(model.predict(test_df)):
+    #     print(
+    #         "Pred:",
+    #         pred,
+    #         "| Actual:",
+    #         test_df["target"].iloc[ind],
+    #         "| Position Standings:",
+    #         test_df["prev_position_driver_standings"].iloc[ind],
+    #     )
+    # print(model.predict(test_df))
+    # print(test_df["target"])
+
     success_rate = compute_success_rate(test_df, model, pos_cat, top_range=TOP_RANGE)
+
     print(f"Training success rate: {success_rate:.2%}")
 
     if save_model:
@@ -134,16 +149,21 @@ def train() -> MODEL_TYPE:
         "split_year": 2022,
     }
 
-    train_df, test_df = get_train_test(
-        pos_cat,
-        min_year=kwargs["min_year"],
-        max_year=kwargs["max_year"],
-        split_year=kwargs["split_year"],
-    )
-
     raw_df = get_dataset(pos_cat)
-    raw_df = raw_df[raw_df["year"] == 2024]
-    df_2024 = drop_features(raw_df)
+    train_df, test_df = (
+        raw_df[
+            (raw_df["year"] >= kwargs["min_year"])
+            & (raw_df["year"] <= kwargs["split_year"])
+        ],
+        raw_df[raw_df["year"] == kwargs["max_year"]],
+    )
+    df_2024 = raw_df[raw_df["year"] == 2024]
+    
+    train_df, test_df, df_2024 = (
+        drop_features(train_df),
+        drop_features(test_df),
+        drop_features(df_2024),
+    )
 
     TOP_RANGE = False
     model, whole_test_success = train_model(pos_cat, train_df=train_df, test_df=test_df)
@@ -173,15 +193,15 @@ def train() -> MODEL_TYPE:
 def test_hyperparams() -> None:
     ht = HyperParamTester(TARGET_LABEL, LEARNER_TYPE)
     ht.run(
-        "top3",
+        "loose",
         {
             "max_depth": {"min": 3, "max": 100, "step": 1},
             "num_trees": {"min": 5, "max": 1000, "step": 5},
             "growing_strategy": {"value": "BEST_FIRST_GLOBAL"},
-            "focal_loss_alpha": {"min": 0.01, "max": 0.99, "step": 0.01},
+            # "focal_loss_alpha": {"min": 0.01, "max": 0.99, "step": 0.01},
         },
         True,
-        10_000,
+        2000,
         1,
     )
 
