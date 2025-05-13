@@ -2,6 +2,13 @@ import os
 import ydf
 import pandas as pd
 
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from typing import Optional
+
 from .utils import compute_success_rate, save_train_configs, get_train_test
 from ..config import (
     LEARNER_TYPE,
@@ -18,9 +25,10 @@ HYERPARAMS = {
     # "max_depth": 5,
     # "num_trees": 45,
     # "focal_loss_alpha": 0.68,
-    "max_depth": 5,
-    "num_trees": 100,
-    "focal_loss_alpha": 0.8,
+    # "max_depth": 5,
+    "max_depth": 90,
+    "num_trees": 500,
+    # "focal_loss_alpha": 0.8,
 }
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(
     label=TARGET_LABEL, task=ydf.Task.CLASSIFICATION, **HYERPARAMS
@@ -28,8 +36,15 @@ LEARNER: LEARNER_TYPE = LEARNER_TYPE(
 TOP_RANGE = False
 
 
+class EmptyDataFrame(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 def train_model(
     pos_cat: PosCat,
+    train_df: Optional[pd.DataFrame] = None,
+    test_df: Optional[pd.DataFrame] = None,
     *,
     min_year: int = 2017,
     max_year: int = 2022,
@@ -51,17 +66,17 @@ def train_model(
     Returns:
         (trained_model, success_rate)
     """
-    train_df, test_df = get_train_test(
-        pos_cat, min_year=min_year, max_year=max_year, split_year=split_year
-    )
+    if train_df is None or test_df is None:
+        train_df, test_df = get_train_test(
+            pos_cat, min_year=min_year, max_year=max_year, split_year=split_year
+        )
 
     if test_df.empty:
-        print("Empty test dataset")
-        return
+        raise EmptyDataFrame("Empty test dataset.")
 
-    train_df = pd.concat(
-        [train_df, *([train_df[train_df["target"] == "1"]] * 1)], ignore_index=True
-    )
+    # train_df = pd.concat(
+    #     [train_df, *([train_df[train_df["target"] == "1"]] * 2)], ignore_index=True
+    # )
 
     model: MODEL_TYPE = LEARNER.train(train_df)
     print("Features:", model.input_feature_names())
@@ -82,8 +97,8 @@ def train_model(
 
 
 def evaluate_2024(
-    pos_cat: PosCat, model=None
-) -> tuple[float, pd.DataFrame, pd.DataFrame]:
+    pos_cat: PosCat, df: Optional[pd.DataFrame] = None, model=None
+) -> tuple[float, pd.DataFrame]:
     """
     Evaluate model performance on 2024 data.
 
@@ -95,15 +110,17 @@ def evaluate_2024(
         tuple[float, DataFrame, DataFrame]:
             - Success rate
             - DataFrame used to compute success rate
-            - DataFrame retrieved from get_dataset call.
     """
     global TOP_RANGE
-    raw_df = get_dataset(pos_cat)
-    raw_df = raw_df[raw_df["year"] == 2024]
-    df = drop_features(raw_df)
+
+    if df is None:
+        raw_df = get_dataset(pos_cat)
+        raw_df = raw_df[raw_df["year"] == 2024]
+        df = drop_features(raw_df)
+
     success = compute_success_rate(df, model, pos_cat, top_range=TOP_RANGE)
     print(f"2024 success rate: {success:.2%}")
-    return success, df, raw_df
+    return success, df
 
 
 def train() -> MODEL_TYPE:
@@ -117,13 +134,26 @@ def train() -> MODEL_TYPE:
         "split_year": 2022,
     }
 
+    train_df, test_df = get_train_test(
+        pos_cat,
+        min_year=kwargs["min_year"],
+        max_year=kwargs["max_year"],
+        split_year=kwargs["split_year"],
+    )
+
+    raw_df = get_dataset(pos_cat)
+    raw_df = raw_df[raw_df["year"] == 2024]
+    df_2024 = drop_features(raw_df)
+
     TOP_RANGE = False
-    model, whole_test_success = train_model(**kwargs)
-    whole_2024_success, _, _ = evaluate_2024(pos_cat, model)
+    model, whole_test_success = train_model(pos_cat, train_df=train_df, test_df=test_df)
+    whole_2024_success, _ = evaluate_2024(pos_cat, df_2024, model)
 
     TOP_RANGE = True
-    model, top_range_test_success = train_model(**kwargs)
-    top_range_2024_success, dfa, dfb = evaluate_2024(pos_cat, model)
+    model, top_range_test_success = train_model(
+        pos_cat, train_df=train_df, test_df=test_df
+    )
+    top_range_2024_success, eval_df = evaluate_2024(pos_cat, df_2024, model)
 
     save_train_configs(
         model,
@@ -135,9 +165,8 @@ def train() -> MODEL_TYPE:
         whole_2024_success,
     )
 
-    dfb.to_csv("raw.csv", index=False)
-    dfa.to_csv("eval.csv", index=False)
-    print(dfa.dtypes)
+    eval_df.to_csv("eval.csv", index=False)
+    print(eval_df.dtypes)
     return model
 
 
@@ -157,8 +186,53 @@ def test_hyperparams() -> None:
     )
 
 
+def train_log_regression():
+    # Load and prepare data
+    df = get_dataset("loose")
+    df = pd.concat([df, *([df[df["target"].isin(["1", "2"])]] * 1)], ignore_index=True)
+    # tr = drop_features(df[df["year"] < 2024]).dropna()
+    # ev = drop_features(df[df["year"] == 2024]).dropna()
+    df = drop_features(df.dropna())
+
+    Y = df.pop("target")
+    X = df
+    print(X.dtypes)
+
+    le = LabelEncoder()
+    y_encoded = le.fit_transform(Y)
+
+    print("Class distribution:\n", pd.Series(Y).value_counts(normalize=True))
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y_encoded, test_size=0.1, random_state=42, stratify=y_encoded
+    )
+
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    clf = LogisticRegression(
+        # multi_class="multinomial",
+        solver="lbfgs",
+        max_iter=1000,
+        class_weight="balanced",
+        random_state=42,
+    )
+    clf.fit(X_train_scaled, y_train)
+
+    y_pred = clf.predict(X_test_scaled)
+    print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+    print(
+        "Classification Report:\n",
+        classification_report(y_test, y_pred, target_names=le.classes_),
+    )
+
+    return clf, scaler, le
+
+
 if __name__ == "__main__":
     train()
+    # train_log_regression()
     # test_hyperparams()
     # df = get_dataset("top3")
     # df = df[df["year"] == 2024]

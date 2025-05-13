@@ -242,7 +242,7 @@ def get_train_test(
     """
     df = get_dataset(pos_cat)
     df = df[(df["year"] >= min_year) & (df["year"] <= max_year)]
-    df = df.dropna()
+    # df = df.dropna()
     train_df, test_df = (
         df[df["year"] <= split_year],
         df[df["year"] > split_year],

@@ -17,8 +17,8 @@ for p in (
     if not os.path.exists(p):
         os.mkdir(p)
 
-LEARNER_TYPE = ydf.GradientBoostedTreesLearner
-MODEL_TYPE = ydf.GradientBoostedTreesModel
+LEARNER_TYPE = ydf.RandomForestLearner
+MODEL_TYPE = ydf.RandomForestModel
 TARGET_LABEL = "target"
 
 TRAINED_MODEL: MODEL_TYPE = None
@@ -31,4 +31,4 @@ if os.path.exists(mpath):
     TRAINED_MODEL = ydf.load_model(mpath)
     TRAINED_MODEL_CLASSES = tuple(TRAINED_MODEL.label_classes())
     TRAINED_MODEL_FEATURES = tuple(TRAINED_MODEL.input_feature_names())
-    print("Trained model features:", TRAINED_MODEL_FEATURES)
+    # print("Trained model features:", TRAINED_MODEL_FEATURES)
