@@ -16,14 +16,14 @@ from ..typing import (
 PosCat = Literal["tight", "loose", "winner", "top3"]
 
 
-# def time_it(func: Callable) -> Callable:
-#     def wrapper(*args, **kwargs):
-#         s = time.time()
-#         res = func(*args, **kwargs)
-#         print("Total time:", time.time() - s)
-#         return res
+def time_it(func: Callable) -> Callable:
+    def wrapper(*args, **kwargs):
+        s = time.time()
+        res = func(*args, **kwargs)
+        print("Total time:", time.time() - s)
+        return res
 
-#     return wrapper
+    return wrapper
 
 
 def drop_temp_cols(df: pd.DataFrame) -> pd.DataFrame:
@@ -474,80 +474,70 @@ def append_std(df: pd.DataFrame, *, in_season: bool = True, window: 3) -> pd.Dat
 
 # @time_it
 def append_elo(
-    df: pd.DataFrame, *, default_elo: float = 1000.0, k: float = 0.1, m: float = 0.01
+    df: pd.DataFrame, *, default_elo: float = 1000.0, k: float = 200, m: float = 0.01
 ) -> pd.DataFrame:
     """
-    Assigns elo ratings for drivers across races.
-    Winners with lower Elo receive a larger bonus, and all drivers receive additional elo
-    adjustments based on their relative race position, scaled by a multiplier `k`.
+    Computes and appends Elo ratings for drivers across races.
 
-    Parameters:
-        df (pd.DataFrame): A race result DataFrame containing at least the columns:
-                        'driverId', 'raceId', 'constructorId', 'year', 'round', 'position_numeric'.
-        default_elo (int, optional): Starting Elo value for drivers with no race history.
-                                    Defaults to 1000.
-        k (float, optional): Scaling factor for performance-based Elo adjustments.
-                            Defaults to 0.1.
-        m (float, optional): Multiplier for number of points to be put up for each driver
-                            within the constructor. Defaults to 0.01.
+    Elo ratings represent the relative skill levels of drivers, updated after each race
+    based on finishing positions. The higher a driver's Elo, the better their historical performance.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing at least 'driverId', 'year', 'round',
+            and 'positionOrder' columns.
+        default_elo (float): Starting Elo rating for all drivers (default: 1000.0).
+        k (float): Rating sensitivity factor in likelihood calculation (default: 200).
+        m (float): Elo update multiplier controlling the impact of each result (default: 0.01).
 
     Returns:
-        pd.DataFrame: A copy of the input DataFrame with Elo ratings appended per row.
-                    Elo reflects the driver's rating *before* the given race.
-
-    Notes:
-        - Elo is computed within each (year, round, constructorId) group.
-        - Drivers finishing in the best position receive Elo bonuses.
-        - If the best-position driver also has the lowest Elo, they receive the highest possible bonus.
-        - Elo adjustments are cumulative across races.
+        pd.DataFrame: The input DataFrame with an additional 'elo' column representing
+            Elo ratings per race per driver.
     """
     df = df.sort_values(["year", "round"])
-    df["tmp_race_number"] = df.groupby("driverId").cumcount()
 
-    df["elo"] = np.nan
-    df.loc[df["tmp_race_number"] == 0, "elo"] = default_elo
+    df["elo"] = (
+        df.groupby("driverId")
+        .cumcount()
+        .apply(lambda x: default_elo if x == 0 else np.nan)
+    )
 
     current_elos: dict[str, float] = {
         driver_id: default_elo for driver_id in df["driverId"].unique()
     }
-
     series_list: list[pd.Series] = []
 
-    for _, group in df.groupby(["year", "round", "constructorId"]):
-        num_drivers_in_race: int = len(df[df["raceId"] == group.iloc[0]["raceId"]])
-
-        if num_drivers_in_race == 1:
-            s = df.iloc[0]
-            # current_elos[s["driverId"]] = round(
-            #     current_elos[s["driverId"]] + k * (num_drivers_in_race - position), 2
-            # )
-            s["elo"] = current_elos[s["driverId"]]
-            series_list.append(s)
-            continue
-
-        elo_pot: dict[str, float] = {
-            driver: current_elos[driver] * m for driver in group["driverId"].unique()
+    for _, group in df.groupby(["year", "round"]):
+        drivers: list[str] = group["driverId"].unique()
+        local_current_elos: dict[str, float] = {d: current_elos[d] for d in drivers}
+        positions: dict[str, int] = {
+            g["driverId"]: g["positionOrder"] for _, g in group.iterrows()
         }
 
-        best_position: int = group["position_numeric"].min()
-        lowest_elo_driver = min(elo_pot, key=lambda k: elo_pot[k])
+        for ind, di in enumerate(drivers):
+            for dj in drivers[ind + 1 :]:
+                if positions[di] < positions[dj]:
+                    result = 1
+                else:
+                    result = 0
 
-        for _, row in group.iterrows():
-            driver_id = row["driverId"]
-            position = row["position_numeric"]
+                elo_i = current_elos[di]
+                elo_j = current_elos[dj]
 
-            if driver_id == lowest_elo_driver and position == best_position:
-                current_elos[driver_id] += max(elo_pot.values())
-            elif position == best_position:
-                current_elos[driver_id] += min(elo_pot.values())
-            else:
-                current_elos[driver_id] -= elo_pot[driver_id]
+                # % likelihood of driver i beating driver j
+                likelihood = 1 / (1 + 10 ** ((elo_j - elo_i) / k))
 
-            # current_elos[driver_id] = round(
-            #     current_elos[driver_id] + k * (num_drivers_in_race - position), 2
-            # )
-            row["elo"] = current_elos[driver_id]
-            series_list.append(row)
+                local_current_elos[di] += (elo_j * m) * (result - likelihood)
+
+                if result == 1:
+                    local_current_elos[dj] -= (elo_i * m) * (1 - (1 - likelihood))
+                else:
+                    local_current_elos[dj] += (elo_i * m) * (result - likelihood)
+
+        for key, value in local_current_elos.items():
+            current_elos[key] = value
+            s = group[group["driverId"] == key].iloc[0]
+            s["elo"] = value
+            series_list.append(s)
 
     final_df = pd.DataFrame(series_list).sort_values(["year", "round"])
     final_df["elo"] = final_df.groupby("driverId")["elo"].shift(1).fillna(default_elo)
