@@ -22,15 +22,10 @@ from ..features.utils import PosCat
 from ..hyperparam_tester import HyperParamTester
 
 HYERPARAMS = {
-    # "max_depth": 5,
-    # "num_trees": 45,
-    # "focal_loss_alpha": 0.68,
-    # "max_depth": 5,
     "max_depth": 90,
     "num_trees": 500,
     "min_examples": 1,
     "growing_strategy": "BEST_FIRST_GLOBAL"
-    # "focal_loss_alpha": 0.8,
 }
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(
     label=TARGET_LABEL, task=ydf.Task.REGRESSION, **HYERPARAMS
@@ -158,7 +153,7 @@ def train() -> MODEL_TYPE:
         raw_df[raw_df["year"] == kwargs["max_year"]],
     )
     df_2024 = raw_df[raw_df["year"] == 2024]
-    
+
     train_df, test_df, df_2024 = (
         drop_features(train_df),
         drop_features(test_df),
@@ -186,7 +181,7 @@ def train() -> MODEL_TYPE:
     )
 
     eval_df.to_csv("eval.csv", index=False)
-    print(eval_df.dtypes)
+    # print(eval_df.dtypes)
     return model
 
 

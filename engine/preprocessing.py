@@ -57,6 +57,8 @@ def merge_datasets() -> pd.DataFrame:
     races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[
         ["raceId", "circuitId", "year", "round"]
     ]
+    
+    quali_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[["raceId", "driverId", "position"]]
 
     df = races_df.merge(results_df, on=["raceId"])
     df = df.merge(
@@ -70,6 +72,11 @@ def merge_datasets() -> pd.DataFrame:
         constructors_standings_df,
         on=["raceId", "constructorId"],
         suffixes=("", "_constructor_standings"),
+    )
+    df = df.merge(
+        quali_df,
+        on=["driverId", "raceId"],
+        suffixes=("", "_quali"),
     )
 
     df = df.sort_values(["year", "round"])
