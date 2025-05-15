@@ -2,6 +2,7 @@ from typing import Optional
 from pandas import DataFrame
 from .utils import (
     PosCat,
+    append_circuit_encodings,
     append_drivers_age,
     append_elo_change,
     append_elo_percentile,
@@ -29,20 +30,23 @@ def drop_features(df: DataFrame) -> DataFrame:
             "circuitId",
             "constructorId",
             "driverId",
+            "statusId",
             "raceId",
             "position",
             "points",
             "wins",
             "position_numeric",
             "positionText",
-            "year",
             "position_driver_standings",
             "points_constructor_standings",
             "position_constructor_standings",
-            "dob",
             "positionOrder",
             "constructorRef",
             "driverRef",
+            "circuitRef",
+            "year",
+            "round",
+            "dob",
             "nationality",
         ],
         axis=1,
@@ -51,33 +55,28 @@ def drop_features(df: DataFrame) -> DataFrame:
 
 def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
     df: DataFrame = merge_datasets()
-    pos_cat = None
+
     if pos_cat is None:
         df["target"] = df["positionOrder"]
     else:
         df["target"] = df["positionText"].apply(
             lambda x: get_position_category(x, pos_cat)
         )
-    df = append_constructor_encodings(df)
-    # df = append_drivers_age(df)
-    # df = append_nationality_encodings(df)
 
-    # df = append_last_n(df, "positionOrder", window=4, typ="str")
-    # df = append_position_propensity(df, pos_cat)
-    # df = append_avg_position_move(df, window=4)
-    # df = append_median_race_position(df, window=3)
-    # df = append_sma(df, window=0)
-    # df = append_std(df, window=0)
-    df = append_elo(df)
-    # df = append_elo_rank_in_race(df)
-    # df = append_elo_percentile(df)
+    w = 1
+
+    df = append_elo(df, k=200, p=0.01)
     df = append_elo_change(df)
-    # df = append_last_n(df, "elo", window=10)
+    df = append_elo_percentile(df)
+    df = append_elo_rank_in_race(df)
+    df = append_avg_position_move(df, window=w)
+    df = append_constructor_encodings(df)    
     return df
 
 
 if __name__ == "__main__":
-    drop_features(get_dataset("loose")).to_csv("file.csv", index=False)
-    # df = get_dataset("loose")
-    # df = df[df["year"] == 2022]
-    # print(len(df))
+    df = get_dataset("top3")
+    # df = df.groupby("driverId").filter(lambda x: (x["elo"] < 0).any())
+    # df = df[df["driverId"] == df["driverId"].iloc[0]]
+    # df = drop_features(df)
+    df.to_csv("file.csv", index=False)

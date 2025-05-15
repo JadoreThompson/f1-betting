@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from enum import Enum
-from typing import Any, Callable, Iterable, Literal
+from typing import Callable, Iterable, Literal
 from ..typing import (
     LoosePositionCategory,
     TightPositionCategory,
@@ -41,15 +41,13 @@ def get_position_category(value: str, pos_cat: PosCat) -> str:
     Returns:
         str: Categorical label representing the finishing position, based on the chosen `pos_cat`:
     """
-    value = str(value)
-
     if pos_cat == "winner":
         if value == "1":
             return WinnerPositionCategory.WINNER.value
         return WinnerPositionCategory.NOT_WINNER.value
 
     if pos_cat == "top3":
-        if not value.isdigit() or int(value) > 3:
+        if not value.isdigit() or int(value) < 1 or int(value) > 3:
             return Top3PositionCategory.NOT_TOP_3.value
         return Top3PositionCategory.TOP3.value
 
@@ -216,7 +214,7 @@ def append_median_race_position(
     df = df.dropna(
         subset=[f"median_{col}{"_progressive" if progressive else ""}_{window}"]
     )
-    return drop_temp_cols(df)
+    return drop_temp_cols(df.sort_values(["year", "round"]))
 
 
 def append_last_n(
@@ -238,12 +236,14 @@ def append_last_n(
     Returns:
         pd.DataFrame: DataFrame with additional columns for each of the last N values.
     """
+    if window < 1:
+        raise ValueError("window must be >= 1.")
+
     df = df.sort_values(["year", "round"])
+    s = df.groupby(["year", "driverId"] if in_season else "driverId")[col]
 
     for i in range(1, window + 1):
-        df[f"last_{col}_{i}"] = df.groupby(
-            ["year", "driverId"] if in_season else "driverId"
-        )[col].shift(i)
+        df[f"last_{col}_{i}"] = s.shift(i)
 
     cols = [col for col in df.columns if col.startswith("last_")]
     df = df.dropna(subset=cols)
@@ -255,7 +255,7 @@ def append_last_n(
 
 def append_position_propensity(
     df: pd.DataFrame,
-    pos_cat: PosCat,
+    pos_cat: Literal["tight", "loose", "winner", "top3", "real"],
     *,
     in_season=True,
 ) -> pd.DataFrame:
@@ -269,7 +269,7 @@ def append_position_propensity(
     Args:
         df (pd.DataFrame): DataFrame containing race results with columns 'driverId',
             'position_numeric', 'year', and 'raceId'.
-        pos_cat (PosCat): Position category type to use.
+        pos_cat (PosCat, "real"): Position category type to use.
         in_season (bool, optional): If True, calculates propensity per driver per year.
             If False, calculates across all years. Defaults to True.
 
@@ -278,19 +278,26 @@ def append_position_propensity(
                      position category value) and temporary columns removed.
     """
     df = df.copy()
-    df["tmp_position"] = df["positionText"].apply(
-        lambda x: get_position_category(x, pos_cat)
-    )
-    category_cls: Enum = {
-        "loose": LoosePositionCategory,
-        "tight": TightPositionCategory,
-        "top3": Top3PositionCategory,
-        "winner": WinnerPositionCategory,
-    }[pos_cat]
+
+    if pos_cat == "real":
+        df["tmp_position"] = df["positionOrder"].astype("str")
+        factory: list = df["tmp_position"].unique().tolist()
+        factory.append("0")
+    else:
+        df["tmp_position"] = df["positionText"].apply(
+            lambda x: get_position_category(x, pos_cat)
+        )
+        factory: dict[str, Enum] = {
+            "loose": LoosePositionCategory,
+            "tight": TightPositionCategory,
+            "top3": Top3PositionCategory,
+            "winner": WinnerPositionCategory,
+        }[pos_cat]._value2member_map_
+
     dfs: list[pd.DataFrame] = []  # storing for concatenation
 
     for _, group in df.groupby(["driverId", "year"] if in_season else "driverId"):
-        counts: dict[str, int] = {k: 0 for k in category_cls._value2member_map_}
+        counts: dict[str, int] = {k: 0 for k in factory}
         vals = counts.values()
         prop_series: dict[str, list[int]] = {k: [] for k in counts}
 
@@ -317,11 +324,7 @@ def append_position_propensity(
 
     df = pd.concat(dfs, ignore_index=True)
     df = df.dropna(subset=[col for col in df.columns if col.startswith("propensity_")])
-    return drop_temp_cols(
-        df
-        # .sort_values(["year", "round"], axis=0)
-        .reset_index(drop=True)
-    )
+    return drop_temp_cols(df.reset_index(drop=True).sort_values(["year", "round"]))
 
 
 def append_last_season_wins(df: pd.DataFrame) -> pd.DataFrame:
@@ -349,8 +352,8 @@ def append_last_season_wins(df: pd.DataFrame) -> pd.DataFrame:
 
     return (
         pd.concat(dfs, ignore_index=True)
-        # .sort_values(["year", "round"])
         .reset_index(drop=True)
+        .sort_values(["year", "round"])
     )
 
 
@@ -369,11 +372,12 @@ def append_dnf_count(df: pd.DataFrame, *, window: int = 3) -> pd.DataFrame:
             group[col] = dnf_mask.rolling(window=window).sum()
         return group
 
-    df = (
-        df.groupby(["year", "driverId"]).apply(calc_rolling)
-        # .sort_values(["year", "round"], axis=0)
+    return (
+        df.groupby(["year", "driverId"])
+        .apply(calc_rolling)
+        .reset_index(drop=True)
+        .sort_values(["year", "round"])
     )
-    return df
 
 
 def append_field_pos_delta(
@@ -438,7 +442,7 @@ def append_field_pos_delta(
 
     return drop_temp_cols(
         pd.concat(dfs)
-        # .sort_values(["year", "round"])
+        .sort_values(["year", "round"])
     )
 
 
@@ -449,16 +453,18 @@ def append_std(df: pd.DataFrame, *, in_season: bool = True, window: 3) -> pd.Dat
     df = df.sort_values(by=["year", "round"])
 
     calc_std: Callable[[Iterable[int]], float] = lambda values: (
-        np.nan if len(values) < 2 else np.std(values, ddof=0)
+        np.nan
+        if len(values) < 2 or any(val for val in values == np.nan)
+        else np.std(values, ddof=0)
     )
 
     df["tmp_position_numeric"] = df.groupby(group_cols)["position_numeric"].shift(1)
 
-    if window < 1:
+    if window < 2:
         df[col] = (
             df.groupby(group_cols)["tmp_position_numeric"]
             .expanding()
-            .agg(calc_std)
+            .apply(calc_std)
             .reset_index(drop=True)
         )
     else:
@@ -472,9 +478,8 @@ def append_std(df: pd.DataFrame, *, in_season: bool = True, window: 3) -> pd.Dat
     return drop_temp_cols(df)
 
 
-# @time_it
 def append_elo(
-    df: pd.DataFrame, *, default_elo: float = 1000.0, k: float = 200, m: float = 0.01
+    df: pd.DataFrame, *, default_elo: float = 1000.0, k: float = 200, p: float = 0.01
 ) -> pd.DataFrame:
     """
     Computes and appends Elo ratings for drivers across races.
@@ -487,7 +492,7 @@ def append_elo(
             and 'positionOrder' columns.
         default_elo (float): Starting Elo rating for all drivers (default: 1000.0).
         k (float): Rating sensitivity factor in likelihood calculation (default: 200).
-        m (float): Elo update multiplier controlling the impact of each result (default: 0.01).
+        p (float): Elo update multiplier controlling the impact of each result (default: 0.01).
 
     Returns:
         pd.DataFrame: The input DataFrame with an additional 'elo' column representing
@@ -526,14 +531,17 @@ def append_elo(
                 # % likelihood of driver i beating driver j
                 likelihood = 1 / (1 + 10 ** ((elo_j - elo_i) / k))
 
-                local_current_elos[di] += (elo_j * m) * (result - likelihood)
+                local_current_elos[di] += (elo_j * p) * (result - likelihood)
 
                 if result == 1:
-                    local_current_elos[dj] -= (elo_i * m) * (1 - (1 - likelihood))
-                else:
-                    local_current_elos[dj] += (elo_i * m) * (result - likelihood)
+                    local_current_elos[dj] -= (elo_i * p) * (1 - (1 - likelihood))
 
+                else:
+                    local_current_elos[dj] += (elo_i * p) * (result - likelihood)
+
+        max_pos = max(positions.values())
         for key, value in local_current_elos.items():
+            value = round(value, 2)
             current_elos[key] = value
             s = group[group["driverId"] == key].iloc[0]
             s["elo"] = value
@@ -601,6 +609,10 @@ def append_constructor_encodings(df: pd.DataFrame) -> pd.DataFrame:
 
 def append_nationality_encodings(df: pd.DataFrame) -> pd.DataFrame:
     dummies = pd.get_dummies(df["nationality"], prefix="nationality", dtype=int)
+    return pd.concat([df, dummies], axis=1)
+
+def append_circuit_encodings(df: pd.DataFrame) -> pd.DataFrame:
+    dummies = pd.get_dummies(df["circuitRef"], prefix="circuit", dtype=int)
     return pd.concat([df, dummies], axis=1)
 
 

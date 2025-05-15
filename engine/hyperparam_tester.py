@@ -133,15 +133,16 @@ class HyperParamTester:
             self._objective, n_trials=n_trials, n_jobs=n_jobs, show_progress_bar=True
         )
 
-        if study.best_trial:
-            self._best_hyperparams = study.best_params
-            self._best_score = study.best_value
-        else:
-            self._best_hyperparams = {}
-            self._best_score = float("-inf")
-            print("Warning: Optuna study completed without any successful trials.")
-
-        self._save_results()
+        try:
+            if study.best_trial:
+                self._best_hyperparams = study.best_params
+                self._best_score = study.best_value
+            else:
+                self._best_hyperparams = {}
+                self._best_score = float("-inf")
+                print("Warning: Optuna study completed without any successful trials.")
+        finally:
+            self._save_results()
 
     def _save_results(self) -> None:
         """Helper method to save the results to a JSON file."""

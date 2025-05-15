@@ -2,6 +2,7 @@ import json
 import os
 import ydf
 
+from enum import Enum
 from pandas import DataFrame, Series
 from typing import Any, Callable, Optional, Protocol, runtime_checkable
 from ..config import (
@@ -79,7 +80,9 @@ def save_train_configs(
 
     new_content = {
         "features": model.input_feature_names(),
-        "learner_params": hparams,
+        "learner_params": {
+            k: (v.value if isinstance(v, Enum) else v) for k, v in hparams.items()
+        },
     }
 
     gain = False
@@ -192,27 +195,11 @@ def handle_classification(
         pred_values.append(pred)
 
         if top_range:
-            # eligible = False
-
-            # if pos_cat == "loose" and (
-            #     pred in ("1", "2") or df.iloc[i][TARGET_LABEL] in ("1", "2")
-            # ):
-            #     eligible = True
-            # else:
-            #     if pred > "0" or df.iloc[i][TARGET_LABEL] > "0":
-            #         eligible = True
-
-            # if eligible:
-            #     count += 1
-            #     if pred == df.iloc[i][TARGET_LABEL]:
-            #         success += 1
             if tr_func(pred, ind, target_s):
                 count += 1
                 if pred == target_s.iloc[ind]:
                     success += 1
         else:
-            # if pred == df.iloc[i][TARGET_LABEL]:
-            #     success += 1
             if pred == target_s.iloc[ind]:
                 success += 1
 
@@ -231,15 +218,17 @@ def handle_regression(
     top_range: bool,
     pos_cat: Optional[PosCat] = None,
 ) -> tuple[float, list[str]]:
-    target_s = df[TARGET_LABEL]
-    predictions = model.predict(df)
+    predictions: list = model.predict(df)
     pred_values: list[str] = []
+    target_s: Series = df[TARGET_LABEL].apply(
+        lambda x: get_position_category(str(x), pos_cat)
+    )
+
     success = 0.0
     count = 0
 
     if top_range:
         tr_func = get_top_range_funcs(pos_cat)
-        target_s = target_s.apply(lambda x: get_position_category(x, pos_cat))
 
     if pos_cat is None:
         for ind, pred in enumerate(predictions):
@@ -251,13 +240,15 @@ def handle_regression(
 
     else:
         for ind, pred in enumerate(predictions):
+            pred = get_position_category(str(round(pred)), pos_cat)
+
             if top_range:
-                pred = get_position_category(str(round(pred)), pos_cat)
                 if tr_func(pred, ind, target_s):
                     count += 1
                     if pred == target_s.iloc[ind]:
                         success += 1
             else:
+
                 if pred == target_s.iloc[ind]:
                     success += 1
 
@@ -267,7 +258,10 @@ def handle_regression(
             if count:
                 success /= count
         else:
-            success /= len(predictions)
+            try:
+                success /= len(predictions)
+            except ZeroDivisionError:
+                pass
 
     return success, pred_values
 
@@ -296,64 +290,20 @@ def compute_success_rate(
     if top_range and pos_cat is None:
         raise ValueError("pos_cat must be passed if top_range is True.")
 
-    # success = 0.0
-    # count = 0
-
     if model is None:
         model = TRAINED_MODEL
-
-    # predictions = model.predict(dataset)
-    # pred_values = []  # To be added as a series
-    # mtask = model.task()
-
+    dataset = dataset.copy()
     if (mtask := model.task()) == ydf.Task.CLASSIFICATION:
         success, pred_values = handle_classification(dataset, model, pos_cat, top_range)
     elif mtask == ydf.Task.REGRESSION:
-        success, pred_values = handle_regression(dataset, model, pos_cat, top_range)
+        success, pred_values = handle_regression(dataset, model, top_range, pos_cat)
 
-    # for i, preds in enumerate(predictions):
-    #     if len(model.label_classes()) == 2:
-    #         pred_index = 0 if preds < 0.5 else 1
-    #     else:
-    #         pred_index = preds.tolist().index(max(preds))
-
-    #     pred = model.label_classes()[pred_index]
-    #     pred_values.append(pred)
-
-    #     if top_range:
-    #         eligible = False
-
-    #         if pos_cat == "loose" and (
-    #             pred in ("1", "2") or dataset.iloc[i][TARGET_LABEL] in ("1", "2")
-    #         ):
-    #             eligible = True
-    #         else:
-    #             if pred > "0" or dataset.iloc[i][TARGET_LABEL] > "0":
-    #                 eligible = True
-
-    #         if eligible:
-    #             count += 1
-    #             if pred == dataset.iloc[i][TARGET_LABEL]:
-    #                 success += 1
-    #     else:
-    #         if pred == dataset.iloc[i][TARGET_LABEL]:
-    #             success += 1
-
-    # dataset["prediction"] = pred_values
-
-    # if success:
-    #     if top_range:
-    #         success /= count
-    #     else:
-    #         success /= len(predictions)
-
-    # return success
     dataset["prediction"] = pred_values
     return success
 
 
 def get_train_test(
-    pos_cat: PosCat = "tight",
+    pos_cat: PosCat,
     min_year: int = 2010,
     max_year: int = 2024,
     split_year: int = 2022,
@@ -372,7 +322,6 @@ def get_train_test(
     """
     df = get_dataset(pos_cat)
     df = df[(df["year"] >= min_year) & (df["year"] <= max_year)]
-    # df = df.dropna()
     train_df, test_df = (
         df[df["year"] <= split_year],
         df[df["year"] > split_year],

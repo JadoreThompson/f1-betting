@@ -25,6 +25,9 @@ def parse_times(s: str) -> int:
 
 
 def merge_datasets() -> pd.DataFrame:
+    circuits_df = pd.read_csv(os.path.join(DPATH, "circuits.csv"))[
+        ["circuitId", "circuitRef"]
+    ]
     constructors_df = pd.read_csv(os.path.join(DPATH, "constructors.csv"))[
         ["constructorId", "constructorRef"]
     ]
@@ -49,8 +52,8 @@ def merge_datasets() -> pd.DataFrame:
             "grid",
             "position",
             "positionText",
-            "positionOrder"
-            # "statusId",
+            "positionOrder",
+            "statusId",
         ]
     ]
 
@@ -61,6 +64,7 @@ def merge_datasets() -> pd.DataFrame:
     quali_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[["raceId", "driverId", "position"]]
 
     df = races_df.merge(results_df, on=["raceId"])
+    df = df.merge(circuits_df, on=["circuitId"])
     df = df.merge(
         driver_standings_df,
         on=["raceId", "driverId"],
@@ -103,6 +107,3 @@ def merge_datasets() -> pd.DataFrame:
 
     df["position_numeric"] = pd.to_numeric(df["position"], errors="coerce").fillna(0)
     return df
-
-
-merge_datasets().to_csv("file.csv", index=False)
