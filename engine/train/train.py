@@ -1,16 +1,21 @@
 import json
 import os
-import ydf
 import pandas as pd
+import pickle
+import ydf
 
-from imblearn.over_sampling import SMOTE
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from typing import Optional
 
-from .utils import compute_success_rate, save_train_configs, get_train_test
+from .utils import (
+    balance_classes,
+    compute_success_rate,
+    save_train_configs,
+    get_train_test,
+)
 from ..config import (
     LEARNER_TYPE,
     MDPATH,
@@ -75,8 +80,6 @@ def train_model(
     if test_df.empty:
         raise EmptyDataFrame("Empty test dataset.")
 
-    # train_df = pd.concat([train_df, train_df], ignore_index=True)
-
     model: MODEL_TYPE = LEARNER.train(train_df)
     print("Features:", model.input_feature_names())
 
@@ -126,8 +129,8 @@ def evaluate_2024(
 def train() -> MODEL_TYPE:
     global TOP_RANGE
 
-    dataset_pos_cat = "top3"
-    eval_pos_cat = "top3"
+    dataset_pos_cat = "loose"
+    eval_pos_cat = "loose"
     kwargs = {
         "min_year": 2017,
         "max_year": 2023,
@@ -135,6 +138,7 @@ def train() -> MODEL_TYPE:
     }
 
     raw_df = get_dataset(dataset_pos_cat)
+    raw_df = balance_classes(raw_df).sort_values(["year", "round"])
 
     # training
     train_df, test_df = (
@@ -151,17 +155,6 @@ def train() -> MODEL_TYPE:
         drop_features(test_df).dropna(),
         drop_features(df_2024).dropna(),
     )
-    
-    # balancing target classes
-    smote_nc = SMOTE(random_state=42)
-
-    x = train_df.drop("target", axis=1)
-    y = train_df["target"]
-
-    x_rs, y_rs = smote_nc.fit_resample(x, y)
-    x_rs["target"] = y_rs
-    train_df = x_rs
-
 
     TOP_RANGE = False
     model, whole_test_success = train_model(
@@ -210,42 +203,68 @@ def test_hyperparams() -> None:
 
 def train_log_regression():
     df = get_dataset("top3")
-    df = pd.concat([df, *([df[df["target"].isin(["1", "2"])]] * 1)], ignore_index=True)
+
+    df_2024 = drop_features(df[df["year"] == 2024])
+
+    df = df[df["year"] < 2024]
     df = drop_features(df.dropna())
+    df = balance_classes(df)
 
     Y = df.pop("target")
     X = df
-    print(X.dtypes)
+
+    df_2024_Y = df_2024.pop("target")
+    df_2024_X = df_2024
 
     le = LabelEncoder()
     y_encoded = le.fit_transform(Y)
+    y_encoded_2024 = le.fit_transform(df_2024_Y)
 
     print("Class distribution:\n", pd.Series(Y).value_counts(normalize=True))
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y_encoded, test_size=0.1, random_state=42, stratify=y_encoded
     )
+    # 2024 for evaluation, validating the findings
+    _, X_test_2024, _, y_test_2024 = train_test_split(
+        df_2024_X,
+        y_encoded_2024,
+        test_size=0.95,
+        random_state=42,
+        stratify=y_encoded_2024,
+    )
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
+    X_test_2024_scaled = scaler.transform(X_test_2024)
 
-    clf = LogisticRegression()
+    clf = LogisticRegression(random_state=42)
     clf.fit(X_train_scaled, y_train)
 
     y_pred = clf.predict(X_test_scaled)
+    y_pred_2024 = clf.predict(X_test_2024_scaled)
+
     print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
     print(
         "Classification Report:\n",
         classification_report(y_test, y_pred, target_names=le.classes_),
     )
+    print("*" * 20)
+    print("Confusion Matrix:\n", confusion_matrix(y_test_2024, y_pred_2024))
+    print(
+        "Classification Report:\n",
+        classification_report(y_test_2024, y_pred_2024, target_names=le.classes_),
+    )
+
+    # pickle.dump(clf, open("log_reg_model.pkl", "wb"))
 
     return clf, scaler, le
 
 
 if __name__ == "__main__":
-    train()
-    # train_log_regression()
+    # train()
+    train_log_regression()
     # test_hyperparams()
     # df = get_dataset("top3")
     # df = df[df["year"] == 2024]

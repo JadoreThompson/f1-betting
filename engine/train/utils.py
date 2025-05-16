@@ -3,8 +3,10 @@ import os
 import ydf
 
 from enum import Enum
+from imblearn.over_sampling import SMOTE, SMOTENC
 from pandas import DataFrame, Series
 from typing import Any, Callable, Optional, Protocol, runtime_checkable
+
 from ..config import (
     BPATH,
     TRAINED_MODEL,
@@ -327,3 +329,32 @@ def get_train_test(
         df[df["year"] > split_year],
     )
     return drop_features(train_df), drop_features(test_df)
+
+
+def balance_classes(df: DataFrame) -> DataFrame:
+    """Balances the quantity of target classes
+        using SMOTE.
+
+    Args:
+        df (DataFrame): DataFrame to be balanced.
+
+    Returns:
+        DataFrame: DataFrame with balanced target quantity
+            of classes.
+    """
+    cfs = tuple(col for col in df.columns if df[col].dtype == "O" and col != "target")
+
+    if cfs:
+        smote = SMOTENC(
+            categorical_features=cfs,
+            random_state=42,
+        )
+    else:
+        smote = SMOTE()
+
+    x = df.drop("target", axis=1)
+    y = df["target"]
+
+    x_rs, y_rs = smote.fit_resample(x, y)
+    x_rs["target"] = y_rs
+    return x_rs
