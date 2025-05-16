@@ -440,10 +440,7 @@ def append_field_pos_delta(
         ].apply(lambda x: avg - x)
         dfs.append(rgroup)
 
-    return drop_temp_cols(
-        pd.concat(dfs)
-        .sort_values(["year", "round"])
-    )
+    return drop_temp_cols(pd.concat(dfs).sort_values(["year", "round"]))
 
 
 def append_std(df: pd.DataFrame, *, in_season: bool = True, window: 3) -> pd.DataFrame:
@@ -575,6 +572,19 @@ def append_elo_rank_in_race(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def append_elo_percentile(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds a new column 'elo_percentile' to the DataFrame, representing each driver's
+    Elo rating as a proportion of the total Elo ratings within the same race.
+
+    Args:
+        df (pd.DataFrame): A DataFrame containing at least the columns 'raceId' and 'elo',
+                           where 'raceId' identifies the race and 'elo' is the Elo rating
+                           of a driver.
+
+    Returns:
+        pd.DataFrame: A copy of the original DataFrame with an additional column
+                      'elo_percentile' showing the normalized Elo rating within each race.
+    """
     df = df.copy()
 
     def helper(s: pd.Series) -> float:
@@ -610,6 +620,7 @@ def append_constructor_encodings(df: pd.DataFrame) -> pd.DataFrame:
 def append_nationality_encodings(df: pd.DataFrame) -> pd.DataFrame:
     dummies = pd.get_dummies(df["nationality"], prefix="nationality", dtype=int)
     return pd.concat([df, dummies], axis=1)
+
 
 def append_circuit_encodings(df: pd.DataFrame) -> pd.DataFrame:
     dummies = pd.get_dummies(df["circuitRef"], prefix="circuit", dtype=int)

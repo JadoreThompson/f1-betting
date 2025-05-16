@@ -54,6 +54,19 @@ def drop_features(df: DataFrame) -> DataFrame:
 
 
 def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
+    """
+    Returns DataFrame comprised of all necessary features for training
+    or testing.
+    
+    Args:
+        pos_cat (Optional[PosCat], optional): If passed, the series within the
+        target column is the positionText categorised into *pos_cat* category
+        Else the target is the positionOrder. This is done as it's assumed
+        you're performing regression otherwise. Defaults to None.
+
+    Returns:
+        DataFrame: DataFrame comprised of all features.
+    """    
     df: DataFrame = merge_datasets()
 
     if pos_cat is None:

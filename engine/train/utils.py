@@ -162,6 +162,18 @@ def save_train_configs(
 
 
 def get_top_range_funcs(pos_cat: PosCat) -> Callable[[str, int, Series], bool]:
+    """
+    Returns a function that evaluates whether a prediction falls into the 'top range'
+    category based on the given position category.
+
+    Args:
+        pos_cat (PosCat): Position category mode. Determines how top range is defined.
+
+    Returns:
+        Callable[[str, int, Series], bool]: A function that takes a prediction string,
+        its index, and a Series of true values, and returns True if it's considered a
+        'top range' prediction.
+    """
     if pos_cat == "loose":
 
         def func(pred: str, pred_ind: int, s: Series) -> bool:
@@ -178,6 +190,18 @@ def get_top_range_funcs(pos_cat: PosCat) -> Callable[[str, int, Series], bool]:
 def handle_classification(
     df: DataFrame, model: SupportsPredict, pos_cat: PosCat, top_range: bool
 ) -> tuple[float, list[str]]:
+    """
+    Evaluates classification predictions and calculates success rate.
+
+    Args:
+        df (DataFrame): Input data containing features and true labels.
+        model (SupportsPredict): Trained model with a predict method.
+        pos_cat (PosCat): Position category used to define evaluation rules.
+        top_range (bool): Whether to evaluate only 'top range' predictions.
+
+    Returns:
+        tuple[float, list[str]]: Success rate and list of predicted class labels.
+    """
     target_s = df[TARGET_LABEL]
     predictions = model.predict(df)
     pred_values: list[str] = []
@@ -220,6 +244,20 @@ def handle_regression(
     top_range: bool,
     pos_cat: Optional[PosCat] = None,
 ) -> tuple[float, list[str]]:
+    """
+    Evaluates regression predictions, optionally transforming them into position categories,
+    and calculates success rate.
+
+    Args:
+        df (DataFrame): Input data with features and true labels.
+        model (SupportsPredict): Trained regression model.
+        top_range (bool): Whether to evaluate only 'top range' predictions.
+        pos_cat (Optional[PosCat], optional): Position category to map predictions.
+            If None, predictions are evaluated directly. Defaults to None.
+
+    Returns:
+        tuple[float, list[str]]: Success rate and list of transformed predicted values.
+    """
     predictions: list = model.predict(df)
     pred_values: list[str] = []
     target_s: Series = df[TARGET_LABEL].apply(
@@ -276,18 +314,20 @@ def compute_success_rate(
     top_range: bool = False,
 ) -> float:
     """
-    Calculate prediction success rate, optionally focusing on specific position ranges.
+    Computes the success rate of predictions made by a model on a dataset.
 
     Args:
-        dataset: DataFrame with features and actual positions
-        model: Model to evaluate (uses TRAINED_MODEL if None)
-        pos_cat: Position category, required if top_range is True
-
-    Returns:
-        Success rate as float between 0.0-1.0
+        dataset (DataFrame): Dataset containing features and true labels.
+        model (Optional[SupportsPredict], optional): Trained model to evaluate.
+            If None, uses the default `TRAINED_MODEL`. Defaults to None.
+        pos_cat (PosCat, optional): Position category used to transform target and/or predictions.
+        top_range (bool, optional): If True, evaluates only top range predictions. Defaults to False.
 
     Raises:
-        ValueError if top_range is True but pos_cat is None
+        ValueError: If top_range is True but pos_cat is not provided.
+
+    Returns:
+        float: Calculated success rate.
     """
     if top_range and pos_cat is None:
         raise ValueError("pos_cat must be passed if top_range is True.")

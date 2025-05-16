@@ -57,20 +57,6 @@ def train_model(
     save_model: bool = False,
     model_name: str = "model_x",
 ) -> tuple[MODEL_TYPE, float]:
-    """
-    Train model for given position category and evaluate on test data.
-
-    Args:
-        pos_cat: Position category for training
-        min_year: Minimum year for dataset
-        max_year: Maximum year for dataset
-        split_year: Year threshold for train/test split
-        save_model: Whether to save model and datasets to disk
-        model_name: Name to use when saving model
-
-    Returns:
-        (trained_model, success_rate)
-    """
     global TOP_RANGE
     if train_df is None or test_df is None:
         train_df, test_df = get_train_test(
@@ -102,18 +88,6 @@ def train_model(
 def evaluate_2024(
     pos_cat: PosCat, df: Optional[pd.DataFrame] = None, model=None
 ) -> tuple[float, pd.DataFrame]:
-    """
-    Evaluate model performance on 2024 data.
-
-    Args:
-        pos_cat: Position category for evaluation
-        model: Model to evaluate (uses TRAINED_MODEL if None)
-
-    Returns:
-        tuple[float, DataFrame, DataFrame]:
-            - Success rate
-            - DataFrame used to compute success rate
-    """
     global TOP_RANGE
 
     if df is None:
@@ -179,7 +153,7 @@ def train() -> MODEL_TYPE:
     )
 
     eval_df.to_csv("eval.csv", index=False)
-    df_2024.to_csv("2024.csv", index=False)
+    # df_2024.to_csv("2024.csv", index=False)
 
     # print(json.dumps(model.variable_importances(), indent=4))
     return model
@@ -263,8 +237,8 @@ def train_log_regression():
 
 
 if __name__ == "__main__":
-    # train()
-    train_log_regression()
+    train()
+    # train_log_regression()
     # test_hyperparams()
     # df = get_dataset("top3")
     # df = df[df["year"] == 2024]

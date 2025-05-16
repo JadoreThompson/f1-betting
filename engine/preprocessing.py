@@ -25,6 +25,17 @@ def parse_times(s: str) -> int:
 
 
 def merge_datasets() -> pd.DataFrame:
+    """
+    Merges multiple racing-related datasets into a single DataFrame for
+    analysis or testing.
+
+    Appends previous race statistics for drivers and constructors (e.g., points, wins, standings),
+    standardizes data types, and adds a numeric representation of race position.
+
+    Returns:
+        pd.DataFrame: The merged and processed dataset.
+    """
+
     circuits_df = pd.read_csv(os.path.join(DPATH, "circuits.csv"))[
         ["circuitId", "circuitRef"]
     ]
@@ -60,8 +71,10 @@ def merge_datasets() -> pd.DataFrame:
     races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[
         ["raceId", "circuitId", "year", "round"]
     ]
-    
-    quali_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[["raceId", "driverId", "position"]]
+
+    quali_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
+        ["raceId", "driverId", "position"]
+    ]
 
     df = races_df.merge(results_df, on=["raceId"])
     df = df.merge(circuits_df, on=["circuitId"])

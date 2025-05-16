@@ -1,0 +1,30 @@
+{
+    "features": [
+        "grid",
+        "position_standings",
+        "prev_points",
+        "prev_wins",
+        "prev_position_standings",
+        "last_positionText_str_1",
+        "last_positionText_str_2",
+        "last_positionText_str_3",
+        "last_positionText_str_4",
+        "last_positionText_str_5",
+        "avg_position_move_in_season_5",
+        "propensity_top3_in_season_1",
+        "propensity_top3_in_season_0"
+    ],
+    "learner_params": {
+        "max_depth": 3,
+        "num_trees": 85,
+        "focal_loss_alpha": 0.85
+    },
+    "top_range": {
+        "test": 0.46,
+        "2024": 0.49
+    },
+    "whole": {
+        "test": 0.9,
+        "2024": 0.9
+    }
+}
