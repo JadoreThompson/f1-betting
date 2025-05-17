@@ -120,6 +120,53 @@ def append_avg_position_move(
     return drop_temp_cols(df)
 
 
+def append_avg_quali_position_move(
+    df: pd.DataFrame,
+    *,
+    in_season: bool = True,
+    progressive: bool = True,
+    window: int = 3,
+) -> pd.DataFrame:
+    """
+    Compute and append the average position change for each driver.
+
+    This metric captures how much a driver gains or loses relative to their grid position.
+    Supports per-season grouping and rolling/progressive averaging.
+
+    Args:
+        df (pd.DataFrame): DataFrame with 'grid', 'position_quali', 'driverId', and 'year' columns.
+        in_season (bool): Whether to compute averages within each season (default: True).
+        progressive (bool): Whether to use rolling/expanding mean up to the current race (default: True).
+        window (int): Window size for rolling mean if progressive is True. If <1, uses expanding mean.
+
+    Returns:
+        pd.DataFrame: Input DataFrame with an added column for average position change.
+    """
+    if any(key and key not in df.columns for key in ("position_quali", "grid")):
+        raise ValueError("position_quali and grid must be in dataframe object.")
+
+    df["tmp_position_change"] = df["position_quali"] - df["positionOrder"]
+    final_key = f"avg_quali_position_move{"_in_season" if in_season else ""}{"_progressive" if progressive else ""}_{window}"
+
+    group_cols = ["year", "driverId"] if in_season else ["driverId"]
+
+    tpcs = df.groupby(group_cols)["tmp_position_change"]
+
+    if progressive:
+        if window < 1:
+            s = tpcs.apply(lambda x: x.shift(1).expanding().mean())
+        else:
+            s = tpcs.apply(lambda x: x.shift(1).rolling(window=window).mean())
+        s = s.reset_index(level=group_cols, drop=True)
+
+    else:
+        s = tpcs.transform("mean")
+
+    df[final_key] = s
+    df = df.dropna(subset=[final_key])
+    return drop_temp_cols(df)
+
+
 def append_sma(
     df: pd.DataFrame,
     col: str = "position_numeric",
@@ -639,10 +686,22 @@ def append_drivers_age(df: pd.DataFrame) -> pd.DataFrame:
 def append_confidence(
     df: pd.DataFrame, *, in_season: bool = True, window: int = 3
 ) -> pd.DataFrame:
+    """Appends driver confidence, calculated through
+    the average of the reciprocal of the last *window* races.
+
+    Args:
+        df (pd.DataFrame): _description_
+        in_season (bool, optional): _description_. Defaults to True.
+        window (int, optional): _description_. Defaults to 3.
+
+    Returns:
+        pd.DataFrame
+    """
+
     def helper(positions: Iterable[int]) -> float:
         if len(positions) < window:
             return np.nan
-        return round(sum(1 / pos for pos in positions) / window, 2)
+        return round(sum(1 / pos for pos in positions) / (window or len(positions)), 2)
 
     dfs: list[pd.DataFrame] = []
 
@@ -650,10 +709,48 @@ def append_confidence(
         ["year", "driverId"] if in_season else "driverId"
     ):
         group[f"confidence_{window}"] = (
-            group["positionOrder"].expanding().agg(helper).shift(1)
-        )
+            group["positionOrder"].expanding().agg(helper)
+            if window < 1
+            else group["positionOrder"].rolling(window=window).agg(helper)
+        ).shift(1)
 
         dfs.append(group)
 
     df = pd.concat(dfs).sort_values(["year", "round"])
     return df
+
+
+def append_last_n_podiums(
+    df: pd.DataFrame, *, in_season: bool = True, window: int = 3
+) -> pd.DataFrame:
+    """
+    Apppends the last n podium finishes.
+
+    Args:
+        df (pd.DataFrame)
+        in_season (bool, optional): Defaults to True.
+        window (int, optional): Defaults to 3.
+
+    Returns:
+        pd.DataFrame
+    """
+
+    def helper(positions: Iterable[int]) -> int:
+        if len(positions) < window:
+            return np.nan
+
+        return sum(1 for p in positions if 1 <= p <= 3)
+
+    dfs: list[pd.DataFrame] = []
+
+    for _, group in df.sort_values(["year", "round"]).groupby(
+        ["year", "driverId"] if in_season else "driverId"
+    ):
+        group[f"last_podiums_{window}"] = (
+            group["positionOrder"].expanding().apply(helper)
+            if window < 1
+            else group["positionOrder"].rolling(window=window).apply(helper)
+        ).shift(1)
+        dfs.append(group)
+
+    return pd.concat(dfs).sort_values(["year", "round"])

@@ -76,6 +76,7 @@ def merge_datasets() -> pd.DataFrame:
         ["raceId", "driverId", "position"]
     ]
 
+
     df = races_df.merge(results_df, on=["raceId"])
     df = df.merge(circuits_df, on=["circuitId"])
     df = df.merge(
