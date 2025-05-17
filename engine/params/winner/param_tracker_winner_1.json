@@ -1,0 +1,26 @@
+{
+    "features": [
+        "grid",
+        "position_quali",
+        "prev_wins",
+        "prev_points",
+        "elo",
+        "elo_change",
+        "confidence_5"
+    ],
+    "learner_params": {
+        "max_depth": 5,
+        "num_trees": 100,
+        "min_examples": 1,
+        "growing_strategy": "BEST_FIRST_GLOBAL",
+        "task": "CLASSIFICATION"
+    },
+    "top_range": {
+        "test": 0.57,
+        "2024": 0.22
+    },
+    "whole": {
+        "test": 0.98,
+        "2024": 0.96
+    }
+}

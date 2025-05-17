@@ -357,8 +357,10 @@ def append_last_season_wins(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def append_dnf_count(df: pd.DataFrame, *, window: int = 3) -> pd.DataFrame:
-    df = df.sort_values(by="year")
+def append_dnf_count(
+    df: pd.DataFrame, *, in_season: bool = True, window: int = 3
+) -> pd.DataFrame:
+    df = df.sort_values(["year", "round"])
     col = f"dnf_count_{window}"
 
     def calc_rolling(group: pd.DataFrame) -> pd.DataFrame:
@@ -373,7 +375,7 @@ def append_dnf_count(df: pd.DataFrame, *, window: int = 3) -> pd.DataFrame:
         return group
 
     return (
-        df.groupby(["year", "driverId"])
+        df.groupby(["year", "driverId"] if in_season else "driverId")
         .apply(calc_rolling)
         .reset_index(drop=True)
         .sort_values(["year", "round"])
@@ -632,3 +634,26 @@ def append_drivers_age(df: pd.DataFrame) -> pd.DataFrame:
     df["tmp_birth_year"] = df["dob"].apply(lambda x: int(x.split("-")[0]))
     df["age"] = df.apply(lambda x: x["year"] - x["tmp_birth_year"], axis=1)
     return df.drop(columns=["tmp_birth_year"])
+
+
+def append_confidence(
+    df: pd.DataFrame, *, in_season: bool = True, window: int = 3
+) -> pd.DataFrame:
+    def helper(positions: Iterable[int]) -> float:
+        if len(positions) < window:
+            return np.nan
+        return round(sum(1 / pos for pos in positions) / window, 2)
+
+    dfs: list[pd.DataFrame] = []
+
+    for _, group in df.sort_values(["year", "round"]).groupby(
+        ["year", "driverId"] if in_season else "driverId"
+    ):
+        group[f"confidence_{window}"] = (
+            group["positionOrder"].expanding().agg(helper).shift(1)
+        )
+
+        dfs.append(group)
+
+    df = pd.concat(dfs).sort_values(["year", "round"])
+    return df

@@ -6,7 +6,13 @@ import ydf
 
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    mean_squared_error,
+    mean_absolute_error,
+    r2_score,
+)
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from typing import Optional
 
@@ -100,19 +106,25 @@ def evaluate_2024(
     return success, df
 
 
-def train() -> MODEL_TYPE:
+def train_forest(
+    eval_pos_cat: PosCat,
+    dataset_pos_cat: Optional[PosCat],
+    show_importances: bool = False,
+    **kwargs,
+) -> MODEL_TYPE:
     global TOP_RANGE
 
-    dataset_pos_cat = "loose"
-    eval_pos_cat = "loose"
-    kwargs = {
-        "min_year": 2017,
-        "max_year": 2023,
-        "split_year": 2022,
-    }
+    if not kwargs:
+        kwargs = {
+            "min_year": 2017,
+            "max_year": 2023,
+            "split_year": 2022,
+        }
 
     raw_df = get_dataset(dataset_pos_cat)
-    raw_df = balance_classes(raw_df).sort_values(["year", "round"])
+
+    # if LEARNER._task == ydf.Task.CLASSIFICATION:
+    #     raw_df = balance_classes(raw_df).sort_values(["year", "round"])
 
     # training
     train_df, test_df = (
@@ -155,7 +167,9 @@ def train() -> MODEL_TYPE:
     eval_df.to_csv("eval.csv", index=False)
     # df_2024.to_csv("2024.csv", index=False)
 
-    # print(json.dumps(model.variable_importances(), indent=4))
+    if show_importances:
+        print(json.dumps(model.variable_importances(), indent=4))
+
     return model
 
 
@@ -175,14 +189,24 @@ def test_hyperparams() -> None:
     )
 
 
-def train_log_regression():
-    df = get_dataset("top3")
+def train_regression(
+    classification: bool,
+    pos_cat: Optional[PosCat],
+    save: bool = False,
+    name: str = "log_reg_model.pkl",
+) -> None:
+    df = get_dataset(pos_cat).dropna()
 
     df_2024 = drop_features(df[df["year"] == 2024])
 
     df = df[df["year"] < 2024]
     df = drop_features(df.dropna())
-    df = balance_classes(df)
+
+    if classification:
+        df = balance_classes(df)
+
+    if not classification:
+        df = df[df["target"] != 27]
 
     Y = df.pop("target")
     X = df
@@ -208,37 +232,54 @@ def train_log_regression():
         stratify=y_encoded_2024,
     )
 
+    # Scaling
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     X_test_2024_scaled = scaler.transform(X_test_2024)
 
-    clf = LogisticRegression(random_state=42)
+    if classification:
+        clf = LogisticRegression(random_state=42)
+    else:
+        clf = LinearRegression()
+
     clf.fit(X_train_scaled, y_train)
 
     y_pred = clf.predict(X_test_scaled)
     y_pred_2024 = clf.predict(X_test_2024_scaled)
 
-    print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
-    print(
-        "Classification Report:\n",
-        classification_report(y_test, y_pred, target_names=le.classes_),
-    )
-    print("*" * 20)
-    print("Confusion Matrix:\n", confusion_matrix(y_test_2024, y_pred_2024))
-    print(
-        "Classification Report:\n",
-        classification_report(y_test_2024, y_pred_2024, target_names=le.classes_),
-    )
+    if classification:
+        print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+        print(
+            "Classification Report:\n",
+            classification_report(y_test, y_pred, target_names=le.classes_),
+        )
+        print("*" * 20)
+        print("Confusion Matrix:\n", confusion_matrix(y_test_2024, y_pred_2024))
+        print(
+            "Classification Report:\n",
+            classification_report(y_test_2024, y_pred_2024, target_names=le.classes_),
+        )
+    else:
+        print("Regression Metrics on Test Set:")
+        print("Mean Absolute Error:", mean_absolute_error(y_test, y_pred))
+        print("Mean Squared Error:", mean_squared_error(y_test, y_pred))
+        print("R^2 Score:", r2_score(y_test, y_pred))
+        print("*" * 20)
+        print("Regression Metrics on 2024 Test Set:")
+        print("Mean Absolute Error:", mean_absolute_error(y_test_2024, y_pred_2024))
+        print("Mean Squared Error:", mean_squared_error(y_test_2024, y_pred_2024))
+        print("R^2 Score:", r2_score(y_test_2024, y_pred_2024))
 
-    # pickle.dump(clf, open("log_reg_model.pkl", "wb"))
+    if save:
+        pickle.dump(clf, open(name, "wb"))
 
     return clf, scaler, le
 
 
 if __name__ == "__main__":
-    train()
-    # train_log_regression()
+    # train_forest("winner", "winner")
+    train_regression(True, "winner")
     # test_hyperparams()
     # df = get_dataset("top3")
     # df = df[df["year"] == 2024]

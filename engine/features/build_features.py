@@ -3,6 +3,7 @@ from pandas import DataFrame
 from .utils import (
     PosCat,
     append_circuit_encodings,
+    append_confidence,
     append_drivers_age,
     append_elo_change,
     append_elo_percentile,
@@ -48,6 +49,8 @@ def drop_features(df: DataFrame) -> DataFrame:
             "round",
             "dob",
             "nationality",
+            ####
+            "prev_points_constructor_standings",
         ],
         axis=1,
     )
@@ -57,7 +60,7 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
     """
     Returns DataFrame comprised of all necessary features for training
     or testing.
-    
+
     Args:
         pos_cat (Optional[PosCat], optional): If passed, the series within the
         target column is the positionText categorised into *pos_cat* category
@@ -66,7 +69,7 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
 
     Returns:
         DataFrame: DataFrame comprised of all features.
-    """    
+    """
     df: DataFrame = merge_datasets()
 
     if pos_cat is None:
@@ -80,15 +83,14 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
 
     df = append_elo(df, k=200, p=0.01)
     df = append_elo_change(df)
-    df = append_elo_percentile(df)
-    df = append_elo_rank_in_race(df)
-    df = append_avg_position_move(df, window=w)
-    df = append_constructor_encodings(df)    
+    df = append_confidence(df, in_season=False, window=5)
+    df = append_last_n(df, "target", window=6, typ="int")
+
     return df
 
 
 if __name__ == "__main__":
-    df = get_dataset("top3")
+    df = get_dataset("winner")
     # df = df.groupby("driverId").filter(lambda x: (x["elo"] < 0).any())
     # df = df[df["driverId"] == df["driverId"].iloc[0]]
     # df = drop_features(df)
