@@ -2,6 +2,7 @@ from typing import Optional
 from pandas import DataFrame
 from .utils import (
     PosCat,
+    append_avg_quali_position_move,
     append_circuit_encodings,
     append_confidence,
     append_drivers_age,
@@ -82,10 +83,10 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
     w = 1
 
     df = append_elo(df, k=200, p=0.01)
-    df = append_elo_change(df)
+    df = append_elo_percentile(df)
     df = append_confidence(df, in_season=False, window=5)
     df = append_last_n(df, "target", window=6, typ="int")
-
+    
     return df
 
 

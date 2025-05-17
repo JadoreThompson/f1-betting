@@ -30,7 +30,7 @@ def interact(data: DataFrame | Iterable, model=None) -> tuple[Prediction, ...]:
         d = DataFrame(data, columns=model.input_feature_names())
     else:
         d = data
-        
+
     preds: list[list[float] | float] = model.predict(d).tolist()
 
     if len(model_classes := model.label_classes()) == 2:
@@ -47,7 +47,7 @@ def interact(data: DataFrame | Iterable, model=None) -> tuple[Prediction, ...]:
 def plot_heatmap(df: DataFrame) -> None:
     corr = df.corr(numeric_only=True)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(16, 12))
     cax = ax.matshow(corr, cmap="coolwarm")
     fig.colorbar(cax)
 
@@ -65,8 +65,8 @@ def plot_heatmap(df: DataFrame) -> None:
 
 
 if __name__ == "__main__":
-    df = get_dataset("top3")
+    df = get_dataset("winner")
     df = df[df["year"] == 2024]
-    # df = drop_features(df)
+    df = drop_features(df)
     df["target"] = df["target"].astype("int")
     plot_heatmap(df)
