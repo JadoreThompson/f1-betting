@@ -19,8 +19,10 @@ from typing import Optional
 from .utils import (
     balance_classes,
     compute_success_rate,
-    save_train_configs,
+    get_classification_report,
+    save_train_configs_forest,
     get_train_test,
+    save_train_configs_regression,
 )
 from ..config import (
     LEARNER_TYPE,
@@ -154,7 +156,7 @@ def train_forest(
     )
     top_range_2024_success, eval_df = evaluate_2024(eval_pos_cat, df_2024, model)
 
-    save_train_configs(
+    save_train_configs_forest(
         model,
         eval_pos_cat,
         HYERPARAMS,
@@ -248,6 +250,7 @@ def train_regression(
     y_pred = clf.predict(X_test_scaled)
     y_pred_2024 = clf.predict(X_test_2024_scaled)
 
+    
     if classification:
         print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
         print(
@@ -272,14 +275,16 @@ def train_regression(
         print("R^2 Score:", r2_score(y_test_2024, y_pred_2024))
 
     if save:
-        pickle.dump(clf, open(name, "wb"))
+        rep = get_classification_report(y_pred_2024, y_test_2024)
+        save_train_configs_regression(pos_cat, df_2024, rep)
+        # pickle.dump(clf, open(name, "wb"))
 
     return clf, scaler, le
 
 
 if __name__ == "__main__":
     # train_forest("winner", "winner")
-    train_regression(True, "winner")
+    train_regression(True, "winner", True)
     # test_hyperparams()
     # df = get_dataset("top3")
     # df = df[df["year"] == 2024]

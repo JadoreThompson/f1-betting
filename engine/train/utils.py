@@ -1,11 +1,22 @@
+from collections import defaultdict
 import json
 import os
+import numpy as np
 import ydf
 
 from enum import Enum
 from imblearn.over_sampling import SMOTE, SMOTENC
 from pandas import DataFrame, Series
-from typing import Any, Callable, Optional, Protocol, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Literal,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 
 from ..config import (
     BPATH,
@@ -15,13 +26,17 @@ from ..config import (
 from ..features.build_features import get_dataset, drop_features
 from ..features.utils import PosCat, get_position_category
 
+Report = Dict[str, Dict[str, float]]
+
 
 @runtime_checkable
 class SupportsPredict(Protocol):
     def predict(self, *args, **kwargs) -> Any: ...
 
 
-def get_files(category: str) -> tuple[str, str, str]:
+def get_files(
+    category: str, model_type: Literal["forest", "regression"]
+) -> tuple[str, str, str]:
     """
     Get folder path and filenames for parameter tracking.
 
@@ -31,17 +46,20 @@ def get_files(category: str) -> tuple[str, str, str]:
     Returns:
         tuple[str, str, str]: (folder_path, old_filename, new_filename)
     """
-    folder = os.path.join(BPATH, "params", category)
+    folder = os.path.join(BPATH, "params", model_type, category)
     if not os.path.exists(folder):
-        os.mkdir(folder)
+        os.makedirs(folder)
 
-    old_fname = f"param_tracker_{category}_{len(os.listdir(folder)) - 1}.json"
-    new_fname = f"param_tracker_{category}_{len(os.listdir(folder))}.json"
+    template = f"param_tracker_{model_type}_{category}_{{}}.json"
 
-    return folder, old_fname, new_fname
+    return (
+        folder,
+        template.format(len(os.listdir(folder)) - 1),
+        template.format(len(os.listdir(folder))),
+    )
 
 
-def save_train_configs(
+def save_train_configs_forest(
     model,
     pos_cat: PosCat,
     hparams: dict[str, Any],
@@ -73,7 +91,7 @@ def save_train_configs(
     if whole_2024_success is not None:
         whole_2024_success = round(whole_2024_success, 2)
 
-    folder, old_fname, new_fname = get_files(pos_cat)
+    folder, old_fname, new_fname = get_files(pos_cat, "forest")
 
     try:
         content = json.load(open(os.path.join(folder, old_fname), "r"))
@@ -159,6 +177,91 @@ def save_train_configs(
                 indent=4,
             )
         )
+
+
+def get_classification_report(preds: Iterable[Any], actuals: Iterable[Any]) -> Report:
+    assert len(preds) == len(actuals), "Predictions and actuals must be the same length"
+
+    all_categories = set(actuals)
+
+    true_positives = defaultdict(int)
+    false_positives = defaultdict(int)
+    false_negatives = defaultdict(int)
+
+    total_predictions = len(actuals)
+    total_correct_predictions = 0
+
+    for p, a in zip(preds, actuals):
+        if p == a:
+            true_positives[a] += 1
+            total_correct_predictions += 1
+        else:
+            false_positives[p] += 1
+            false_negatives[a] += 1
+
+    report: Report = {}
+
+    for category in all_categories:
+        tp = true_positives[category]
+        fp = false_positives[category]
+        fn = false_negatives[category]
+
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (
+            (2 * precision * recall) / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
+
+        report[category] = {
+            "precision": round(precision, 4),
+            "recall": round(recall, 4),
+            "f1_score": round(f1, 4),
+        }
+
+    return report
+
+
+def save_train_configs_regression(
+    pos_cat: PosCat, df: DataFrame, report: Report
+) -> None:
+    """
+    Save model configuration and performance metrics if improvement is detected.
+    """
+    folder, old_fname, new_fname = get_files(pos_cat, "regression")
+
+    try:
+        content = json.load(open(os.path.join(folder, old_fname), "r"))
+    except FileNotFoundError:
+        content = {}
+
+    new_content: dict[str, Report | Iterable[str]] = {
+        "report": report,
+        "features": df.columns.tolist(),
+    }
+
+    old_report = content.get("report", {})
+
+    new_content["report"] = {
+        (str(k) if isinstance(k, np.int64) else k): v
+        for k, v in new_content["report"].items()
+    }
+
+    if any(
+        v > old_report.get(f, {}).get(k, 0.0)
+        for f, fdata in report.items()
+        for k, v in fdata.items()
+    ):
+
+        json.dump(
+            new_content,
+            open(os.path.join(folder, new_fname), "w"),
+            indent=4,
+        )
+        print("Improvements made\n", json.dumps(new_content["report"], indent=4))
+    else:
+        print("No improvement in metrics\n", json.dumps(old_report, indent=4))
 
 
 def get_top_range_funcs(pos_cat: PosCat) -> Callable[[str, int, Series], bool]:
