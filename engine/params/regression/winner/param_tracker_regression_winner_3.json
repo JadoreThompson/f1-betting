@@ -1,0 +1,30 @@
+{
+    "report": {
+        "0": {
+            "precision": 0.9818,
+            "recall": 0.9276,
+            "f1_score": 0.9539
+        },
+        "1": {
+            "precision": 0.3438,
+            "recall": 0.6875,
+            "f1_score": 0.4583
+        }
+    },
+    "features": [
+        "position_quali",
+        "prev_wins",
+        "prev_points",
+        "prev_position_driver_standings",
+        "prev_position_constructor_standings",
+        "elo",
+        "elo_change",
+        "last_target_1",
+        "last_target_2",
+        "last_target_3",
+        "last_target_4",
+        "last_target_5",
+        "last_target_6",
+        "last_podiums_0"
+    ]
+}

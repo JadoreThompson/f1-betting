@@ -125,9 +125,6 @@ def train_forest(
 
     raw_df = get_dataset(dataset_pos_cat)
 
-    # if LEARNER._task == ydf.Task.CLASSIFICATION:
-    #     raw_df = balance_classes(raw_df).sort_values(["year", "round"])
-
     # training
     train_df, test_df = (
         raw_df[
@@ -257,7 +254,7 @@ def train_regression(
             "Classification Report:\n",
             classification_report(y_test, y_pred, target_names=le.classes_),
         )
-        print("*" * 20)
+        print(f"{' 2024 ':*^20}")
         print("Confusion Matrix:\n", confusion_matrix(y_test_2024, y_pred_2024))
         print(
             "Classification Report:\n",
@@ -277,7 +274,7 @@ def train_regression(
     if save:
         rep = get_classification_report(y_pred_2024, y_test_2024)
         save_train_configs_regression(pos_cat, df_2024, rep)
-        # pickle.dump(clf, open(name, "wb"))
+        pickle.dump(clf, open(name, "wb"))
 
     return clf, scaler, le
 

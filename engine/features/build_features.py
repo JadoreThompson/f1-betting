@@ -51,8 +51,9 @@ def drop_features(df: DataFrame) -> DataFrame:
             "round",
             "dob",
             "nationality",
-            ####
             "prev_points_constructor_standings",
+            ####
+            "grid",
         ],
         axis=1,
     )
@@ -95,5 +96,5 @@ if __name__ == "__main__":
     df = get_dataset("winner")
     # df = df.groupby("driverId").filter(lambda x: (x["elo"] < 0).any())
     # df = df[df["driverId"] == df["driverId"].iloc[0]]
-    # df = drop_features(df)
+    df = drop_features(df)
     df.to_csv("file.csv", index=False)
