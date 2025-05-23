@@ -50,7 +50,7 @@ def get_files(
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    template = f"param_tracker_{model_type}_{category}_{{}}.json"
+    template = f"param_tracker_{category}_{{}}.json"
 
     return (
         folder,
