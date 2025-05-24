@@ -53,7 +53,7 @@ def drop_features(df: DataFrame) -> DataFrame:
             "nationality",
             "prev_points_constructor_standings",
             ####
-            "grid",
+            "prev_position_driver_standings",
         ],
         axis=1,
     )
@@ -86,9 +86,9 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
 
     df = append_elo(df, k=200, p=0.01)
     df = append_elo_change(df)
-    df = append_last_n(df, "target", window=6, typ="int")
+    # df = append_elo_rank_in_race(df)
     df = append_last_n_podiums(df, window=0)
-
+    # df = append_constructor_encodings(df)
     return df
 
 

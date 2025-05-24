@@ -724,12 +724,15 @@ def append_last_n_podiums(
     df: pd.DataFrame, *, in_season: bool = True, window: int = 3
 ) -> pd.DataFrame:
     """
-    Apppends the last n podium finishes.
+    Apppends the last n podium finishes within the last n 
+    races.
 
     Args:
         df (pd.DataFrame)
         in_season (bool, optional): Defaults to True.
-        window (int, optional): Defaults to 3.
+        window (int, optional): Defaults to 3. If window 
+            is less than 1 it returns an expanding representation
+            instead of a rolling window representation.
 
     Returns:
         pd.DataFrame

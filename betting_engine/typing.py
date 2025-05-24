@@ -1,0 +1,1 @@
+Payload = dict[str, str | int]
