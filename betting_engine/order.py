@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .enums import OrderStatus
 from .typing import Payload
 
@@ -6,12 +7,17 @@ class Order:
     def __init__(self, payload: Payload, expected_value: float) -> None:
         self._payload = payload
         self._side = payload["side"]
-        self._standing_bet_amount = expected_value
+        self._standing_bet_amount = payload["bet_amount"]
+        self._standing_ev = expected_value
 
-    def reduce_standing_bet_amount(self, amount: int) -> None:
+    def reduce_unfilled_amount(self, amount: float) -> None:
+        if amount <= 0:
+            raise ValueError("Amount to reduce must be greater than 0.")
+
         self._standing_bet_amount -= amount
+        self._standing_ev -= amount
 
-        if self._standing_bet_amount == 0:
+        if self._standing_ev == 0:
             self._payload["status"] = OrderStatus.FILLED
         else:
             self._payload["status"] = OrderStatus.PARTIALLY_FILLED
@@ -36,3 +42,7 @@ class Order:
     @property
     def standing_bet_amount(self) -> int:
         return self._standing_bet_amount
+
+    @property
+    def standing_ev(self) -> int:
+        return self._standing_ev

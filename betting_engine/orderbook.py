@@ -12,7 +12,7 @@ class OrderBook:
         self._asks: dict[str, Order] = {}
         self._ask_orders = self._asks.values()
 
-    def place_order(self, order: Order) -> None:
+    def append(self, order: Order) -> None:
         order_id = order.payload["order_id"]
 
         if order.side == Side.BID:
@@ -20,14 +20,15 @@ class OrderBook:
         else:
             self._asks[order_id] = order
 
-    def remove_order(self, order: Order | dict) -> None:
+    def remove(self, order: Order | dict) -> None:
+        if not isinstance(order, (Order, dict)):
+            raise TypeError("order must be an instance of Order or a dictionary.")
+
         order_id = (
             order.payload["order_id"] if isinstance(order, Order) else order["order_id"]
         )
 
-        if (
-            order.payload["side"] if isinstance(order, Order) else order["side"]
-        ) == Side.BID:
+        if (order.side if isinstance(order, Order) else order["side"]) == Side.BID:
             if order_id in self._bids:
                 self._bids.pop(order_id)
         else:
