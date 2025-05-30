@@ -1,11 +1,13 @@
 venv
 __pycache__
+node_modules
 
+# Private
 .env
 
+# Msc
 rec.py
 file.csv
 raw.csv
 eval.csv
 **.xml
-**.sol
