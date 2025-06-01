@@ -1,14 +1,24 @@
 from enum import Enum
 
 
-class OrderStatus(int, Enum):
-    PENDING = 0
-    PARTIALLY_FILLED = 1
-    FILLED = 2
-    CLOSED = 3
-    CANCELLED = 4
+class OrderStatus(str, Enum):
+    PENDING = "pending"
+    PARTIALLY_FILLED = "partially_filled"
+    FILLED = "filled"
+    CANCELLED = "cancelled"
+    CLOSED = "closed"
 
 
-class Side(int, Enum):
-    BID = 0
-    ASK = 1
+class BetStatus(str, Enum):
+    """Client facing bet status."""
+
+    OPEN = "open"
+    PENDING = "pending"
+    CLOSED = "closed"
+    SETTLED = "settled"
+
+
+
+class Topic(int, Enum):
+    CREATE = 0
+    CLOSE = 1

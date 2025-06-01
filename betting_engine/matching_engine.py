@@ -1,29 +1,44 @@
 from datetime import datetime
+from multiprocessing import Queue
 from typing import Iterable
-from .enums import OrderStatus, Side
+
+from enums import Side
+from .enums import OrderStatus, Topic
 from .order import Order
 from .orderbook import OrderBook
-from .typing import Payload
+from .typing import EnginePayload, Payload
 
 
 class MatchingEngine:
-    def __init__(self) -> None:
+    def __init__(self, queue: Queue) -> None:
         self._orderbooks: dict[str, OrderBook] = {}
+        self._queue = queue
 
-    def place_order(self, payload: dict[str, Payload]) -> None:
+    def run(self) -> None:
+        while True:
+            payload: EnginePayload = self._queue.get()
+            print(f"Received payload: {payload}")
+            if payload["topic"] == Topic.CREATE:
+                self._place_order(payload)
+            elif payload["topic"] == Topic.CLOSE:
+                self._close_order(payload)
+            else:
+                raise ValueError(f"Unknown topic: {payload['topic']}")
+
+    def _place_order(self, payload: EnginePayload) -> None:
         orderbook = self._orderbooks.setdefault(
-            payload["order"]["bet_id"],
-            OrderBook(payload["bet"]["numerator"], payload["bet"]["denominator"]),
+            payload["bet"]["bet_id"],
+            OrderBook(payload["market"]["numerator"], payload["market"]["denominator"]),
         )
 
-        payload = payload["order"]
+        payload = payload["bet"]
 
-        if payload["side"] == Side.BID:
-            expected_payout_value: float = orderbook.numerator * payload["bet_amount"]
+        if payload["side"] == Side.BACK:
+            expected_payout_value: float = orderbook.numerator * payload["amount"]
         else:
             expected_payout_value: float = (
                 round(100 / (100 - (100 / orderbook.numerator)))
-            ) * payload["bet_amount"]
+            ) * payload["amount"]
 
         expected_payout_value = round(expected_payout_value, 2)
         order = Order(payload, expected_payout_value)
@@ -33,14 +48,14 @@ class MatchingEngine:
         if not is_matched:
             orderbook.append(order)
 
-    def close_order(self, payload: Payload) -> None:
-        orderbook = self._orderbooks[payload["bet_id"]]
+    def _close_order(self, payload: Payload) -> None:
+        orderbook = self._orderbooks[payload["market_id"]]
         orderbook.remove(payload)
 
-        if payload["status"] == OrderStatus.FILLED:
-            payload["status"] = OrderStatus.CLOSED
+        if payload["bet_status"] == OrderStatus.FILLED:
+            payload["bet_status"] = OrderStatus.CLOSED
         else:
-            payload["status"] = OrderStatus.CANCELLED
+            payload["bet_status"] = OrderStatus.CANCELLED
 
     def _match_order(
         self,
@@ -50,7 +65,7 @@ class MatchingEngine:
         filled_orders: list[Order] = []
 
         book: Iterable[Order] = (
-            orderbook.asks if order.side == Side.BID else orderbook.bids
+            orderbook.asks if order.side == Side.BACK else orderbook.bids
         )
 
         for resting_order in book:
@@ -71,10 +86,10 @@ class MatchingEngine:
             order.reduce_unfilled_amount(min_bet_amount)
             resting_order.reduce_unfilled_amount(min_bet_amount)
 
-            if resting_order.payload["status"] == OrderStatus.FILLED:
+            if resting_order.payload["bet_status"] == OrderStatus.FILLED:
                 filled_orders.append(resting_order)
 
-            if order.payload["status"] == OrderStatus.FILLED:
+            if order.payload["bet_status"] == OrderStatus.FILLED:
                 break
 
         # Clean up filled orders
@@ -83,4 +98,4 @@ class MatchingEngine:
             _order.payload["closed_at"] = close_time
             orderbook.remove(_order)
 
-        return order.payload["status"] == OrderStatus.FILLED
+        return order.payload["bet_status"] == OrderStatus.FILLED

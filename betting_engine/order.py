@@ -7,7 +7,7 @@ class Order:
     def __init__(self, payload: Payload, expected_value: float) -> None:
         self._payload = payload
         self._side = payload["side"]
-        self._standing_bet_amount = payload["bet_amount"]
+        self._standing_bet_amount = payload["amount"]
         self._standing_ev = expected_value
 
     def reduce_unfilled_amount(self, amount: float) -> None:
@@ -18,16 +18,16 @@ class Order:
         self._standing_ev -= amount
 
         if self._standing_ev == 0:
-            self._payload["status"] = OrderStatus.FILLED
+            self._payload["bet_status"] = OrderStatus.FILLED
         else:
-            self._payload["status"] = OrderStatus.PARTIALLY_FILLED
+            self._payload["bet_status"] = OrderStatus.PARTIALLY_FILLED
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, self.__class__):
-            return self._payload["order_id"] == value.payload["order_id"]
+            return self._payload["bet_id"] == value.payload["bet_id"]
 
         if isinstance(value, dict):
-            return self._payload["order_id"] == value["order_id"]
+            return self._payload["bet_id"] == value["bet_id"]
 
         raise NotImplemented
 

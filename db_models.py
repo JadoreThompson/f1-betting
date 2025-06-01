@@ -1,7 +1,11 @@
+from datetime import datetime
 from sqlalchemy.sql import text
 from sqlalchemy import UUID, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from betting_engine.enums import BetStatus, Side
+from uuid import uuid4
+
+from betting_engine.enums import BetStatus
+from enums import MarketStatus
 
 
 class Base(DeclarativeBase):
@@ -35,7 +39,9 @@ class F1Data(Base):
 class Users(Base):
     __tablename__ = "users"
 
-    user_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     username: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     password: Mapped[str] = mapped_column(String, nullable=False)
@@ -54,8 +60,21 @@ class Markets(Base):
         Integer, primary_key=True, autoincrement=True
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str] = mapped_column(String, nullable=False)
+    market_status: Mapped[str] = mapped_column(
+        Integer, nullable=False, default=MarketStatus.OPEN.value
+    )
     numerator: Mapped[int] = mapped_column(Integer, nullable=False)
     denominator: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
+    closed_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=True, server_default=None
+    )
 
 
 class Bets(Base):
@@ -77,10 +96,13 @@ class Bets(Base):
         String(20), nullable=False, default=BetStatus.PENDING.value
     )
     created_at: Mapped[DateTime] = mapped_column(
-        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        server_default=text("CURRENT_TIMESTAMP"),
     )
     closed_at: Mapped[DateTime] = mapped_column(
         DateTime, nullable=True, server_default=None
     )
 
-    user = relationship("User", back_populates="user_bets")
+    user = relationship("Users", back_populates="user_bets")

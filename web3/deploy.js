@@ -13,13 +13,13 @@ async function deployUSDTToken() {
   const walletFromContract = contract.connect(WALLET);
   await walletFromContract.transfer(
     "0xec74c989ba1dd95f0b63e8d47d421e678d5eb7b5",
-    500000
+    5000000
   );
 }
 
 
 async function deployBettingEscrow() {
-  const usdtAddress = "0x3eF51093ed923AF7dd4DC1877Ca595f1a76211B1";
+  const usdtAddress = "0x0fe922d26FDe4a9160Bb2D145e851e2d9c2f3f84";
   const bettingEscrowContract = await (
     await ethers.getContractFactory("BettingEscrow")
   ).deploy(usdtAddress);
@@ -74,7 +74,7 @@ async function deployBettingEscrow() {
   // Now place the bet
   const walletFromContract = bettingEscrowContract.connect(WALLET);
   console.log("Placing bet...");
-  const betTx = await walletFromContract.placeBet(betAmount);
+  const betTx = await walletFromContract.placeBet(1, betAmount);
   await betTx.wait();
   console.log("Bet placed successfully!");
 }

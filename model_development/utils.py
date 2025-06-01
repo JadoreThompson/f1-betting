@@ -1,7 +1,6 @@
 import os
 import numpy as np
 
-from collections import namedtuple
 from matplotlib import pyplot as plt
 from pandas import DataFrame
 from typing import Iterable, Optional
@@ -9,8 +8,7 @@ from typing import Iterable, Optional
 from .config import MPATH, TARGET_LABEL, TRAINED_MODEL
 from .features.build_features import drop_features, get_dataset
 from .features.utils import PosCat
-
-Prediction = namedtuple("Prediction", ("prediction", "percentage"))
+from .typing import Prediction
 
 
 def save_model(model, name: str) -> None:

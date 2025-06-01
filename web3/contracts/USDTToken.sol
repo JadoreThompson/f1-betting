@@ -34,7 +34,7 @@ contract USDTToken is IERC20 {
         decimals = 6; // USDT uses 6 decimals
         owner = msg.sender;
         
-        uint256 initialSupply = 10 * 10 ** decimals;
+        uint256 initialSupply = 1e6 * 10 ** decimals;
         _totalSupply = initialSupply;
         _balances[msg.sender] = initialSupply;
         emit Transfer(address(0), msg.sender, initialSupply);

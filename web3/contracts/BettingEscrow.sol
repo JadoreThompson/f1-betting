@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-// TODO: Impromve robustness
+// TODO: Improve robustness
 contract BettingEscrow is Ownable, ReentrancyGuard {
     IERC20 public usdtToken;
     mapping(uint256 => address[]) public marketParticipants;
@@ -34,7 +34,7 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
 
     function placeBet(
         uint256 marketId,
-        uint32 amount
+        uint256 amount
     ) external nonReentrant {
         require(msg.sender != address(0), "Invalid sender address");
         require(!containsParticipant(marketId, msg.sender), "Already participated in this market");
@@ -58,7 +58,7 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
     }
 
     function withdraw(
-        uint32 marketId,
+        uint256 marketId,
         address winner,
         uint256 amount
     ) external onlyOwner nonReentrant {

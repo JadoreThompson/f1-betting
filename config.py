@@ -1,6 +1,6 @@
+from datetime import timedelta
 import redis
 import os
-import ydf
 
 from dotenv import load_dotenv
 from urllib.parse import quote
@@ -42,5 +42,10 @@ REDIS_CLIENT = redis.asyncio.Redis(
     ),
 )
 
-# Extras
-# MODEL = ydf.load_model(os.path.join(BPATH, "engine", "models", "model_1"))
+# Cookie and JWT
+COOKIE_ALIAS = "f1-betting-cookie"
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "secret-key")
+JWT_EXPIRY = timedelta(minutes=1e6)
+JWT_ALGO = "HS256"
+
+POLLING_BASE_URL = os.getenv("POLLING_BASE_URL")

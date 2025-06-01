@@ -1,5 +1,5 @@
 from typing import Iterable
-from .enums import Side
+from enums import Side
 from .order import Order
 
 
@@ -13,27 +13,27 @@ class OrderBook:
         self._ask_orders = self._asks.values()
 
     def append(self, order: Order) -> None:
-        order_id = order.payload["order_id"]
+        bet_id = order.payload["bet_id"]
 
-        if order.side == Side.BID:
-            self._bids[order_id] = order
+        if order.side == Side.BACK:
+            self._bids[bet_id] = order
         else:
-            self._asks[order_id] = order
+            self._asks[bet_id] = order
 
     def remove(self, order: Order | dict) -> None:
         if not isinstance(order, (Order, dict)):
             raise TypeError("order must be an instance of Order or a dictionary.")
 
-        order_id = (
-            order.payload["order_id"] if isinstance(order, Order) else order["order_id"]
+        bet_id = (
+            order.payload["bet_id"] if isinstance(order, Order) else order["bet_id"]
         )
 
-        if (order.side if isinstance(order, Order) else order["side"]) == Side.BID:
-            if order_id in self._bids:
-                self._bids.pop(order_id)
+        if (order.side if isinstance(order, Order) else order["side"]) == Side.BACK:
+            if bet_id in self._bids:
+                self._bids.pop(bet_id)
         else:
-            if order_id in self._asks:
-                self._asks.pop(order_id)
+            if bet_id in self._asks:
+                self._asks.pop(bet_id)
 
     @property
     def bids(self) -> Iterable[Order]:

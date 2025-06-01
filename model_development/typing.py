@@ -1,3 +1,4 @@
+from collections import namedtuple
 from enum import Enum
 
 
@@ -24,3 +25,5 @@ class Top3PositionCategory(str, Enum):
 class WinnerPositionCategory(str, Enum):
     WINNER = "1"
     NOT_WINNER = "0"
+
+Prediction = namedtuple("Prediction", ("prediction", "percentage"))
