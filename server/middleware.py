@@ -16,8 +16,6 @@ async def verify_jwt(req: Request) -> dict[str, Any]:
     Returns:
         dict[str, Any]: The decoded JWT payload if valid.
     """
-    print("Verifying JWT...")
-    print(f"Cookies: {req.cookies}")
     token = req.cookies.get(COOKIE_ALIAS)
 
     if not token:

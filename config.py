@@ -49,3 +49,7 @@ JWT_EXPIRY = timedelta(minutes=1e6)
 JWT_ALGO = "HS256"
 
 POLLING_BASE_URL = os.getenv("POLLING_BASE_URL")
+INFURA_API_KEY = os.getenv("INFURA_API_KEY")
+PRIVATE_KEY = os.getenv("PRIVATE_KEY")
+BE_CONTRACT_ADDR = os.getenv("BE_CONTRACT")
+USDT_CONTRACT_ADDR = os.getenv("USDT_CONTRACT")

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from db_models import Users
 from config import COOKIE_ALIAS
 from server.routes.auth.models import LoginBody, RegisterBody
-from server.utils.db import get_db_session
+from utils.db import get_db_session
 from server.utils.utils import generate_jwt
 
 auth_route = APIRouter(prefix="/auth", tags=["auth"])

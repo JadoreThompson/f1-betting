@@ -1,10 +1,19 @@
 from typing import Iterable
+from sqlalchemy import update
+
+from config import PRIVATE_KEY
+from db_models import Bets
 from enums import Side
+from utils.db import get_db_session
+
+from .config import PROVIDER, USDT_CONTRACT, BE_CONTRACT
+from .enums import BetStatus
 from .order import Order
 
 
 class OrderBook:
-    def __init__(self, numerator: int, denominator: int) -> None:
+    def __init__(self, market_id: int, numerator: int, denominator: int) -> None:
+        self._market_id = market_id
         self._numerator = numerator
         self._denominator = denominator
         self._bids: dict[str, Order] = {}
@@ -34,6 +43,49 @@ class OrderBook:
         else:
             if bet_id in self._asks:
                 self._asks.pop(bet_id)
+
+    async def settle(self, side: Side) -> None:
+        if side == Side.BACK:
+            winners = self._bids.values()
+        else:
+            winners = self._asks.values()
+
+        k: int = self._numerator if side == Side.BACK else self._denominator
+
+        usdt_decimals = await USDT_CONTRACT.functions.decimals().call()
+
+        for w in winners:
+            wallet_addr = w.payload["wallet_address"]
+
+            payout = (w.payload["amount"] * k) * 10**usdt_decimals
+
+            txn = await BE_CONTRACT.functions.withdraw(
+                self._market_id,
+                wallet_addr,
+                int(payout),
+            ).build_transaction(
+                {
+                    "nonce": await PROVIDER.eth.get_transaction_count(wallet_addr),
+                    "gas": 300000,  # optional: specify to avoid estimateGas
+                    "gasPrice": await PROVIDER.eth.gas_price,
+                }
+            )
+
+            signed_txn = PROVIDER.eth.account.sign_transaction(txn, PRIVATE_KEY)
+
+            tx_hash = await PROVIDER.eth.send_raw_transaction(
+                signed_txn.raw_transaction
+            )
+
+        bet_ids = tuple(w.payload["bet_id"] for w in winners)
+        
+        async with get_db_session() as s:
+            await s.execute(
+                update(Bets)
+                .values(bet_status=BetStatus.SETTLED.value)
+                .where(Bets.bet_id.in_(bet_ids))
+            )
+            await s.commit()
 
     @property
     def bids(self) -> Iterable[Order]:

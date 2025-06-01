@@ -4,7 +4,7 @@ from sqlalchemy import select
 from db_models import Markets
 from enums import MarketStatus, MarketCategory
 from server.routes.markets.models import MarketResponse
-from server.utils.db import get_db_session
+from utils.db import get_db_session
 
 markets_route = APIRouter(prefix="/markets", tags=["markets"])
 
@@ -24,9 +24,8 @@ async def get_markets() -> MarketResponse:
         res = await sess.execute(
             select(*cols)
             .where(
-                Markets.market_status == MarketStatus.OPEN.value,
+                Markets.market_status != MarketStatus.SETTLED.value,
                 Markets.category == MarketCategory.TOP3.value,
-                Markets.market_id > 10_006,
             )
             .limit(limit)
         )
@@ -35,9 +34,8 @@ async def get_markets() -> MarketResponse:
         res = await sess.execute(
             select(*cols)
             .where(
-                Markets.market_status == MarketStatus.OPEN.value,
+                Markets.market_status != MarketStatus.SETTLED.value,
                 Markets.category == MarketCategory.WINNER.value,
-                Markets.market_id > 10_006,
             )
             .limit(limit)
         )

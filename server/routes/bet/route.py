@@ -1,12 +1,13 @@
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy import insert, select
 
-from betting_engine.enums import Topic
+from betting_engine import Topic
 from db_models import Bets, Markets
 from server.middleware import verify_jwt
-from server.utils.db import get_db_session
-from utils import dump_sqlalchemy_object
+from utils.db import get_db_session
+from utils.utils import dump_sqlalchemy_object
 from .controller import push_to_engine
 from .models import CreateBet
 
@@ -42,14 +43,14 @@ async def create_bet(
     push_to_engine(
         Topic.CREATE,
         market={
-            "market_id": body.market_id, #market.market_id,
-            "numerator": 1, #market.numerator,
-            "denominator": 1, #market.denominator,
+            "market_id": market.market_id,
+            "numerator": market.numerator,
+            "denominator": market.denominator,
         },
         bet=dump_sqlalchemy_object(placed_bet),
     )
 
-    return Response(
+    return JSONResponse(
         status_code=201,
         content={"message": "Bet placed successfully", "bet_id": placed_bet.bet_id},
     )

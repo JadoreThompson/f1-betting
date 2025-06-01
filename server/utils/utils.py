@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from config import JWT_SECRET_KEY, JWT_ALGO, JWT_EXPIRY
 from db_models import Users
-from .db import get_db_session
+from utils.db import get_db_session
 
 
 class JWTError(Exception):

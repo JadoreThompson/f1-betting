@@ -1,10 +1,11 @@
 from __future__ import annotations
-from .enums import OrderStatus
+from .enums import BetStatus, OrderStatus
 from .typing import Payload
 
 
 class Order:
     def __init__(self, payload: Payload, expected_value: float) -> None:
+        self.status = OrderStatus.PENDING
         self._payload = payload
         self._side = payload["side"]
         self._standing_bet_amount = payload["amount"]
@@ -18,9 +19,10 @@ class Order:
         self._standing_ev -= amount
 
         if self._standing_ev == 0:
-            self._payload["bet_status"] = OrderStatus.FILLED
+            self.status = OrderStatus.FILLED
+            self._payload["bet_status"] = BetStatus.OPEN.value
         else:
-            self._payload["bet_status"] = OrderStatus.PARTIALLY_FILLED
+            self.status = OrderStatus.PARTIALLY_FILLED
 
     def __eq__(self, value: object) -> bool:
         if isinstance(value, self.__class__):

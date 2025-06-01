@@ -4,7 +4,7 @@ from sqlalchemy import UUID, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from uuid import uuid4
 
-from betting_engine.enums import BetStatus
+from betting_engine import BetStatus
 from enums import MarketStatus
 
 
@@ -59,7 +59,7 @@ class Markets(Base):
     market_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    title: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False) # TODO: change this to driver
     category: Mapped[str] = mapped_column(String, nullable=False)
     market_status: Mapped[str] = mapped_column(
         Integer, nullable=False, default=MarketStatus.OPEN.value

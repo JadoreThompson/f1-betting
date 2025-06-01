@@ -40,9 +40,9 @@ class Poller:
 
                     data = await rsp.json()
 
-                    if data["MRData"]["RaceTable"]["Races"]:
+                    if race_data := data["MRData"]["RaceTable"]["Races"]:
                         print("Race results found!")
-                        return True
+                        return race_data
 
                     print(f"No results yet. Sleeping for {sleep_duration} seconds...")
                     await sleep(sleep_duration)

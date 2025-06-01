@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from db_models import Drivers, F1Data
 from model_development import interact, Prediction
-from server.utils.db import get_db_session
+from utils.db import get_db_session
 
 
 

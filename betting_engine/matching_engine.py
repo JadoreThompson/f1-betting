@@ -1,34 +1,43 @@
 from datetime import datetime
 from multiprocessing import Queue
+from sqlalchemy import update
 from typing import Iterable
 
-from enums import Side
-from .enums import OrderStatus, Topic
+from db_models import Markets
+from enums import MarketStatus, Side
+from utils.db import get_db_session
+from .enums import BetStatus, OrderStatus, Topic
 from .order import Order
 from .orderbook import OrderBook
-from .typing import EnginePayload, Payload
+from .typing import EnginePayload, Payload, SettlePayload
 
 
 class MatchingEngine:
     def __init__(self, queue: Queue) -> None:
-        self._orderbooks: dict[str, OrderBook] = {}
+        self._orderbooks: dict[int, OrderBook] = {}
         self._queue = queue
 
-    def run(self) -> None:
+    async def run(self) -> None:
         while True:
             payload: EnginePayload = self._queue.get()
-            print(f"Received payload: {payload}")
+            print(payload)
             if payload["topic"] == Topic.CREATE:
                 self._place_order(payload)
             elif payload["topic"] == Topic.CLOSE:
                 self._close_order(payload)
+            elif payload["topic"] == Topic.SETTLE:
+                await self._settle_orderbook(payload)
             else:
                 raise ValueError(f"Unknown topic: {payload['topic']}")
 
     def _place_order(self, payload: EnginePayload) -> None:
         orderbook = self._orderbooks.setdefault(
-            payload["bet"]["bet_id"],
-            OrderBook(payload["market"]["numerator"], payload["market"]["denominator"]),
+            payload["bet"]["market_id"],
+            OrderBook(
+                payload["bet"]["market_id"],
+                payload["market"]["numerator"],
+                payload["market"]["denominator"],
+            ),
         )
 
         payload = payload["bet"]
@@ -52,10 +61,10 @@ class MatchingEngine:
         orderbook = self._orderbooks[payload["market_id"]]
         orderbook.remove(payload)
 
-        if payload["bet_status"] == OrderStatus.FILLED:
-            payload["bet_status"] = OrderStatus.CLOSED
+        if payload["bet_status"] == BetStatus.OPEN:
+            payload["bet_status"] = BetStatus.CLOSED.value
         else:
-            payload["bet_status"] = OrderStatus.CANCELLED
+            payload["bet_status"] = BetStatus.CANCELLED.value
 
     def _match_order(
         self,
@@ -86,10 +95,10 @@ class MatchingEngine:
             order.reduce_unfilled_amount(min_bet_amount)
             resting_order.reduce_unfilled_amount(min_bet_amount)
 
-            if resting_order.payload["bet_status"] == OrderStatus.FILLED:
+            if resting_order.status == OrderStatus.FILLED:
                 filled_orders.append(resting_order)
 
-            if order.payload["bet_status"] == OrderStatus.FILLED:
+            if order.status == OrderStatus.FILLED:
                 break
 
         # Clean up filled orders
@@ -98,4 +107,24 @@ class MatchingEngine:
             _order.payload["closed_at"] = close_time
             orderbook.remove(_order)
 
-        return order.payload["bet_status"] == OrderStatus.FILLED
+        return order.status == OrderStatus.FILLED
+
+    async def _settle_orderbook(self, data: EnginePayload) -> None:
+        data: SettlePayload = data["settle_data"]
+        ob = self._orderbooks.setdefault(
+            data["market_id"], OrderBook(data["market_id"], 2, 2)
+        )
+
+        if ob is None:
+            return
+
+        await ob.settle(data["winners"])
+        self._orderbooks.pop(data["market_id"])
+
+        async with get_db_session() as s:
+            await s.execute(
+                update(Markets)
+                .values(market_status=MarketStatus.SETTLED.value)
+                .where(Markets.market_id == data["market_id"])
+            )
+            await s.commit()
