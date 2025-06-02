@@ -7,11 +7,13 @@ from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
 from sqlalchemy import insert, select
 from sqlalchemy.dialects.postgresql import insert as ps_insert
+from sqlalchemy.sql.functions import sum as sql_sum
 
 from config import POLLING_BASE_URL
 from db_models import (
     Circuits,
     Constructors,
+    DriverStandings,
     Drivers,
     GrandPrixResults,
     QualiResults,
@@ -750,3 +752,40 @@ class DataPoller(BasePoller):
                 ps_insert(GrandPrixResults).values(data).on_conflict_do_nothing()
             )
             await sess.commit()
+
+    async def _persist_driver_standings(self, year: int, round_: int) -> None:
+        async with get_db_session() as sess:
+            r = await sess.execute(
+                select(
+                    sql_sum(GrandPrixResults.points).label("driver_points"),
+                    GrandPrixResults.driver_id,
+                    Drivers.constructor_id,
+                )
+                .where(GrandPrixResults.year == year, GrandPrixResults.round == round_)
+                .group_by(GrandPrixResults.driver_id)
+                .join(GrandPrixResults, GrandPrixResults.driver_id == Drivers.driver_id)
+                .group_by(Drivers.driver_id)
+                .order_by("driver_points")
+            )
+
+            rdata = r.all()
+
+            await sess.execute(
+                insert(DriverStandings).values(
+                    [
+                        {
+                            "year": year,
+                            "round": round_,
+                            "driver_id": driver_id,
+                            "constructor_id": constructor_id,
+                            "points": points,
+                            "position": len(rdata) - ind,
+                        }
+                        for ind, (points, driver_id, constructor_id) in enumerate(rdata)
+                    ]
+                )
+            )
+
+            await sess.commit()
+
+    async def _persist_constructor_standings(self): ...

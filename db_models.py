@@ -49,6 +49,9 @@ class Drivers(Base):
     grand_prix_results: Mapped[list["GrandPrixResults"]] = relationship(
         "GrandPrixResults", back_populates="driver"
     )
+    driver_standings: Mapped[list["DriverStandings"]] = relationship(
+        "DriverStandings", back_populates="driver"
+    )
 
     def __repr__(self):
         return f"Driver(id={self.driver_id}, name={self.given_name} {self.family_name})"
@@ -77,9 +80,81 @@ class Constructors(Base):
     grand_prix_results: Mapped[list["GrandPrixResults"]] = relationship(
         "GrandPrixResults", back_populates="constructor"
     )
+    constructor_standings: Mapped[list["ConstructorStandings"]] = relationship(
+        "ConstructorStandings", back_populates="constructor"
+    )
+    driver_standings: Mapped["DriverStandings"] = relationship(
+        "DriverStandings", back_populates="constructor"
+    )
 
     def __repr__(self):
         return f"Constructor(id={self.constructor_id}, name={self.name})"
+
+
+class DriverStandings(Base):
+    __tablename__ = "driver_standings"
+
+    driver_standing_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[int] = mapped_column(Integer, nullable=False)
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=False
+    )
+    constructor_id: Mapped[int] = mapped_column(
+        ForeignKey("constructors.constructor_id"), nullable=False
+    )
+    points: Mapped[float] = mapped_column(Float, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Relationships
+    driver: Mapped["Drivers"] = relationship(
+        "Drivers", back_populates="driver_standings"
+    )
+    constructor: Mapped["Constructors"] = relationship(
+        "Constructors", back_populates="driver_standings"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("year", "round", "driver_id", name="uq_driver_standing"),
+    )
+
+    def __repr__(self):
+        return f"DriverStanding(year={self.year}, round={self.round}, driver_id={self.driver_id}, position={self.position}, points={self.points})"
+
+
+class ConstructorStandings(Base):
+    __tablename__ = "constructor_standings"
+
+    constructor_standing_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[int] = mapped_column(Integer, nullable=False)
+    constructor_id: Mapped[int] = mapped_column(
+        ForeignKey("constructors.constructor_id"), nullable=False
+    )
+    points: Mapped[float] = mapped_column(Float, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    position_text: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Relationships
+    constructor: Mapped["Constructors"] = relationship(
+        "Constructors", back_populates="constructor_standings"
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "year", "round", "constructor_id", name="uq_constructor_standing"
+        ),
+    )
+
+    def __repr__(self):
+        return (
+            f"ConstructorStanding(year={self.year}, round={self.round}, "
+            f"constructor_id={self.constructor_id}, position={self.position}, points={self.points})"
+        )
 
 
 class Circuits(Base):

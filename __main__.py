@@ -24,6 +24,7 @@ def run_data_pipeline() -> None:
     and will run indefinitely until the process is terminated.
     """
     asyncio.run(DataPoller(10).poll())
+    # asyncio.run(DataPoller(10)._persist_driver_standings(2024, 10))
 
 
 async def settlement_pipeline(queue: Queue) -> None:

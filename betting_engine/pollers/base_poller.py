@@ -16,7 +16,7 @@ class BasePoller:
     async def _fetch_schedule(self, session: ClientSession) -> dict[str, Any]:
         async with session.get(POLLING_BASE_URL + f"/current") as rsp:
             if rsp.status != 200:
-                raise Exception("Error fetching season schedule.")
+                raise Exception(f"Error fetching season schedule. status code: {rsp.status}")
             return await rsp.json()
 
     @override
