@@ -1,11 +1,8 @@
 from datetime import datetime
 from multiprocessing import Queue
-from sqlalchemy import update
 from typing import Iterable
 
-from db_models import Markets
-from enums import MarketStatus, Side
-from utils.db import get_db_session
+from enums import Side
 from .enums import BetStatus, OrderStatus, Topic
 from .order import Order
 from .orderbook import OrderBook

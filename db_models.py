@@ -1,8 +1,18 @@
 from datetime import datetime
 from sqlalchemy.sql import text
-from sqlalchemy import UUID, DateTime, ForeignKey, Integer, String
+from sqlalchemy import (
+    UUID,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from uuid import uuid4
+
 from betting_engine import BetStatus
 from enums import MarketStatus
 
@@ -17,24 +27,227 @@ class Drivers(Base):
     driver_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    number: Mapped[str] = mapped_column(String, nullable=True)
-
-
-class F1Data(Base):
-    __tablename__ = "f1_data"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    driver_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("drivers.driver_id"), nullable=False, unique=True
+    driver_ref: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    constructor_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("constructors.constructor_id"), nullable=False
     )
-    last_1: Mapped[str] = mapped_column(String, nullable=True)
-    last_2: Mapped[str] = mapped_column(String, nullable=True)
-    last_3: Mapped[str] = mapped_column(String, nullable=True)
-    last_4: Mapped[str] = mapped_column(String, nullable=True)
-    last_5: Mapped[str] = mapped_column(String, nullable=True)
+    permanent_number: Mapped[str] = mapped_column(String, nullable=False)
+    code: Mapped[str] = mapped_column(String, nullable=False)
+    dob: Mapped[Date] = mapped_column(Date, nullable=False)
+    nationality: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Relationships
+    constructor: Mapped["Constructors"] = relationship(
+        "Constructors", back_populates="drivers"
+    )
+    quali_results: Mapped[list["QualiResults"]] = relationship(
+        "QualiResults", back_populates="driver"
+    )
+    sprint_results: Mapped[list["SprintResults"]] = relationship(
+        "SprintResults", back_populates="driver"
+    )
+    grand_prix_results: Mapped[list["GrandPrixResults"]] = relationship(
+        "GrandPrixResults", back_populates="driver"
+    )
+
+    def __repr__(self):
+        return f"Driver(id={self.driver_id}, name={self.given_name} {self.family_name})"
 
 
+class Constructors(Base):
+    __tablename__ = "constructors"
+
+    constructor_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    constructor_ref: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    nationality: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Relationships
+    drivers: Mapped[list["Drivers"]] = relationship(
+        "Drivers", back_populates="constructor"
+    )
+    quali_results: Mapped[list["QualiResults"]] = relationship(
+        "QualiResults", back_populates="constructor"
+    )
+    sprint_results: Mapped[list["SprintResults"]] = relationship(
+        "SprintResults", back_populates="constructor"
+    )
+    grand_prix_results: Mapped[list["GrandPrixResults"]] = relationship(
+        "GrandPrixResults", back_populates="constructor"
+    )
+
+    def __repr__(self):
+        return f"Constructor(id={self.constructor_id}, name={self.name})"
+
+
+class Circuits(Base):
+    __tablename__ = "circuits"
+
+    circuit_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    circuit_ref: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    location: Mapped[str] = mapped_column(String, nullable=False)
+    country: Mapped[str] = mapped_column(String, nullable=False)
+    lat: Mapped[float] = mapped_column(Float, nullable=False)
+    lng: Mapped[float] = mapped_column(Float, nullable=False)
+
+    # Relationships
+    quali_results: Mapped[list["QualiResults"]] = relationship(
+        "QualiResults", back_populates="circuit"
+    )
+    sprint_results: Mapped[list["SprintResults"]] = relationship(
+        "SprintResults", back_populates="circuit"
+    )
+    grand_prix_results: Mapped[list["GrandPrixResults"]] = relationship(
+        "GrandPrixResults", back_populates="circuit"
+    )
+
+    def __repr__(self):
+        return (
+            f"Circuit(id={self.circuit_id}, name={self.name}, location={self.location})"
+        )
+
+
+class QualiResults(Base):
+    __tablename__ = "quali_results"
+
+    quali_result_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[int] = mapped_column(Integer, nullable=False)
+    circuit_id: Mapped[int] = mapped_column(
+        ForeignKey("circuits.circuit_id"), nullable=False
+    )
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=False
+    )
+    constructor_id: Mapped[int] = mapped_column(
+        ForeignKey("constructors.constructor_id"), nullable=False
+    )
+    q1: Mapped[str | None] = mapped_column(String, nullable=True)
+    q2: Mapped[str | None] = mapped_column(String, nullable=True)
+    q3: Mapped[str | None] = mapped_column(String, nullable=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    position_text: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Relationships
+    driver: Mapped["Drivers"] = relationship("Drivers", back_populates="quali_results")
+    constructor: Mapped["Constructors"] = relationship(
+        "Constructors", back_populates="quali_results"
+    )
+    circuit: Mapped["Circuits"] = relationship(
+        "Circuits", back_populates="quali_results"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("year", "round", "driver_id", name="uq_quali_result_driver"),
+    )
+
+    def __repr__(self):
+        return f"QualiResult(year={self.year}, round={self.round}, driver_id={self.driver_id}, position={self.position})"
+
+
+class SprintResults(Base):
+    __tablename__ = "sprint_results"
+
+    sprint_result_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[int] = mapped_column(Integer, nullable=False)
+    circuit_id: Mapped[int] = mapped_column(
+        ForeignKey("circuits.circuit_id"), nullable=False
+    )
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=False
+    )
+    constructor_id: Mapped[int] = mapped_column(
+        ForeignKey("constructors.constructor_id"), nullable=False
+    )
+    grid: Mapped[int] = mapped_column(Integer, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    position_text: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Relationships
+    driver: Mapped["Drivers"] = relationship("Drivers", back_populates="sprint_results")
+    constructor: Mapped["Constructors"] = relationship(
+        "Constructors", back_populates="sprint_results"
+    )
+    circuit: Mapped["Circuits"] = relationship(
+        "Circuits", back_populates="sprint_results"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("year", "round", "driver_id", name="uq_sprint_result_driver"),
+    )
+
+    def __repr__(self):
+        return f"SprintResult(year={self.year}, round={self.round}, driver_id={self.driver_id}, position={self.position})"
+
+
+class GrandPrixResults(Base):
+    __tablename__ = "grand_prix_results"
+
+    grand_prix_result_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[int] = mapped_column(Integer, nullable=False)
+    circuit_id: Mapped[int] = mapped_column(
+        ForeignKey("circuits.circuit_id"), nullable=False
+    )
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=False
+    )
+    constructor_id: Mapped[int] = mapped_column(
+        ForeignKey("constructors.constructor_id"), nullable=False
+    )
+
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    position_text: Mapped[str] = mapped_column(String, nullable=False)
+    points: Mapped[float] = mapped_column(Float, nullable=False)
+    grid: Mapped[int] = mapped_column(Integer, nullable=False)
+    laps: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)
+
+    time_millis: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    time_str: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    fastest_lap_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fastest_lap_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fastest_lap_time: Mapped[str | None] = mapped_column(String, nullable=True)
+    fastest_lap_speed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fastest_lap_speed_unit: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Relationships
+    driver: Mapped["Drivers"] = relationship(
+        "Drivers", back_populates="grand_prix_results"
+    )
+    constructor: Mapped["Constructors"] = relationship(
+        "Constructors", back_populates="grand_prix_results"
+    )
+    circuit: Mapped["Circuits"] = relationship(
+        "Circuits", back_populates="grand_prix_results"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("year", "round", "driver_id", name="uq_gp_result_driver"),
+    )
+
+    def __repr__(self):
+        return (
+            f"GrandPrixResult(year={self.year}, round={self.round}, driver_id={self.driver_id}, "
+            f"position={self.position}, points={self.points})"
+        )
+
+
+# Web Application
 class Users(Base):
     __tablename__ = "users"
 
@@ -94,7 +307,7 @@ class Bets(Base):
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     wallet_address: Mapped[str] = mapped_column(String, nullable=False)
     bet_status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default=BetStatus.PENDING.value
+        String, nullable=False, default=BetStatus.PENDING.value
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
