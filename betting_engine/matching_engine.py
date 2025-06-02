@@ -120,11 +120,3 @@ class MatchingEngine:
 
         await ob.settle(data["winners"])
         self._orderbooks.pop(data["market_id"])
-
-        async with get_db_session() as s:
-            await s.execute(
-                update(Markets)
-                .values(market_status=MarketStatus.SETTLED.value)
-                .where(Markets.market_id == data["market_id"])
-            )
-            await s.commit()

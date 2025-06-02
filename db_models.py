@@ -3,7 +3,6 @@ from sqlalchemy.sql import text
 from sqlalchemy import UUID, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from uuid import uuid4
-
 from betting_engine import BetStatus
 from enums import MarketStatus
 
@@ -59,20 +58,22 @@ class Markets(Base):
     market_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )
-    title: Mapped[str] = mapped_column(String, nullable=False) # TODO: change this to driver
+    title: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # TODO: change this to driver
     category: Mapped[str] = mapped_column(String, nullable=False)
     market_status: Mapped[str] = mapped_column(
         Integer, nullable=False, default=MarketStatus.OPEN.value
     )
     numerator: Mapped[int] = mapped_column(Integer, nullable=False)
     denominator: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
         default=datetime.now,
         server_default=text("CURRENT_TIMESTAMP"),
     )
-    closed_at: Mapped[DateTime] = mapped_column(
+    closed_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=None
     )
 
@@ -92,17 +93,18 @@ class Bets(Base):
     side: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     wallet_address: Mapped[str] = mapped_column(String, nullable=False)
-    bet_status: Mapped[BetStatus] = mapped_column(
+    bet_status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=BetStatus.PENDING.value
     )
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
         default=datetime.now,
         server_default=text("CURRENT_TIMESTAMP"),
     )
-    closed_at: Mapped[DateTime] = mapped_column(
+    closed_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=True, server_default=None
     )
+    settlement_txn: Mapped[str] = mapped_column(String, nullable=True)
 
     user = relationship("Users", back_populates="user_bets")

@@ -1,9 +1,10 @@
+from datetime import UTC, datetime
 from typing import Iterable
 from sqlalchemy import update
 
 from config import PRIVATE_KEY
-from db_models import Bets
-from enums import Side
+from db_models import Bets, Markets
+from enums import MarketStatus, Side
 from utils.db import get_db_session
 
 from .config import PROVIDER, USDT_CONTRACT, BE_CONTRACT
@@ -51,12 +52,10 @@ class OrderBook:
             winners = self._asks.values()
 
         k: int = self._numerator if side == Side.BACK else self._denominator
-
         usdt_decimals = await USDT_CONTRACT.functions.decimals().call()
 
         for w in winners:
             wallet_addr = w.payload["wallet_address"]
-
             payout = (w.payload["amount"] * k) * 10**usdt_decimals
 
             txn = await BE_CONTRACT.functions.withdraw(
@@ -72,19 +71,30 @@ class OrderBook:
             )
 
             signed_txn = PROVIDER.eth.account.sign_transaction(txn, PRIVATE_KEY)
-
             tx_hash = await PROVIDER.eth.send_raw_transaction(
                 signed_txn.raw_transaction
             )
 
+            w.payload["settlement_txn"] = tx_hash.to_0x_hex()
+            w.payload["bet_status"] = BetStatus.SETTLED.value
+
         bet_ids = tuple(w.payload["bet_id"] for w in winners)
-        
+
         async with get_db_session() as s:
             await s.execute(
                 update(Bets)
-                .values(bet_status=BetStatus.SETTLED.value)
+                .values(bet_status=BetStatus.SETTLED.value, closed_at=datetime.now(UTC))
                 .where(Bets.bet_id.in_(bet_ids))
             )
+
+            await s.execute(update(Bets), [w.payload for w in winners])
+
+            await s.execute(
+                update(Markets)
+                .values(market_status=MarketStatus.SETTLED.value)
+                .where(Markets.market_id == self._market_id)
+            )
+
             await s.commit()
 
     @property

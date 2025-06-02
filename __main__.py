@@ -6,7 +6,7 @@ from typing import Callable
 from sqlalchemy import select
 from multiprocessing import Process, Queue
 
-from betting_engine import MatchingEngine, Poller, Topic
+from betting_engine import Poller, Topic, MatchingEngine
 from db_models import Markets
 from enums import MarketCategory, MarketStatus, Side
 from server import config
