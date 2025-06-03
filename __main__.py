@@ -23,7 +23,7 @@ def run_data_pipeline() -> None:
     This function is designed to be executed in a multiprocessing context
     and will run indefinitely until the process is terminated.
     """
-    asyncio.run(DataPoller(10).poll())
+    asyncio.run(DataPoller(30).poll())
     # asyncio.run(DataPoller(10)._persist_driver_standings(2024, 10))
 
 

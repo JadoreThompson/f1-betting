@@ -24,8 +24,8 @@ class FastestLapTime:
 
 @dataclass
 class AverageSpeed:
-    units: str
-    speed: float
+    units: Optional[str] = None
+    speed: Optional[float] = None
 
 
 @dataclass
@@ -69,6 +69,7 @@ class SprintResult:
     circuit_id: int
     driver: Driver
     grid: int
+    points: int
     position: int
     position_text: str
 

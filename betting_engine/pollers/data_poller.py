@@ -5,13 +5,14 @@ from asyncio import sleep
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, desc
 from sqlalchemy.dialects.postgresql import insert as ps_insert
-from sqlalchemy.sql.functions import sum as sql_sum
+from sqlalchemy.sql.functions import sum as sql_sum, coalesce
 
 from config import POLLING_BASE_URL
 from db_models import (
     Circuits,
+    ConstructorStandings,
     Constructors,
     DriverStandings,
     Drivers,
@@ -153,62 +154,78 @@ class DataPoller(BasePoller):
 
         The method will return if no upcoming grand prix is found.
         """
-
-        def get_nested(
-            obj: dict[str, Any], keys: Iterable[str | int]
-        ) -> list[dict[str, Any]]:
-            """Helper function to safely extract nested values from API response."""
-            for key in keys:
-                obj = obj[key]
-            return obj
-
         configs = self._get_configs()
+        cur_round = 0
 
         async with ClientSession() as sess:
             while True:
+                print(1)
                 # Initialisation
                 schedule = await super()._fetch_schedule(sess)
+                print(2)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                next_gp_info = self._get_target_gp(schedule)
+                # next_gp_info = self._get_target_gp(schedule)
 
-                if next_gp_info is None:
-                    return
+                cur_round += 1
+
+                # if next_gp_info is None:
+                #     return
 
                 year = datetime.now().date().year - 1
-                cur_round, _ = next_gp_info
+                # cur_round, _ = next_gp_info
                 circuit_id = await self._persist_circuit(schedule, cur_round)
-
+                print(3)
                 # Fetching
-                for target_func, key, fetch_func, parse_func, persist_func in configs:
-                    next_gp_info = target_func(schedule)
-                    if next_gp_info is None or next_gp_info[0] != cur_round:
-                        continue
+                for (
+                    target_func,
+                    lookup_key,
+                    fetch_func,
+                    parse_func,
+                    persist_func,
+                ) in configs:
+                    # next_gp_info = target_func(schedule)
+                    # if next_gp_info is None or next_gp_info[0] != cur_round:
+                    #     continue
 
+                    # Commented for testing
                     # Sleep until the event
                     # _, time_of_event = next_gp_info
                     # await sleep(round_time.timestamp() - datetime.now(UTC).timestamp())
 
                     fetched_data = await fetch_func(sess, cur_round, year)
+                    # print("Fetched")
                     if fetched_data is None:
                         continue  # For sprint, possibly missing data
 
                     # Dump for debugging
-                    json.dump(fetched_data, open(f"{key}.json", "w"), indent=4)
+                    json.dump(fetched_data, open(f"{lookup_key}.json", "w"), indent=4)
 
-                    raw_results = get_nested(
-                        fetched_data, ["MRData", "RaceTable", "Races", 0, key]
-                    )
+                    leave = False
+                    raw_results = fetched_data
+                    for key_ in ["MRData", "RaceTable", "Races", 0, lookup_key]:
+                        try:
+                            raw_results = raw_results[key_]
+                        except IndexError:
+                            leave = True
+                            break
+
+                    if leave:
+                        continue
 
                     parsed_data = parse_func(raw_results, year, cur_round, circuit_id)
 
                     # Dump for debugging
-                    json.dump(
-                        [self._dumper(asdict(p)) for p in parsed_data],
-                        open(f"{key}-parsesd.json", "w"),
-                        indent=4,
-                    )
+                    # json.dump(
+                    # [self._dumper(asdict(p)) for p in parsed_data],
+                    # open(f"{lookup_key}-parsesd.json", "w"),
+                    # indent=4,
+                    # )
 
                     await persist_func(parsed_data)
+
+                    if lookup_key != "QualifyingResults":
+                        await self._persist_driver_standings(year, cur_round)
+                        await self._persist_constructor_standings(year, cur_round)
 
                 print(f"Sleeping for {self._sleep_duration} seconds...")
                 await sleep(self._sleep_duration)
@@ -427,6 +444,7 @@ class DataPoller(BasePoller):
                 grid=int(d["grid"]),
                 position=int(d["position"]),
                 position_text=d["positionText"],
+                points=int(d["points"]),
             )
             for d in data
         )
@@ -464,14 +482,16 @@ class DataPoller(BasePoller):
 
             fastest_lap_obj = None
             if "FastestLap" in d:
-                fl = d["FastestLap"]
+                fl: dict[str, Any] = d["FastestLap"]
+                units = fl.get("AverageSpeed", {}).get("units")
+                speed = fl.get("AverageSpeed", {}).get("speed")
                 fastest_lap_obj = FastestLap(
                     rank=int(fl["rank"]),
                     lap=int(fl["lap"]),
                     time=FastestLapTime(time=fl["Time"]["time"]),
                     average_speed=AverageSpeed(
-                        units=fl["AverageSpeed"]["units"],
-                        speed=float(fl["AverageSpeed"]["speed"]),
+                        units=units,
+                        speed=float(speed) if speed is not None else speed,
                     ),
                 )
 
@@ -535,7 +555,7 @@ class DataPoller(BasePoller):
         Returns:
             int: Database circuit ID for the specified circuit.
         """
-        circuit_data = data[round_]["Circuit"]
+        circuit_data = data[round_ - 1]["Circuit"]
 
         async with get_db_session() as sess:
             r = await sess.execute(
@@ -734,11 +754,18 @@ class DataPoller(BasePoller):
             d["time_millis"] = gpr.time.millis
             d["time_str"] = gpr.time.time
 
-            d["fastest_lap_rank"] = gpr.fastest_lap.rank
-            d["fastest_lap_number"] = gpr.fastest_lap.lap
-            d["fastest_lap_time"] = gpr.fastest_lap.time.time
-            d["fastest_lap_speed"] = gpr.fastest_lap.average_speed.speed
-            d["fastest_lap_speed_unit"] = gpr.fastest_lap.average_speed.units
+            if gpr.fastest_lap is not None:
+                d["fastest_lap_rank"] = gpr.fastest_lap.rank
+                d["fastest_lap_number"] = gpr.fastest_lap.lap
+                d["fastest_lap_time"] = gpr.fastest_lap.time.time
+                d["fastest_lap_speed"] = gpr.fastest_lap.average_speed.speed
+                d["fastest_lap_speed_unit"] = gpr.fastest_lap.average_speed.units
+            else:
+                d["fastest_lap_rank"] = None
+                d["fastest_lap_number"] = None
+                d["fastest_lap_time"] = None
+                d["fastest_lap_speed"] = None
+                d["fastest_lap_speed_unit"] = None
 
             d.pop("driver")
             d.pop("round_")
@@ -754,21 +781,52 @@ class DataPoller(BasePoller):
             await sess.commit()
 
     async def _persist_driver_standings(self, year: int, round_: int) -> None:
+        sp_subq = (
+            select(
+                sql_sum(SprintResults.points).label("sp_total_points"),
+                SprintResults.driver_id,
+            )
+            .where(SprintResults.year == year)
+            .group_by(SprintResults.driver_id)
+        ).subquery()
+
+        gp_subq = (
+            select(
+                sql_sum(GrandPrixResults.points).label("gp_total_points"),
+                GrandPrixResults.driver_id,
+            )
+            .where(GrandPrixResults.year == year)
+            .group_by(GrandPrixResults.driver_id)
+        ).subquery()
+
+        dc_subq = select(Drivers.driver_id, Drivers.constructor_id).subquery()
+
         async with get_db_session() as sess:
             r = await sess.execute(
-                select(
-                    sql_sum(GrandPrixResults.points).label("driver_points"),
-                    GrandPrixResults.driver_id,
-                    Drivers.constructor_id,
+                select(DriverStandings.driver_id).where(
+                    DriverStandings.year == year, DriverStandings.round == round_
                 )
-                .where(GrandPrixResults.year == year, GrandPrixResults.round == round_)
-                .group_by(GrandPrixResults.driver_id)
-                .join(GrandPrixResults, GrandPrixResults.driver_id == Drivers.driver_id)
-                .group_by(Drivers.driver_id)
-                .order_by("driver_points")
             )
 
-            rdata = r.all()
+            if r.first():
+                return
+
+            r = await sess.execute(
+                select(
+                    gp_subq.c.driver_id,
+                    dc_subq.c.constructor_id,
+                    (
+                        coalesce(gp_subq.c.gp_total_points, 0)
+                        + coalesce(sp_subq.c.sp_total_points, 0)
+                    ).label("total_points"),
+                )
+                .select_from(
+                    gp_subq.outerjoin(
+                        sp_subq, gp_subq.c.driver_id == sp_subq.c.driver_id
+                    ).join(dc_subq, gp_subq.c.driver_id == dc_subq.c.driver_id)
+                )
+                .order_by(desc("total_points"))
+            )
 
             await sess.execute(
                 insert(DriverStandings).values(
@@ -779,13 +837,52 @@ class DataPoller(BasePoller):
                             "driver_id": driver_id,
                             "constructor_id": constructor_id,
                             "points": points,
-                            "position": len(rdata) - ind,
+                            "position": ind + 1,
                         }
-                        for ind, (points, driver_id, constructor_id) in enumerate(rdata)
+                        for ind, (driver_id, constructor_id, points) in enumerate(
+                            r.all()
+                        )
                     ]
                 )
             )
 
             await sess.commit()
 
-    async def _persist_constructor_standings(self): ...
+    async def _persist_constructor_standings(self, year: int, round_: int) -> None:
+        async with get_db_session() as sess:
+            r = await sess.execute(
+                select(ConstructorStandings.constructor_id).where(
+                    ConstructorStandings.year == year,
+                    ConstructorStandings.round == round_,
+                )
+            )
+
+            if r.first():
+                return
+
+            r = await sess.execute(
+                select(
+                    sql_sum(DriverStandings.points).label("constructor_points"),
+                    DriverStandings.constructor_id,
+                )
+                .where(DriverStandings.year == year, DriverStandings.round == round_)
+                .group_by(DriverStandings.constructor_id)
+                .order_by(desc("constructor_points"))
+            )
+
+            await sess.execute(
+                insert(ConstructorStandings).values(
+                    [
+                        {
+                            "year": year,
+                            "round": round_,
+                            "constructor_id": constructor_id,
+                            "points": points,
+                            "position": ind + 1,
+                        }
+                        for ind, (points, constructor_id) in enumerate(r.all())
+                    ]
+                )
+            )
+
+            await sess.commit()

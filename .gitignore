@@ -4,11 +4,4 @@ node_modules
 
 # Private
 .env
-
-# Msc
-rec.py
-file.csv
-raw.csv
-eval.csv
-**.xml
-jolpica_race_data.json
+msc

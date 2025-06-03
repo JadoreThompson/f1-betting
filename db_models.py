@@ -137,7 +137,6 @@ class ConstructorStandings(Base):
     )
     points: Mapped[float] = mapped_column(Float, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
-    position_text: Mapped[str] = mapped_column(String, nullable=False)
 
     # Relationships
     constructor: Mapped["Constructors"] = relationship(
@@ -247,6 +246,7 @@ class SprintResults(Base):
     grid: Mapped[int] = mapped_column(Integer, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     position_text: Mapped[str] = mapped_column(String, nullable=False)
+    points: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Relationships
     driver: Mapped["Drivers"] = relationship("Drivers", back_populates="sprint_results")
