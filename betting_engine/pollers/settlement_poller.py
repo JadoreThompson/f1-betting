@@ -4,7 +4,8 @@ from aiohttp import ClientSession
 from asyncio import sleep
 from config import POLLING_BASE_URL
 from datetime import datetime, UTC
-from .base_poller import BasePoller, TargetNotFound
+from .base_poller import BasePoller
+from .exc import TargetNotFound
 
 
 class SettlementPoller(BasePoller):

@@ -33,12 +33,11 @@ from .models import (
     Constructor,
     Time,
 )
+from .exc import SeasonOver
 
 T = TypeVar("T")
 
 
-# TODO:
-# - Save drivers and info from quali in mem as it can be reused.
 class DataPoller(BasePoller):
     """Formula 1 data poller that fetches and persists qualifying, sprint, and grand prix results.
 
@@ -55,6 +54,7 @@ class DataPoller(BasePoller):
                                           Defaults to 5.
         """
         super().__init__(sleep_duration)
+        self._db_drivers: dict[str, Driver] = {}  # driver_ref => Driver
 
     async def _assert_driver_and_constructor_id(self, driver: Driver) -> None:
         """Ensures driver and constructor have database IDs, persisting them if necessary.
@@ -97,12 +97,13 @@ class DataPoller(BasePoller):
         self,
     ) -> tuple[
         tuple[
-            Callable[[list[dict[str, Any]]], None],
+            Callable[[list[dict[str, Any]]], Optional[tuple[int, datetime]]],
             str,
             Callable[[ClientSession, int, int], Awaitable[dict[str, Any]]],
             Callable[[list[dict[str, Any]], int, int, int], tuple[T, ...]],
             Callable[[Iterable[T]], None],
-        ]
+        ],
+        ...,
     ]:
         """Returns configuration tuples for different F1 race event types.
 
@@ -155,26 +156,21 @@ class DataPoller(BasePoller):
         The method will return if no upcoming grand prix is found.
         """
         configs = self._get_configs()
-        cur_round = 0
 
         async with ClientSession() as sess:
             while True:
-                print(1)
                 # Initialisation
                 schedule = await super()._fetch_schedule(sess)
-                print(2)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                # next_gp_info = self._get_target_gp(schedule)
+                next_gp_info = self._get_target_gp(schedule)
 
-                cur_round += 1
+                if next_gp_info is None:
+                    raise SeasonOver
 
-                # if next_gp_info is None:
-                #     return
-
-                year = datetime.now().date().year - 1
-                # cur_round, _ = next_gp_info
+                year = datetime.now().date().year
+                cur_round, _ = next_gp_info
                 circuit_id = await self._persist_circuit(schedule, cur_round)
-                print(3)
+
                 # Fetching
                 for (
                     target_func,
@@ -183,22 +179,18 @@ class DataPoller(BasePoller):
                     parse_func,
                     persist_func,
                 ) in configs:
-                    # next_gp_info = target_func(schedule)
-                    # if next_gp_info is None or next_gp_info[0] != cur_round:
-                    #     continue
+                    next_gp_info = target_func(schedule)
+                    if next_gp_info is None or next_gp_info[0] != cur_round:
+                        continue
 
-                    # Commented for testing
-                    # Sleep until the event
-                    # _, time_of_event = next_gp_info
-                    # await sleep(round_time.timestamp() - datetime.now(UTC).timestamp())
+                    _, time_of_event = next_gp_info
+                    await sleep(
+                        time_of_event.timestamp() - datetime.now(UTC).timestamp()
+                    )
 
                     fetched_data = await fetch_func(sess, cur_round, year)
-                    # print("Fetched")
                     if fetched_data is None:
                         continue  # For sprint, possibly missing data
-
-                    # Dump for debugging
-                    json.dump(fetched_data, open(f"{lookup_key}.json", "w"), indent=4)
 
                     leave = False
                     raw_results = fetched_data
@@ -213,14 +205,6 @@ class DataPoller(BasePoller):
                         continue
 
                     parsed_data = parse_func(raw_results, year, cur_round, circuit_id)
-
-                    # Dump for debugging
-                    # json.dump(
-                    # [self._dumper(asdict(p)) for p in parsed_data],
-                    # open(f"{lookup_key}-parsesd.json", "w"),
-                    # indent=4,
-                    # )
-
                     await persist_func(parsed_data)
 
                     if lookup_key != "QualifyingResults":
@@ -475,7 +459,7 @@ class DataPoller(BasePoller):
         for d in data:
             driver = self._parse_driver(d["Driver"], d["Constructor"])
 
-            # time_obj = None
+            time_obj = None
             if "Time" in d:
                 millis = int(d["Time"]["millis"]) if "millis" in d["Time"] else None
                 time_obj = Time(millis=millis, time=d["Time"]["time"])
@@ -529,8 +513,14 @@ class DataPoller(BasePoller):
         Returns:
             Driver: Parsed driver object with constructor information.
         """
-        return Driver(
-            driver_ref=driver_data["driverId"],
+        driver_ref = driver_data["driverId"]
+        if driver_ref in self._db_drivers:
+            d = self._db_drivers[driver_ref]
+            if d.constructor.name == constructor_data.get("constructor_ref", ""):
+                return d
+
+        d = Driver(
+            driver_ref=driver_ref,
             permanent_number=driver_data.get("permanentNumber", ""),
             code=driver_data.get("code", ""),
             nationality=driver_data.get("nationality", ""),
@@ -541,6 +531,8 @@ class DataPoller(BasePoller):
                 constructor_ref=constructor_data["constructorId"],
             ),
         )
+        self._db_drivers[driver_ref] = d
+        return d
 
     async def _persist_circuit(self, data: list[dict[str, Any]], round_: int) -> int:
         """Creates or retrieves a circuit record from the database.
@@ -751,8 +743,12 @@ class DataPoller(BasePoller):
             d["driver_id"] = gpr.driver.driver_id
             d["constructor_id"] = gpr.driver.constructor.constructor_id
 
-            d["time_millis"] = gpr.time.millis
-            d["time_str"] = gpr.time.time
+            if gpr.time is not None:
+                d["time_millis"] = gpr.time.millis
+                d["time_str"] = gpr.time.time
+            else:
+                d["time_millis"] = None
+                d["time_str"] = None
 
             if gpr.fastest_lap is not None:
                 d["fastest_lap_rank"] = gpr.fastest_lap.rank
