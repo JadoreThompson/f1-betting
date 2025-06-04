@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 import numpy as np
 import pandas as pd
 from .config import DPATH
@@ -24,94 +25,93 @@ def parse_times(s: str) -> int:
     return int(hour) * 3600 + int(minute) * 60 + int(second)
 
 
-def merge_datasets() -> pd.DataFrame:
+def get_datasets() -> dict:
     """
-    Merges multiple racing-related datasets into a single DataFrame for
-    analysis or testing.
+    Loads all racing-related datasets and returns them in a dictionary.
 
-    Appends previous race statistics for drivers and constructors (e.g., points, wins, standings),
-    standardizes data types, and adds a numeric representation of race position.
+    Returns:
+        dict: A dictionary containing all relevant DataFrames.
+    """
+    datasets = {
+        "circuits": pd.read_csv(os.path.join(DPATH, "circuits.csv"))[
+            ["circuitId", "circuitRef"]
+        ],
+        "constructors": pd.read_csv(os.path.join(DPATH, "constructors.csv"))[
+            ["constructorId", "constructorRef"]
+        ],
+        "constructor_standings": pd.read_csv(
+            os.path.join(DPATH, "constructor_standings.csv")
+        )[["raceId", "constructorId", "points", "position"]],
+        "drivers": pd.read_csv(os.path.join(DPATH, "drivers.csv"))[
+            ["driverId", "driverRef", "dob", "nationality"]
+        ],
+        "driver_standings": pd.read_csv(os.path.join(DPATH, "driver_standings.csv"))[
+            ["raceId", "driverId", "points", "position", "wins"]
+        ],
+        "results": pd.read_csv(os.path.join(DPATH, "results.csv"))[
+            [
+                "raceId",
+                "driverId",
+                "constructorId",
+                "grid",
+                "position",
+                "positionText",
+                "positionOrder",
+                "statusId",
+            ]
+        ],
+        "races": pd.read_csv(os.path.join(DPATH, "races.csv"))[
+            ["raceId", "circuitId", "year", "round"]
+        ],
+        "qualifying": pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
+            ["raceId", "driverId", "position"]
+        ],
+    }
+
+    return datasets
+
+
+def merge_datasets(datasets: Optional[dict[str, pd.DataFrame]] = None) -> pd.DataFrame:
+    """
+    Merges and processes racing-related datasets.
+
+    Args:
+        datasets (dict): Dictionary of DataFrames loaded from get_datasets().
 
     Returns:
         pd.DataFrame: The merged and processed dataset.
     """
-
-    circuits_df = pd.read_csv(os.path.join(DPATH, "circuits.csv"))[
-        ["circuitId", "circuitRef"]
-    ]
-    constructors_df = pd.read_csv(os.path.join(DPATH, "constructors.csv"))[
-        ["constructorId", "constructorRef"]
-    ]
-
-    constructors_standings_df = pd.read_csv(
-        os.path.join(DPATH, "constructor_standings.csv")
-    )[["raceId", "constructorId", "points", "position"]]
-
-    drivers_df = pd.read_csv(os.path.join(DPATH, "drivers.csv"))[
-        ["driverId", "driverRef", "dob", "nationality"]
-    ]
-
-    driver_standings_df = pd.read_csv(os.path.join(DPATH, "driver_standings.csv"))[
-        ["raceId", "driverId", "points", "position", "wins"]
-    ]
-
-    results_df = pd.read_csv(os.path.join(DPATH, "results.csv"))[
-        [
-            "raceId",
-            "driverId",
-            "constructorId",
-            "grid",
-            "position",
-            "positionText",
-            "positionOrder",
-            "statusId",
-        ]
-    ]
-
-    races_df = pd.read_csv(os.path.join(DPATH, "races.csv"))[
-        ["raceId", "circuitId", "year", "round"]
-    ]
-
-    quali_df = pd.read_csv(os.path.join(DPATH, "qualifying.csv"))[
-        ["raceId", "driverId", "position"]
-    ]
-
-
-    df = races_df.merge(results_df, on=["raceId"])
-    df = df.merge(circuits_df, on=["circuitId"])
+    if datasets is None:
+        datasets = get_datasets()
+        
+    df = datasets["races"].merge(datasets["results"], on="raceId")
+    df = df.merge(datasets["circuits"], on="circuitId")
     df = df.merge(
-        driver_standings_df,
+        datasets["driver_standings"],
         on=["raceId", "driverId"],
         suffixes=("", "_driver_standings"),
     )
-    df = df.merge(constructors_df, on=["constructorId"])
-    df = df.merge(drivers_df, on=["driverId"])
+    df = df.merge(datasets["constructors"], on="constructorId")
+    df = df.merge(datasets["drivers"], on="driverId")
     df = df.merge(
-        constructors_standings_df,
+        datasets["constructor_standings"],
         on=["raceId", "constructorId"],
         suffixes=("", "_constructor_standings"),
     )
     df = df.merge(
-        quali_df,
+        datasets["qualifying"],
         on=["driverId", "raceId"],
         suffixes=("", "_quali"),
     )
 
     df = df.sort_values(["year", "round"])
 
-    for key in (
-        "wins",
-        "points",
-        "position_driver_standings",
-    ):
+    for key in ("wins", "points", "position_driver_standings"):
         df[f"prev_{key}"] = df.groupby(["year", "driverId"])[key].transform(
             lambda x: x.shift(1).fillna(0)
         )
 
-    for key in (
-        "position_constructor_standings",
-        "points_constructor_standings",
-    ):
+    for key in ("position_constructor_standings", "points_constructor_standings"):
         df[f"prev_{key}"] = df.groupby(["year", "constructorId", "driverId"])[
             key
         ].transform(lambda x: x.shift(1).fillna(0))
@@ -120,4 +120,5 @@ def merge_datasets() -> pd.DataFrame:
         df[key] = df[key].astype("str")
 
     df["position_numeric"] = pd.to_numeric(df["position"], errors="coerce").fillna(0)
+
     return df
