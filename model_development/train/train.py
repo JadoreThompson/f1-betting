@@ -163,11 +163,13 @@ def train_forest(
         whole_2024_success,
     )
 
-    eval_df.to_csv("eval.csv", index=False)
+    # eval_df.to_csv("eval.csv", index=False)
     # df_2024.to_csv("2024.csv", index=False)
 
     if show_importances:
         print(json.dumps(model.variable_importances(), indent=4))
+        
+    model.save(os.path.join(MPATH, "top3_v2"))
 
     return model
 
@@ -200,6 +202,7 @@ def train_regression(
 
     df = df[df["year"] < 2024]
     df = drop_features(df.dropna())
+    df.to_csv("file.csv", index=False)
 
     if classification:
         df = balance_classes(df)
@@ -247,7 +250,6 @@ def train_regression(
     y_pred = clf.predict(X_test_scaled)
     y_pred_2024 = clf.predict(X_test_2024_scaled)
 
-    
     if classification:
         print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
         print(
@@ -280,9 +282,5 @@ def train_regression(
 
 
 if __name__ == "__main__":
-    # train_forest("winner", "winner")
-    train_regression(True, "winner", True)
-    # test_hyperparams()
-    # df = get_dataset("top3")
-    # df = df[df["year"] == 2024]
-    # df.to_csv("file.csv", index=False)
+    # train_regression(True, "winner", True, os.path.join(MPATH, "winner-log-reg-v1.pkl"))
+    train_forest("top3", "top3")

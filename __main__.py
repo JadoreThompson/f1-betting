@@ -15,29 +15,28 @@ from utils.db import get_db_session
 
 def run_data_pipeline() -> None:
     """Runs the F1 data polling pipeline in a separate process.
-    
+
     Initializes a DataPoller with a 10-second sleep duration and starts
     the continuous polling loop to fetch and persist F1 race data
     (qualifying, sprint, and grand prix results).
-    
+
     This function is designed to be executed in a multiprocessing context
     and will run indefinitely until the process is terminated.
     """
-    # asyncio.run(DataPoller(30).poll())
-    asyncio.run(DataPoller(30)._persist_driver_standings(2024, 10))
+    asyncio.run(DataPoller(30).poll())    
 
 
 async def settlement_pipeline(queue: Queue) -> None:
     """Processes race results and determines betting market settlements.
-    
+
     Fetches the latest race results, retrieves all closed betting markets,
     and determines winners/losers for each market based on the race outcome.
     Settlement decisions are queued for processing by the matching engine.
-    
+
     The function handles two market categories:
     - TOP3: Determines if a driver finished in the top 3 positions
     - WINNER: Determines if a driver won the race
-    
+
     Args:
         queue (Queue): Multiprocessing queue for sending settlement data
                       to the matching engine.
@@ -81,10 +80,10 @@ async def settlement_pipeline(queue: Queue) -> None:
 
 def run_settlement_pipeline(queue: Queue) -> None:
     """Wrapper function to run the settlement pipeline in a separate process.
-    
+
     Executes the async settlement_pipeline function using asyncio.run().
     This function serves as an entry point for multiprocessing execution.
-    
+
     Args:
         queue (Queue): Multiprocessing queue for communication with the
                       matching engine process.
@@ -94,11 +93,11 @@ def run_settlement_pipeline(queue: Queue) -> None:
 
 def run_engine(queue: Queue) -> None:
     """Runs the betting matching engine in a separate process.
-    
+
     Initializes and starts the MatchingEngine which processes betting
     orders, matches back and lay bets, and handles settlement operations.
     The engine communicates via the provided queue.
-    
+
     Args:
         queue (Queue): Multiprocessing queue for receiving messages from
                       other processes (settlements, orders, etc.).
@@ -109,14 +108,15 @@ def run_engine(queue: Queue) -> None:
 
 def run_server(queue: Queue) -> None:
     """Runs the FastAPI web server in a separate process.
-    
+
     Configures and starts a uvicorn server to handle HTTP requests for
     the betting API. The server is configured to run on localhost:8000
     and uses the provided queue for communication with the matching engine.
-    
+
     Args:
         queue (Queue): Multiprocessing queue for server-to-engine communication.
     """
+
     async def helper() -> None:
         """Inner async function to configure and start the uvicorn server."""
         config.MATCHING_ENGINE_QUEUE = queue
@@ -129,22 +129,22 @@ def run_server(queue: Queue) -> None:
 
 def main() -> None:
     """Main orchestrator function that manages all application processes.
-    
+
     Sets up and manages multiple processes for the F1 betting system:
     - Data pipeline: Polls F1 API for race data
     - Settlement pipeline: Processes race results for bet settlement
     - Matching engine: Handles bet matching and settlement execution
     - Web server: Provides HTTP API for betting operations
-    
+
     The function implements automatic process restart logic - if any process
     dies unexpectedly, it will be automatically restarted. The main loop
     continues until interrupted by a keyboard interrupt or system signal.
-    
+
     Process management features:
     - Automatic restart of failed processes
     - Graceful shutdown on interruption
     - Process health monitoring with 0.5s check interval
-    
+
     Note: Currently only the data pipeline is enabled in the args tuple.
     Uncomment other processes as needed for full system operation.
     """

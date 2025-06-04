@@ -2,6 +2,7 @@ import asyncio
 import json
 
 import aiohttp
+import pandas as pd
 from sqlalchemy import insert
 from betting_engine.config import BE_CONTRACT, PROVIDER
 from betting_engine.pollers.settlement_poller import SettlementPoller

@@ -82,13 +82,10 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
             lambda x: get_position_category(x, pos_cat)
         )
 
-    w = 1
-
-    df = append_elo(df, k=200, p=0.01)
+    df = append_elo(df)
     df = append_elo_change(df)
-    # df = append_elo_rank_in_race(df)
+    df = append_last_n(df, "target", window=6)
     df = append_last_n_podiums(df, window=0)
-    # df = append_constructor_encodings(df)
     return df
 
 

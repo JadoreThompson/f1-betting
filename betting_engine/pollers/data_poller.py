@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
 from sqlalchemy import insert, select, desc, case
 from sqlalchemy.dialects.postgresql import insert as ps_insert
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import sum as sql_sum, coalesce
 
 from config import POLLING_BASE_URL
@@ -21,6 +20,7 @@ from db_models import (
     QualiResults,
     SprintResults,
 )
+from model_development.pipeline import Pipeline
 from utils.db import get_db_session
 from .base_poller import BasePoller
 from .models import (
@@ -56,6 +56,7 @@ class DataPoller(BasePoller):
         """
         super().__init__(sleep_duration)
         self._db_drivers: dict[str, Driver] = {}  # driver_ref => Driver
+        self._pipeline = Pipeline()
 
     async def _assert_driver_and_constructor_id(self, driver: Driver) -> None:
         """Ensures driver and constructor have database IDs, persisting them if necessary.
@@ -157,21 +158,23 @@ class DataPoller(BasePoller):
         The method will return if no upcoming grand prix is found.
         """
         configs = self._get_configs()
+        cur_round = 0
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
                 schedule = await super()._fetch_schedule(sess)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                next_gp_info = self._get_target_gp(schedule)
+                # next_gp_info = self._get_target_gp(schedule)
 
-                if next_gp_info is None:
-                    raise SeasonOver
+                # if next_gp_info is None:
+                #     raise SeasonOver
 
-                year = datetime.now().date().year
-                cur_round, _ = next_gp_info
+                year = datetime.now().date().year - 1
+                # cur_round, _ = next_gp_info
+                cur_round += 1
                 circuit_id = await self._persist_circuit(schedule, cur_round)
-
+                print(1)
                 # Fetching
                 for (
                     target_func,
@@ -180,14 +183,14 @@ class DataPoller(BasePoller):
                     parse_func,
                     persist_func,
                 ) in configs:
-                    next_gp_info = target_func(schedule)
-                    if next_gp_info is None or next_gp_info[0] != cur_round:
-                        continue
+                    # next_gp_info = target_func(schedule)
+                    # if next_gp_info is None or next_gp_info[0] != cur_round:
+                    #     continue
 
-                    _, time_of_event = next_gp_info
-                    await sleep(
-                        time_of_event.timestamp() - datetime.now(UTC).timestamp()
-                    )
+                    # _, time_of_event = next_gp_info
+                    # await sleep(
+                    #     time_of_event.timestamp() - datetime.now(UTC).timestamp()
+                    # )
 
                     fetched_data = await fetch_func(sess, cur_round, year)
                     if fetched_data is None:
@@ -211,6 +214,8 @@ class DataPoller(BasePoller):
                     if lookup_key != "QualifyingResults":
                         await self._persist_driver_standings(year, cur_round)
                         await self._persist_constructor_standings(year, cur_round)
+
+                    await self._pipeline.start()
 
                 print(f"Sleeping for {self._sleep_duration} seconds...")
                 await sleep(self._sleep_duration)
