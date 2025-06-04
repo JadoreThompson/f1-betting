@@ -1,5 +1,6 @@
 from __future__ import annotations
-from .enums import BetStatus, OrderStatus
+from enums import BetStatus
+from .enums import OrderStatus
 from .typing import Payload
 
 

@@ -5,3 +5,4 @@ node_modules
 # Private
 .env
 msc
+rec.py

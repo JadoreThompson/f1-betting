@@ -10,16 +10,6 @@ class OrderStatus(int, Enum):
     CLOSED = 4
 
 
-class BetStatus(str, Enum):
-    """Client facing bet status."""
-
-    OPEN = "open"
-    PENDING = "pending"
-    CLOSED = "closed"
-    CANCELLED = "cancelled"
-    SETTLED = "settled"
-
-
 class Topic(int, Enum):
     CREATE = 0
     CLOSE = 1

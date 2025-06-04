@@ -4,11 +4,10 @@ from sqlalchemy import update
 
 from config import PRIVATE_KEY
 from db_models import Bets, Markets
-from enums import MarketStatus, Side
+from enums import MarketStatus, Side, BetStatus
 from utils.db import get_db_session
 
 from .config import PROVIDER, USDT_CONTRACT, BE_CONTRACT
-from .enums import BetStatus
 from .order import Order
 
 

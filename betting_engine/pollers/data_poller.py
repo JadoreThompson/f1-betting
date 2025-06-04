@@ -5,8 +5,9 @@ from asyncio import sleep
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
-from sqlalchemy import insert, select, desc
+from sqlalchemy import insert, select, desc, case
 from sqlalchemy.dialects.postgresql import insert as ps_insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import sum as sql_sum, coalesce
 
 from config import POLLING_BASE_URL
@@ -777,6 +778,7 @@ class DataPoller(BasePoller):
             await sess.commit()
 
     async def _persist_driver_standings(self, year: int, round_: int) -> None:
+        # Points from Sprint results
         sp_subq = (
             select(
                 sql_sum(SprintResults.points).label("sp_total_points"),
@@ -784,8 +786,10 @@ class DataPoller(BasePoller):
             )
             .where(SprintResults.year == year)
             .group_by(SprintResults.driver_id)
-        ).subquery()
+            .subquery()
+        )
 
+        # Points from Grand Prix results
         gp_subq = (
             select(
                 sql_sum(GrandPrixResults.points).label("gp_total_points"),
@@ -793,14 +797,84 @@ class DataPoller(BasePoller):
             )
             .where(GrandPrixResults.year == year)
             .group_by(GrandPrixResults.driver_id)
-        ).subquery()
+            .subquery()
+        )
 
+        # Constructor info
         dc_subq = select(Drivers.driver_id, Drivers.constructor_id).subquery()
+
+        # Running wins: inline Grand Prix + Sprint wins + window sum
+        gp_wins_subq = (
+            select(
+                GrandPrixResults.driver_id,
+                GrandPrixResults.year,
+                GrandPrixResults.round,
+                case((GrandPrixResults.position == 1, 1), else_=0).label("gp_wins"),
+            )
+            .where(GrandPrixResults.year == year)
+            .subquery()
+        )
+
+        sp_wins_subq = (
+            select(
+                SprintResults.driver_id,
+                SprintResults.year,
+                SprintResults.round,
+                case((SprintResults.position == 1, 1), else_=0).label("sp_wins"),
+            )
+            .where(SprintResults.year == year)
+            .subquery()
+        )
+
+        combined_wins_subq = (
+            select(
+                gp_wins_subq.c.driver_id,
+                gp_wins_subq.c.year,
+                gp_wins_subq.c.round,
+                coalesce(gp_wins_subq.c.gp_wins, 0).label("gp_wins"),
+                coalesce(sp_wins_subq.c.sp_wins, 0).label("sp_wins"),
+            )
+            .select_from(
+                gp_wins_subq.outerjoin(
+                    sp_wins_subq,
+                    (gp_wins_subq.c.driver_id == sp_wins_subq.c.driver_id)
+                    & (gp_wins_subq.c.year == sp_wins_subq.c.year)
+                    & (gp_wins_subq.c.round == sp_wins_subq.c.round),
+                )
+            )
+            .subquery()
+        )
+
+        # Final subquery: includes cumulative total_wins
+        wins_with_running_total = (
+            select(
+                combined_wins_subq.c.driver_id,
+                (
+                    sql_sum(combined_wins_subq.c.gp_wins).over(
+                        partition_by=combined_wins_subq.c.driver_id,
+                        order_by=[
+                            combined_wins_subq.c.year,
+                            combined_wins_subq.c.round,
+                        ],
+                    )
+                    + sql_sum(combined_wins_subq.c.sp_wins).over(
+                        partition_by=combined_wins_subq.c.driver_id,
+                        order_by=[
+                            combined_wins_subq.c.year,
+                            combined_wins_subq.c.round,
+                        ],
+                    )
+                ).label("total_wins"),
+            )
+            .where(combined_wins_subq.c.round == round_)
+            .subquery()
+        )
 
         async with get_db_session() as sess:
             r = await sess.execute(
                 select(DriverStandings.driver_id).where(
-                    DriverStandings.year == year, DriverStandings.round == round_
+                    DriverStandings.year == year,
+                    DriverStandings.round == round_,
                 )
             )
 
@@ -815,11 +889,19 @@ class DataPoller(BasePoller):
                         coalesce(gp_subq.c.gp_total_points, 0)
                         + coalesce(sp_subq.c.sp_total_points, 0)
                     ).label("total_points"),
+                    coalesce(wins_with_running_total.c.total_wins, 0).label(
+                        "total_wins"
+                    ),
                 )
                 .select_from(
                     gp_subq.outerjoin(
                         sp_subq, gp_subq.c.driver_id == sp_subq.c.driver_id
-                    ).join(dc_subq, gp_subq.c.driver_id == dc_subq.c.driver_id)
+                    )
+                    .join(dc_subq, gp_subq.c.driver_id == dc_subq.c.driver_id)
+                    .outerjoin(
+                        wins_with_running_total,
+                        gp_subq.c.driver_id == wins_with_running_total.c.driver_id,
+                    )
                 )
                 .order_by(desc("total_points"))
             )
@@ -834,10 +916,14 @@ class DataPoller(BasePoller):
                             "constructor_id": constructor_id,
                             "points": points,
                             "position": ind + 1,
+                            "wins": total_wins,
                         }
-                        for ind, (driver_id, constructor_id, points) in enumerate(
-                            r.all()
-                        )
+                        for ind, (
+                            driver_id,
+                            constructor_id,
+                            points,
+                            total_wins,
+                        ) in enumerate(r.all())
                     ]
                 )
             )

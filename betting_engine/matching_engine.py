@@ -2,8 +2,8 @@ from datetime import datetime
 from multiprocessing import Queue
 from typing import Iterable
 
-from enums import Side
-from .enums import BetStatus, OrderStatus, Topic
+from enums import Side, BetStatus
+from .enums import OrderStatus, Topic
 from .order import Order
 from .orderbook import OrderBook
 from .typing import EnginePayload, Payload, SettlePayload
@@ -17,7 +17,7 @@ class MatchingEngine:
     async def run(self) -> None:
         while True:
             payload: EnginePayload = self._queue.get()
-            print(payload)
+
             if payload["topic"] == Topic.CREATE:
                 self._place_order(payload)
             elif payload["topic"] == Topic.CLOSE:

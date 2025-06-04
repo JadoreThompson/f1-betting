@@ -75,7 +75,7 @@ async def f():
 
 # write_sqlalchemy_url()
 # remove_sqlalchemy_url()
-# alembic_revision_wrapper("Added points to sprint results table.")
+# alembic_revision_wrapper("Added wins to driver standings table")
 # asyncio.run(gen_markets())
 # asyncio.run(f())
 # asyncio.run(Poller.poll())

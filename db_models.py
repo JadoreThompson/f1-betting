@@ -12,9 +12,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from uuid import uuid4
-
-from betting_engine import BetStatus
-from enums import MarketStatus
+from enums import MarketStatus, BetStatus
 
 
 class Base(DeclarativeBase):
@@ -54,7 +52,7 @@ class Drivers(Base):
     )
 
     def __repr__(self):
-        return f"Driver(id={self.driver_id}, name={self.given_name} {self.family_name})"
+        return f"Driver(driver_id={self.driver_id},)"
 
 
 class Constructors(Base):
@@ -88,7 +86,7 @@ class Constructors(Base):
     )
 
     def __repr__(self):
-        return f"Constructor(id={self.constructor_id}, name={self.name})"
+        return f"Constructor(constructor_id={self.constructor_id}, name={self.name})"
 
 
 class DriverStandings(Base):
@@ -107,6 +105,7 @@ class DriverStandings(Base):
     )
     points: Mapped[float] = mapped_column(Float, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
+    wins: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
 
     # Relationships
     driver: Mapped["Drivers"] = relationship(
@@ -181,9 +180,7 @@ class Circuits(Base):
     )
 
     def __repr__(self):
-        return (
-            f"Circuit(id={self.circuit_id}, name={self.name}, location={self.location})"
-        )
+        return f"Circuit(circuit_id={self.circuit_id}, name={self.name}, location={self.location})"
 
 
 class QualiResults(Base):

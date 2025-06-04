@@ -15,3 +15,13 @@ class MarketStatus(int, Enum):
 class Side(str, Enum):
     BACK = "back"
     LAY = "lay"
+    
+class BetStatus(str, Enum):
+    """Client facing bet status."""
+
+    OPEN = "open"
+    PENDING = "pending"
+    CLOSED = "closed"
+    CANCELLED = "cancelled"
+    SETTLED = "settled"
+
