@@ -33,9 +33,7 @@ class SettlementPoller(BasePoller):
                 withib the grand prix.
         """
         async with ClientSession() as sess:
-            schedule = await super()._fetch_schedule(sess)
-            json.dump(schedule, open("jolpica_schedule.json", "w"))
-
+            schedule = await super()._fetch_schedule(sess)            
             target_data = self._get_target(schedule)
 
             if target_data is None:
@@ -47,19 +45,18 @@ class SettlementPoller(BasePoller):
                 f"Target round: {round_number}, time left until start: {time_left:.2f} seconds."
             )
 
-            # await sleep(time_left) # Commented out for testing purposes.
+            await sleep(time_left)
             print(f"Finished Sleeping")
 
-            endpoint = POLLING_BASE_URL + f"/{datetime.now().date().year}/{2}/sprint"
-            print("Polling endpoint: {endpoint}")
+            endpoint = POLLING_BASE_URL + f"/{datetime.now().date().year}/{round_number}"
+            print(f"Polling endpoint: {endpoint}")
 
             while True:
                 async with sess.get(endpoint) as rsp:
                     if rsp.status != 200:
                         raise Exception(f"{endpoint} threw status code: {rsp.status}")
 
-                    data = await rsp.json()
-                    # json.dump(data, open("race_data.json", "w"))
+                    data = await rsp.json()                                        
 
                     if race_data := data["MRData"]["RaceTable"]["Races"][0]["Results"]:
                         print("Race results found!")

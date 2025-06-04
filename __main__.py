@@ -151,9 +151,9 @@ def main() -> None:
     matching_engine_queue = Queue()  # TODO: Change to async queue.
 
     args: tuple[tuple[Callable[[Queue], None] | Callable[[], None], str, bool], ...] = (
-        # (run_server, "server", True),
-        # (run_engine, "matching_engine", True),
-        # (run_settlement_pipeline, "settlement_pipeline", True),
+        (run_server, "server", True),
+        (run_engine, "matching_engine", True),
+        (run_settlement_pipeline, "settlement_pipeline", True),
         (run_data_pipeline, "data_pipeline", False),
     )
 

@@ -8,14 +8,7 @@ from sqlalchemy import select
 from config import JWT_SECRET_KEY, JWT_ALGO, JWT_EXPIRY
 from db_models import Users
 from utils.db import get_db_session
-
-
-class JWTError(Exception):
-    """Custom exception for JWT errors."""
-
-    def __init__(self, message: str):
-        super().__init__(message)
-        self.message = message
+from ..exc import JWTError
 
 
 def generate_jwt(payload: dict[str, Any]) -> str:

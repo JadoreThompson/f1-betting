@@ -2,9 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from server.utils.utils import JWTError
-
-from .routes import auth_route, base_route, bet_route, markets_route
+from server.exc import JWTError
+from .routes import auth_route, bet_route, markets_route
 
 app = FastAPI()
 
@@ -17,7 +16,6 @@ app.add_middleware(
 )
 
 app.include_router(auth_route)
-app.include_router(base_route)
 app.include_router(bet_route)
 app.include_router(markets_route)
 

@@ -157,24 +157,22 @@ class DataPoller(BasePoller):
 
         The method will return if no upcoming grand prix is found.
         """
-        configs = self._get_configs()
-        cur_round = 0
+        configs = self._get_configs()        
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
                 schedule = await super()._fetch_schedule(sess)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                # next_gp_info = self._get_target_gp(schedule)
+                next_gp_info = self._get_target_gp(schedule)
 
-                # if next_gp_info is None:
-                #     raise SeasonOver
+                if next_gp_info is None:
+                    raise SeasonOver
 
-                year = datetime.now().date().year - 1
-                # cur_round, _ = next_gp_info
-                cur_round += 1
+                year = datetime.now().date().year
+                cur_round, _ = next_gp_info
                 circuit_id = await self._persist_circuit(schedule, cur_round)
-                print(1)
+                
                 # Fetching
                 for (
                     target_func,
@@ -183,14 +181,14 @@ class DataPoller(BasePoller):
                     parse_func,
                     persist_func,
                 ) in configs:
-                    # next_gp_info = target_func(schedule)
-                    # if next_gp_info is None or next_gp_info[0] != cur_round:
-                    #     continue
+                    next_gp_info = target_func(schedule)
+                    if next_gp_info is None or next_gp_info[0] != cur_round:
+                        continue
 
-                    # _, time_of_event = next_gp_info
-                    # await sleep(
-                    #     time_of_event.timestamp() - datetime.now(UTC).timestamp()
-                    # )
+                    _, time_of_event = next_gp_info
+                    await sleep(
+                        time_of_event.timestamp() - datetime.now(UTC).timestamp()
+                    )
 
                     fetched_data = await fetch_func(sess, cur_round, year)
                     if fetched_data is None:
