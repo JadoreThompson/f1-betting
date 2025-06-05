@@ -1,4 +1,3 @@
-from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import insert, select
@@ -6,6 +5,7 @@ from sqlalchemy import insert, select
 from betting_engine import Topic
 from db_models import Bets, Markets
 from server.middleware import verify_jwt
+from server.typing import JWTPayload
 from utils.db import get_db_session
 from utils.utils import dump_sqlalchemy_object
 from .controller import push_to_engine
@@ -15,9 +15,7 @@ bet_route = APIRouter(prefix="/bet", tags=["bet"])
 
 
 @bet_route.post("/create")
-async def create_bet(
-    body: CreateBet, jwt_payload: dict[str, Any] = Depends(verify_jwt)
-):
+async def create_bet(body: CreateBet, jwt_payload: JWTPayload = Depends(verify_jwt)):
     async with get_db_session() as sess:
         res = await sess.execute(
             select(Markets).where(Markets.market_id == body.market_id)
@@ -29,7 +27,7 @@ async def create_bet(
         res = await sess.execute(
             insert(Bets)
             .values(
-                user_id=jwt_payload["sub"],
+                user_id=jwt_payload.sub,
                 market_id=market.market_id,
                 side=body.side,
                 amount=body.amount,
@@ -57,11 +55,11 @@ async def create_bet(
 
 
 @bet_route.delete("/cancel")
-async def cancel_bet(bet_id: str, jwt_payload: dict[str, Any] = Depends(verify_jwt)):
+async def cancel_bet(bet_id: str, jwt_payload: JWTPayload = Depends(verify_jwt)):
     async with get_db_session() as sess:
         res = await sess.execute(
             select(Bets).where(
-                Bets.bet_id == bet_id, Bets.user_id == jwt_payload["sub"]
+                Bets.bet_id == bet_id, Bets.user_id == jwt_payload.sub
             )
         )
 

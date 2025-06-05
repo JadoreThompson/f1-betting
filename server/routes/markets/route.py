@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from sqlalchemy import select, func, case
-from sqlalchemy.sql.functions import sum as sql_sum, count, coalesce
+from sqlalchemy.sql.functions import sum as sql_sum, coalesce
 
 from db_models import Bets, Markets
 from enums import BetStatus, MarketStatus, MarketCategory
@@ -51,18 +51,26 @@ async def get_markets() -> MarketResponse:
 
 
 @markets_route.get("/summary")
-async def market_summary() -> MarketSummary:
+async def summary() -> MarketSummary:
     async with get_db_session() as sess:
         r = await sess.execute(
             select(
                 coalesce(sql_sum(Bets.amount), 0),
-                coalesce(sql_sum(
-                    case(
-                        (Bets.bet_status.in_([BetStatus.PENDING, BetStatus.OPEN]), 1),
-                        else_=0,
-                    )
-                ), 0),
+                coalesce(
+                    sql_sum(
+                        case(
+                            (
+                                Bets.bet_status.in_(
+                                    [BetStatus.PENDING, BetStatus.OPEN]
+                                ),
+                                1,
+                            ),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ),
             )
         )
-        d= r.first()
+        d = r.first()
     return MarketSummary(total_volume=d[0], active_bets=d[1])
