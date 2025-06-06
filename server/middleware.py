@@ -1,6 +1,7 @@
 from typing import Any
 from fastapi import HTTPException, Request
 from config import COOKIE_ALIAS
+from server.exc import JWTError
 from server.utils.utils import decode_jwt, validate_jwt_payload
 
 
@@ -19,7 +20,7 @@ async def verify_jwt(req: Request) -> dict[str, Any]:
     token = req.cookies.get(COOKIE_ALIAS)
 
     if not token:
-        raise HTTPException(status_code=401, detail="Authentication token is missing")
+        raise JWTError("Authentication token is missing")
 
     payload = decode_jwt(token)
     return await validate_jwt_payload(payload)

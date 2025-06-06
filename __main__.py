@@ -23,7 +23,7 @@ def run_data_pipeline() -> None:
     This function is designed to be executed in a multiprocessing context
     and will run indefinitely until the process is terminated.
     """
-    asyncio.run(DataPoller(30).poll())    
+    asyncio.run(DataPoller(30).poll())
 
 
 async def settlement_pipeline(queue: Queue) -> None:
@@ -120,7 +120,11 @@ def run_server(queue: Queue) -> None:
     async def helper() -> None:
         """Inner async function to configure and start the uvicorn server."""
         config.MATCHING_ENGINE_QUEUE = queue
-        server_config = uvicorn.Config("server.app:app", host="localhost", port=8000)
+        server_config = uvicorn.Config(
+            "server.app:app",
+            host="0.0.0.0",
+            port=8000,
+        )
         server = uvicorn.Server(server_config)
         await server.serve()
 

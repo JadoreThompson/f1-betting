@@ -10,6 +10,8 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
     IERC20 public usdtToken;
     mapping(uint256 => address[]) public marketParticipants;
     mapping(uint256 => uint256) public marketEscrow;
+    uint256 public volume;
+    uint256 public activeBetCount;
 
     event BetPlaced(address indexed participant, uint256 indexed marketId, uint256 amount);
     event ParticipantPaidOut(address indexed participant, uint256 indexed marketId, uint256 amount);
@@ -41,6 +43,8 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
         require(amount > 0, "Bet amount must be greater than zero");
         require(usdtToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
 
+        activeBetCount += 1;
+        volume += amount;
         marketEscrow[marketId] += amount;
         marketParticipants[marketId].push(msg.sender);
         emit BetPlaced(msg.sender, marketId, amount);
@@ -67,6 +71,7 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
         require(marketEscrow[marketId] >= amount, "Insufficient escrowed funds");
         require(usdtToken.transfer(winner, amount), "Transfer failed");
 
+        activeBetCount -= 1;
         marketEscrow[marketId] -= amount;
         removeParticipant(marketId, winner);
         emit ParticipantPaidOut(winner, marketId, amount);

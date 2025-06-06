@@ -48,7 +48,7 @@ async def validate_jwt_payload(payload: JWTPayload) -> JWTPayload:
     """
     async with get_db_session() as sess:
         res = await sess.execute(
-            select(Users).where(Users.user_id == payload["sub"])
+            select(Users).where(Users.user_id == payload.sub)
         )
         user = res.first()
 

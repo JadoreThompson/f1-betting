@@ -3,7 +3,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import insert, select
 
 from betting_engine import Topic
-from db_models import Bets, Markets
+from db_models import Bets, Markets, Transactions
+from enums import TransactionType
 from server.middleware import verify_jwt
 from server.typing import JWTPayload
 from utils.db import get_db_session
@@ -36,6 +37,18 @@ async def create_bet(body: CreateBet, jwt_payload: JWTPayload = Depends(verify_j
             .returning(Bets)
         )
         placed_bet: Bets = res.scalar_one()
+
+        await sess.execute(
+            insert(Transactions).values(
+                user_id=jwt_payload.sub,
+                bet_id=placed_bet.bet_id,
+                market_id=body.market_id,
+                transaction_type=TransactionType.DEPOSIT.value,
+                amount=body.amount,
+                address=body.txn_address,
+            )
+        )
+
         await sess.commit()
 
     push_to_engine(
@@ -58,9 +71,7 @@ async def create_bet(body: CreateBet, jwt_payload: JWTPayload = Depends(verify_j
 async def cancel_bet(bet_id: str, jwt_payload: JWTPayload = Depends(verify_jwt)):
     async with get_db_session() as sess:
         res = await sess.execute(
-            select(Bets).where(
-                Bets.bet_id == bet_id, Bets.user_id == jwt_payload.sub
-            )
+            select(Bets).where(Bets.bet_id == bet_id, Bets.user_id == jwt_payload.sub)
         )
 
         bet: Bets | None = res.scalars().first()

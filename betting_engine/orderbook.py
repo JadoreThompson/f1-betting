@@ -1,10 +1,10 @@
 from datetime import UTC, datetime
+from sqlalchemy import insert, update
 from typing import Iterable
-from sqlalchemy import update
 
 from config import PRIVATE_KEY
-from db_models import Bets, Markets
-from enums import MarketStatus, Side, BetStatus
+from db_models import Bets, Markets, Transactions
+from enums import MarketStatus, Side, BetStatus, TransactionType
 from utils.db import get_db_session
 
 from .config import PROVIDER, USDT_CONTRACT, BE_CONTRACT
@@ -55,12 +55,15 @@ class OrderBook:
 
         for w in winners:
             wallet_addr = w.payload["wallet_address"]
-            payout = (w.payload["amount"] * k) * 10**usdt_decimals
+            payout = w.payload["amount"] * k
+            w.payload["settlement_amount"] = payout
+            payout_usdt = payout * 10**usdt_decimals
+            # payout_usdt = (w.payload["amount"] * k) * 10**usdt_decimals
 
             txn = await BE_CONTRACT.functions.withdraw(
                 self._market_id,
                 wallet_addr,
-                int(payout),
+                int(payout_usdt),
             ).build_transaction(
                 {
                     "nonce": await PROVIDER.eth.get_transaction_count(wallet_addr),
@@ -87,6 +90,20 @@ class OrderBook:
             )
 
             await s.execute(update(Bets), [w.payload for w in winners])
+            await s.execute(
+                insert(Transactions),
+                [
+                    {
+                        "user_id": w.payload["user_id"],
+                        "bet_id": w.payload["bet_id"],
+                        "market_id": w.payload["market_id"],
+                        "transaction_type": TransactionType.SETTLE.value,
+                        "amount": w.payload["amount"],
+                        "address": w.payload["settlement_txn"]
+                    }
+                    for w in winners
+                ],
+            )
 
             await s.execute(
                 update(Markets)

@@ -3,13 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from server.exc import JWTError
-from .routes import auth_route, bet_route, markets_route
+from .routes import auth_route, bet_route, markets_route, user_route
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        # "http://localhost:5173",
+        "http://192.168.1.145:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -18,6 +21,7 @@ app.add_middleware(
 app.include_router(auth_route)
 app.include_router(bet_route)
 app.include_router(markets_route)
+app.include_router(user_route)
 
 
 @app.exception_handler(JWTError)

@@ -7,3 +7,4 @@ class CreateBet(CustomBaseModel):
     side: Side
     amount: float
     wallet_address: str
+    txn_address: str

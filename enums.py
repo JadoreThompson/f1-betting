@@ -25,3 +25,7 @@ class BetStatus(str, Enum):
     CANCELLED = "cancelled"
     SETTLED = "settled"
 
+class TransactionType(str, Enum):
+    DEPOSIT = "deposit"
+    SETTLE = "settle"
+    
