@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
-
 from config import DB_ENGINE, DB_URL
 
 smaker = sessionmaker(bind=DB_ENGINE, class_=AsyncSession, expire_on_commit=False)

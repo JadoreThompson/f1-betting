@@ -10,13 +10,13 @@ from server.typing import JWTPayload
 from utils.db import get_db_session
 from utils.utils import dump_sqlalchemy_object
 from .controller import push_to_engine
-from .models import CreateBet
+from .models import Bet
 
 bet_route = APIRouter(prefix="/bet", tags=["bet"])
 
 
 @bet_route.post("/create")
-async def create_bet(body: CreateBet, jwt_payload: JWTPayload = Depends(verify_jwt)):
+async def create_bet(body: Bet, jwt_payload: JWTPayload = Depends(verify_jwt)):
     async with get_db_session() as sess:
         res = await sess.execute(
             select(Markets).where(Markets.market_id == body.market_id)

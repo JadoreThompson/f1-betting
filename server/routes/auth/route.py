@@ -31,7 +31,7 @@ async def register(body: RegisterBody):
                 )
                 .returning(Users.user_id)
             )
-            user_id = res.first()[0]
+            user_id = res.scalar_one()
             await sess.commit()
 
         rsp = JSONResponse(
@@ -50,7 +50,7 @@ async def login(body: LoginBody):
                 (Users.username == body.login) | (Users.email == body.login)
             )
         )
-        user = res.scalar_one()
+        user = res.scalar_one_or_none()
 
         if not user or user.password != body.password:
             return JSONResponse(
