@@ -1,12 +1,17 @@
 import asyncio
+import os
 import time
 import uvicorn
+import requests
 
-from typing import Callable
-from sqlalchemy import select
+from datetime import datetime
+from json import dump
 from multiprocessing import Process, Queue
+from sqlalchemy import select
+from typing import Callable
 
 from betting_engine import Topic, MatchingEngine, DataPoller, SettlementPoller
+from config import POLLING_BASE_URL, SERVER_DATA_FOLDER
 from db_models import Markets
 from enums import MarketCategory, MarketStatus, Side
 from server import config
@@ -117,8 +122,17 @@ def run_server(queue: Queue) -> None:
         queue (Queue): Multiprocessing queue for server-to-engine communication.
     """
 
+    def fetch_shedule() -> None:
+        r = requests.get(POLLING_BASE_URL + f"/{datetime.now().year}")
+        d = r.json()
+        dump(
+            d["MRData"]["RaceTable"]["Races"],
+            open(os.path.join(SERVER_DATA_FOLDER, "schedule.json"), "w"),
+        )
+
     async def helper() -> None:
         """Inner async function to configure and start the uvicorn server."""
+        fetch_shedule()
         config.MATCHING_ENGINE_QUEUE = queue
         server_config = uvicorn.Config(
             "server.app:app",
@@ -154,7 +168,7 @@ def main() -> None:
     """
     matching_engine_queue = Queue()  # TODO: Change to async queue.
 
-    args: tuple[tuple[Callable[[Queue], None] | Callable[[], None], str, bool], ...] = (
+    args = (
         (run_server, "server", True),
         (run_engine, "matching_engine", True),
         (run_settlement_pipeline, "settlement_pipeline", True),

@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 load_dotenv()
 BPATH = os.path.dirname(__file__)
+SERVER_DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data")
+if not os.path.exists(SERVER_DATA_FOLDER):
+    os.mkdir(SERVER_DATA_FOLDER)
 
 # DB
 DB_URL = f"postgresql+asyncpg://{os.getenv("DB_USER")}:{quote(os.getenv("DB_PASSWORD"))}@{os.getenv("DB_HOST")}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
@@ -47,6 +50,7 @@ COOKIE_ALIAS = "f1-betting-cookie"
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "secret-key")
 JWT_EXPIRY = timedelta(minutes=1e6)
 JWT_ALGO = "HS256"
+
 
 POLLING_BASE_URL = os.getenv("POLLING_BASE_URL")
 INFURA_API_KEY = os.getenv("INFURA_API_KEY")

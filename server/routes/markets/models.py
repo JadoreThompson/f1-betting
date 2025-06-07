@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from pydantic import BaseModel
 
@@ -7,6 +9,14 @@ class MarketResponse(BaseModel):
     winners: list[list[Any]]
     top3: list[list[Any]]
 
+
 class MarketSummary(BaseModel):
     total_volume: float
     active_bets: int
+
+
+
+class NextRace(BaseModel):
+    name: str
+    datetime: datetime  # with timezone UTC
+    round: int
