@@ -1,14 +1,16 @@
 from uuid import UUID
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import insert, select
 from sqlalchemy.exc import IntegrityError
 
 from db_models import Users
 from config import COOKIE_ALIAS
+from server.middleware import verify_jwt
 from server.routes.auth.models import LoginBody, RegisterBody
-from utils.db import get_db_session
+from server.typing import JWTPayload
 from server.utils.utils import generate_jwt
+from utils.db import get_db_session
 
 auth_route = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -59,3 +61,8 @@ async def login(body: LoginBody):
 
     rsp = JSONResponse(status_code=200, content={"message": "Login successful"})
     return set_cookie(rsp, user.user_id)
+
+
+@auth_route.get("/me")
+async def me(jwt_payload: JWTPayload = Depends(verify_jwt)):
+    pass
