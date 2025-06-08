@@ -359,7 +359,7 @@ class Markets(Base):
         String, nullable=False
     )  # TODO: change this to driver
     category: Mapped[str] = mapped_column(String, nullable=False)
-    market_status: Mapped[str] = mapped_column(
+    market_status: Mapped[int] = mapped_column(
         Integer, nullable=False, default=MarketStatus.OPEN.value
     )
     numerator: Mapped[int] = mapped_column(Integer, nullable=False)

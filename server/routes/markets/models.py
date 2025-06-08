@@ -15,8 +15,16 @@ class MarketSummary(BaseModel):
     active_bets: int
 
 
-
 class NextRace(BaseModel):
     name: str
     datetime: datetime  # with timezone UTC
     round: int
+
+
+class Overview(BaseModel):
+    latest_bet_title: str
+    latest_bet_category: str
+    latest_bet_amount: float
+    most_backed_title: str
+    most_backed_category: str
+    most_backed_amount: float
