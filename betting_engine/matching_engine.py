@@ -40,10 +40,10 @@ class MatchingEngine:
         payload = payload["bet"]
 
         if payload["side"] == Side.BACK:
-            expected_payout_value: float = orderbook.numerator * payload["amount"]
+            expected_payout_value: float = (1 + orderbook.numerator) * payload["amount"]
         else:
             expected_payout_value: float = (
-                round(100 / (100 - (100 / orderbook.numerator)))
+                1 + round(100 / (100 - (100 / orderbook.numerator)))
             ) * payload["amount"]
 
         expected_payout_value = round(expected_payout_value, 2)

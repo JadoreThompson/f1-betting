@@ -51,6 +51,7 @@ class OrderBook:
             winners = self._asks.values()
 
         k: int = self._numerator if side == Side.BACK else self._denominator
+        k += 1
         usdt_decimals = await USDT_CONTRACT.functions.decimals().call()
 
         for w in winners:
@@ -58,7 +59,6 @@ class OrderBook:
             payout = w.payload["amount"] * k
             w.payload["settlement_amount"] = payout
             payout_usdt = payout * 10**usdt_decimals
-            # payout_usdt = (w.payload["amount"] * k) * 10**usdt_decimals
 
             txn = await BE_CONTRACT.functions.withdraw(
                 self._market_id,
