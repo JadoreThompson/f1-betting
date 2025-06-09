@@ -1,5 +1,7 @@
+import warnings
 from sqlalchemy import insert, update
 from typing import Iterable
+from web3.exceptions import ContractLogicError
 
 from config import PRIVATE_KEY
 from db_models import Bets, Markets, Transactions
@@ -29,7 +31,9 @@ class OrderBook:
         _pusher (Pusher): Used to push real-time updates to external consumers.
     """
 
-    def __init__(self, market_id: int, numerator: int, denominator: int, pusher: Pusher) -> None:
+    def __init__(
+        self, market_id: int, numerator: int, denominator: int, pusher: Pusher
+    ) -> None:
         """
         Initializes the order book with the provided market configuration.
 
@@ -85,7 +89,9 @@ class OrderBook:
         if not isinstance(order, (Order, dict)):
             raise TypeError("order must be an instance of Order or a dictionary.")
 
-        bet_id = order.payload["bet_id"] if isinstance(order, Order) else order["bet_id"]
+        bet_id = (
+            order.payload["bet_id"] if isinstance(order, Order) else order["bet_id"]
+        )
         side = order.side if isinstance(order, Order) else order["side"]
 
         if side == Side.BACK:
@@ -93,7 +99,9 @@ class OrderBook:
         else:
             self._asks.pop(bet_id, None)
 
-    async def _handle_payout(self, k: int, usdt_decimals: int, orders: list[Order]) -> None:
+    async def _handle_payout(
+        self, k: int, usdt_decimals: int, orders: list[Order]
+    ) -> None:
         """
         Processes and sends payouts to winners via blockchain.
 
@@ -105,6 +113,7 @@ class OrderBook:
         Modifies:
             - Updates order payload with payout amount, transaction hash, and status.
         """
+        warning_template = "Settlement failed for bet {bet_id}"
         close_time = get_datetime()
 
         for o in orders:
@@ -125,14 +134,23 @@ class OrderBook:
             )
 
             signed_txn = PROVIDER.eth.account.sign_transaction(txn, PRIVATE_KEY)
-            tx_hash = await PROVIDER.eth.send_raw_transaction(signed_txn.raw_transaction)
 
-            o.payload.update({
-                "settlement_txn": tx_hash.to_0x_hex(),
-                "settlement_amount": payout,
-                "bet_status": BetStatus.SETTLED.value,
-                "closed_at": close_time,
-            })
+            try:
+                tx_hash = await PROVIDER.eth.send_raw_transaction(
+                    signed_txn.raw_transaction
+                )
+            except ContractLogicError:
+                warnings.warn(warning_template.format(bet_id=o.payload["bet_id"]))
+                continue
+
+            o.payload.update(
+                {
+                    "settlement_txn": tx_hash.to_0x_hex(),
+                    "settlement_amount": payout,
+                    "bet_status": BetStatus.SETTLED.value,
+                    "closed_at": close_time,
+                }
+            )
 
     async def settle(self, side: Side) -> None:
         """
