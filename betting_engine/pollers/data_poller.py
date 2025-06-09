@@ -3,7 +3,7 @@ import json
 from aiohttp import ClientSession
 from asyncio import sleep
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
 from sqlalchemy import insert, select, desc, case, text
 from sqlalchemy.dialects.postgresql import insert as ps_insert
@@ -22,6 +22,7 @@ from db_models import (
 )
 from model_development.pipeline import Pipeline
 from utils.db import get_db_session
+from utils.utils import get_datetime
 from .base_poller import BasePoller
 from .models import (
     AverageSpeed,
@@ -189,7 +190,7 @@ class DataPoller(BasePoller):
                     _, time_of_event = next_gp_info
                     print("Sleeping until", time_of_event, "for", lookup_key)
                     await sleep(
-                        time_of_event.timestamp() - datetime.now(UTC).timestamp()
+                        time_of_event.timestamp() - get_datetime().timestamp()
                     )
 
                     fetched_data = await fetch_func(sess, cur_round, year)
@@ -235,7 +236,7 @@ class DataPoller(BasePoller):
             Optional[Tuple[int, datetime]]: Tuple of (round_number, qualifying_datetime)
                                           if found, None otherwise.
         """
-        cur_datetime = datetime.now(UTC)
+        cur_datetime = get_datetime()
 
         for d in schedule:
             q_datetime = datetime.fromisoformat(
@@ -259,7 +260,7 @@ class DataPoller(BasePoller):
             Optional[Tuple[int, datetime]]: Tuple of (round_number, sprint_datetime)
                                           if found, None otherwise.
         """
-        cur_datetime = datetime.now(UTC)
+        cur_datetime = get_datetime()
 
         for d in schedule:
             if "Sprint" not in d:
@@ -286,7 +287,7 @@ class DataPoller(BasePoller):
             Optional[Tuple[int, datetime]]: Tuple of (round_number, race_datetime)
                                           if found, None otherwise.
         """
-        cur_datetime = datetime.now(UTC)
+        cur_datetime = get_datetime()
 
         for d in schedule:
             gp_datetime = datetime.fromisoformat(f"{d['date']}T{d['time']}")

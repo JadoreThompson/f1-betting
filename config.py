@@ -47,6 +47,8 @@ REDIS_CLIENT = redis.asyncio.Redis(
         retry_on_timeout=True,
     ),
 )
+ORDER_UPDATE_CHANNEL = os.getenv("ORDER_UPDATE_CHANNEL")
+LOCK_CHANNEL = os.getenv("LOCK_CHANNEL")
 
 # Cookie and JWT
 COOKIE_ALIAS = "f1-betting-cookie"

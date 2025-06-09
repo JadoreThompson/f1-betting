@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from sqlalchemy import insert, update
 from typing import Iterable
 
@@ -6,13 +5,15 @@ from config import PRIVATE_KEY
 from db_models import Bets, Markets, Transactions
 from enums import MarketStatus, Side, BetStatus, TransactionType
 from utils.db import get_db_session
+from utils.utils import get_datetime
 
 from .config import PROVIDER, USDT_CONTRACT, BE_CONTRACT
+from .pusher import Pusher
 from .order import Order
 
 
 class OrderBook:
-    def __init__(self, market_id: int, numerator: int, denominator: int) -> None:
+    def __init__(self, market_id: int, numerator: int, denominator: int, pusher: Pusher) -> None:
         self._market_id = market_id
         self._numerator = numerator
         self._denominator = denominator
@@ -20,6 +21,10 @@ class OrderBook:
         self._bid_orders = self._bids.values()
         self._asks: dict[str, Order] = {}
         self._ask_orders = self._asks.values()
+        
+        if not pusher.is_running:
+            raise RuntimeError("Pusher must be running prior to initialisation.")
+        self._pusher = pusher
 
     def append(self, order: Order) -> None:
         bet_id = order.payload["bet_id"]
@@ -54,6 +59,7 @@ class OrderBook:
         k += 1
         usdt_decimals = await USDT_CONTRACT.functions.decimals().call()
 
+        close_time = get_datetime()
         for w in winners:
             wallet_addr = w.payload["wallet_address"]
             payout = w.payload["amount"] * k
@@ -79,16 +85,11 @@ class OrderBook:
 
             w.payload["settlement_txn"] = tx_hash.to_0x_hex()
             w.payload["bet_status"] = BetStatus.SETTLED.value
-
-        bet_ids = tuple(w.payload["bet_id"] for w in winners)
+            w.payload["closed_at"] = close_time
+            
+        self._pusher.append(list(winners))
 
         async with get_db_session() as s:
-            await s.execute(
-                update(Bets)
-                .values(bet_status=BetStatus.SETTLED.value, closed_at=datetime.now(UTC))
-                .where(Bets.bet_id.in_(bet_ids))
-            )
-
             await s.execute(update(Bets), [w.payload for w in winners])
             await s.execute(
                 insert(Transactions),

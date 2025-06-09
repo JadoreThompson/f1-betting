@@ -1,6 +1,6 @@
 import os
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from fastapi import APIRouter
 from json import load
 from sqlalchemy import desc, select, case
@@ -11,6 +11,7 @@ from db_models import Bets, Markets, Transactions
 from enums import BetStatus, MarketStatus, MarketCategory, TransactionType
 from server.routes.markets.models import MarketResponse
 from utils.db import get_db_session
+from utils.utils import get_datetime
 from .models import MarketSummary, NextRace, Overview
 
 markets_route = APIRouter(prefix="/markets", tags=["markets"])
@@ -86,7 +87,7 @@ async def summary() -> MarketSummary:
 async def schedule() -> NextRace | None:
     """Returns the upcoming race"""
     global next_race
-    cur_datetime = datetime.now(UTC)
+    cur_datetime = get_datetime()
 
     if next_race:
         if cur_datetime >= next_race.datetime + timedelta(days=1):

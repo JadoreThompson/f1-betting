@@ -7,10 +7,11 @@ import requests
 from datetime import datetime
 from json import dump
 from multiprocessing import Process, Queue
+from r_mutex import LockManager, LockClient
 from sqlalchemy import select
 
 from betting_engine import Topic, MatchingEngine, DataPoller, SettlementPoller
-from config import POLLING_BASE_URL, SERVER_DATA_FOLDER, SYNC_DB_ENGINE
+from config import LOCK_CHANNEL, ORDER_UPDATE_CHANNEL, POLLING_BASE_URL, REDIS_CLIENT, SERVER_DATA_FOLDER, SYNC_DB_ENGINE
 from db_models import Base, Markets
 from enums import MarketCategory, MarketStatus, Side
 from server import config
@@ -130,7 +131,13 @@ def run_server(queue: Queue) -> None:
 
     async def helper() -> None:
         """Inner async function to configure and start the uvicorn server."""
+        from server.routes.bet import utils as bet_utils
+        
+        bet_utils.lock = LockClient(REDIS_CLIENT, LOCK_CHANNEL, False)
+        await bet_utils.lock.run()
+        
         fetch_shedule()
+        
         config.MATCHING_ENGINE_QUEUE = queue
         server_config = uvicorn.Config(
             "server.app:app",
@@ -143,7 +150,7 @@ def run_server(queue: Queue) -> None:
     asyncio.run(helper())
 
 
-def main() -> None:
+async def main() -> None:
     """Main orchestrator function that manages all application processes.
 
     Sets up and manages multiple processes for the F1 betting system:
@@ -165,6 +172,7 @@ def main() -> None:
     Uncomment other processes as needed for full system operation.
     """
     matching_engine_queue = Queue()  # TODO: Change to async queue.
+    lock_manager = LockManager(REDIS_CLIENT, ORDER_UPDATE_CHANNEL)
 
     args = (
         (run_settlement_pipeline, "settlement_pipeline", True),
@@ -178,6 +186,9 @@ def main() -> None:
         for f, name, use_queue in args
     ]
 
+    # Initialising
+    asyncio.create_task(lock_manager.run())
+    
     for p in ps:
         p.start()
 
@@ -208,13 +219,13 @@ def main() -> None:
         print("Shutdown complete.")
 
 
-def main_test_wrapper():
+def wrapped_main():
     try:
         Base.metadata.create_all(bind=SYNC_DB_ENGINE)
-        main()
+        asyncio.run(main())
     finally:
         Base.metadata.drop_all(bind=SYNC_DB_ENGINE)
 
 
 if __name__ == "__main__":
-    main_test_wrapper()
+    wrapped_main()

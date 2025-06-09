@@ -13,10 +13,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from uuid import uuid4
 from enums import MarketStatus, BetStatus
+from utils.utils import get_datetime
 
 
-def datetime_now() -> datetime:
-    return datetime.now(UTC)
+
 
 
 class Base(DeclarativeBase):
@@ -336,7 +336,7 @@ class Users(Base):
     email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     password: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime_now, nullable=False
+        DateTime(timezone=True), default=get_datetime, nullable=False
     )
 
     user_bets = relationship(
@@ -367,7 +367,7 @@ class Markets(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime_now,
+        default=get_datetime,
         server_default=text("CURRENT_TIMESTAMP"),
     )
     closed_at: Mapped[datetime] = mapped_column(
@@ -400,7 +400,7 @@ class Bets(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime_now,
+        default=get_datetime,
     )
     closed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True, server_default=None
@@ -432,7 +432,7 @@ class Transactions(Base):
     )
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=datetime_now
+        DateTime(timezone=True), nullable=False, default=get_datetime
     )
     address: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 

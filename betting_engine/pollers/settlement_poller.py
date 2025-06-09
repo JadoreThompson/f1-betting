@@ -1,9 +1,10 @@
 from aiohttp import ClientSession
 from asyncio import sleep
-from datetime import datetime, UTC
+from datetime import datetime
 from typing import Any, AsyncGenerator, Optional
 
 from config import POLLING_BASE_URL
+from utils.utils import get_datetime
 from .base_poller import BasePoller
 from .exc import TargetNotFound
 
@@ -41,7 +42,7 @@ class SettlementPoller(BasePoller):
                     raise TargetNotFound
 
                 round_number, round_time = target_data
-                time_left = round_time.timestamp() - datetime.now(UTC).timestamp()
+                time_left = round_time.timestamp() - get_datetime().timestamp()
                 print(
                     f"Target round: {round_number}, time left until start: {time_left:.2f} seconds."
                 )
@@ -80,7 +81,7 @@ class SettlementPoller(BasePoller):
                 - int: Next round.
                 - datetime: Datetime of next round's grand prix race.
         """
-        cur_datetime = datetime.now(UTC)
+        cur_datetime = get_datetime()
 
         for d in data["MRData"]["RaceTable"]["Races"]:
             round_datetime = datetime.fromisoformat(f"{d["date"]}T{d["time"]}")
