@@ -5,9 +5,9 @@ from asyncio import sleep
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Any, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
-from sqlalchemy import insert, select, desc, case
+from sqlalchemy import insert, select, desc, case, text
 from sqlalchemy.dialects.postgresql import insert as ps_insert
-from sqlalchemy.sql.functions import sum as sql_sum, coalesce
+from sqlalchemy.sql.functions import sum as sql_sum, coalesce, count
 
 from config import POLLING_BASE_URL
 from db_models import (
@@ -157,22 +157,23 @@ class DataPoller(BasePoller):
 
         The method will return if no upcoming grand prix is found.
         """
-        configs = self._get_configs()        
+        configs = self._get_configs()
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
-                schedule = await super()._fetch_schedule(sess)
+                year = datetime.now().date().year
+                schedule = await super()._fetch_schedule(sess, year)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
                 next_gp_info = self._get_target_gp(schedule)
 
                 if next_gp_info is None:
                     raise SeasonOver
 
-                year = datetime.now().date().year
+                print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
                 cur_round, _ = next_gp_info
                 circuit_id = await self._persist_circuit(schedule, cur_round)
-                
+
                 # Fetching
                 for (
                     target_func,
@@ -186,6 +187,7 @@ class DataPoller(BasePoller):
                         continue
 
                     _, time_of_event = next_gp_info
+                    print("Sleeping until", time_of_event, "for", lookup_key)
                     await sleep(
                         time_of_event.timestamp() - datetime.now(UTC).timestamp()
                     )
@@ -213,7 +215,7 @@ class DataPoller(BasePoller):
                         await self._persist_driver_standings(year, cur_round)
                         await self._persist_constructor_standings(year, cur_round)
 
-                    await self._pipeline.start()
+                    await self._pipeline.run()
 
                 print(f"Sleeping for {self._sleep_duration} seconds...")
                 await sleep(self._sleep_duration)
@@ -781,129 +783,72 @@ class DataPoller(BasePoller):
             await sess.commit()
 
     async def _persist_driver_standings(self, year: int, round_: int) -> None:
-        # Points from Sprint results
-        sp_subq = (
+        # total GP wins per driver
+        driver_wins_subq = (
             select(
-                sql_sum(SprintResults.points).label("sp_total_points"),
-                SprintResults.driver_id,
-            )
-            .where(SprintResults.year == year)
-            .group_by(SprintResults.driver_id)
-            .subquery()
-        )
-
-        # Points from Grand Prix results
-        gp_subq = (
-            select(
-                sql_sum(GrandPrixResults.points).label("gp_total_points"),
                 GrandPrixResults.driver_id,
+                sql_sum(case((GrandPrixResults.position == 1, 1), else_=0)).label(
+                    "total_wins"
+                ),
             )
             .where(GrandPrixResults.year == year)
             .group_by(GrandPrixResults.driver_id)
             .subquery()
         )
 
-        # Constructor info
-        dc_subq = select(Drivers.driver_id, Drivers.constructor_id).subquery()
-
-        # Running wins: inline Grand Prix + Sprint wins + window sum
-        gp_wins_subq = (
+        # total grand prix points
+        gp_points_subq = (
             select(
                 GrandPrixResults.driver_id,
-                GrandPrixResults.year,
-                GrandPrixResults.round,
-                case((GrandPrixResults.position == 1, 1), else_=0).label("gp_wins"),
+                coalesce(sql_sum(GrandPrixResults.points), 0).label("gp_point_sum"),
             )
             .where(GrandPrixResults.year == year)
+            .group_by(GrandPrixResults.driver_id)
             .subquery()
         )
 
-        sp_wins_subq = (
+        # total sprint points
+        sp_points_subq = (
             select(
                 SprintResults.driver_id,
-                SprintResults.year,
-                SprintResults.round,
-                case((SprintResults.position == 1, 1), else_=0).label("sp_wins"),
+                coalesce(sql_sum(SprintResults.points), 0).label("sp_point_sum"),
             )
             .where(SprintResults.year == year)
-            .subquery()
-        )
-
-        combined_wins_subq = (
-            select(
-                gp_wins_subq.c.driver_id,
-                gp_wins_subq.c.year,
-                gp_wins_subq.c.round,
-                coalesce(gp_wins_subq.c.gp_wins, 0).label("gp_wins"),
-                coalesce(sp_wins_subq.c.sp_wins, 0).label("sp_wins"),
-            )
-            .select_from(
-                gp_wins_subq.outerjoin(
-                    sp_wins_subq,
-                    (gp_wins_subq.c.driver_id == sp_wins_subq.c.driver_id)
-                    & (gp_wins_subq.c.year == sp_wins_subq.c.year)
-                    & (gp_wins_subq.c.round == sp_wins_subq.c.round),
-                )
-            )
-            .subquery()
-        )
-
-        # Final subquery: includes cumulative total_wins
-        wins_with_running_total = (
-            select(
-                combined_wins_subq.c.driver_id,
-                (
-                    sql_sum(combined_wins_subq.c.gp_wins).over(
-                        partition_by=combined_wins_subq.c.driver_id,
-                        order_by=[
-                            combined_wins_subq.c.year,
-                            combined_wins_subq.c.round,
-                        ],
-                    )
-                    + sql_sum(combined_wins_subq.c.sp_wins).over(
-                        partition_by=combined_wins_subq.c.driver_id,
-                        order_by=[
-                            combined_wins_subq.c.year,
-                            combined_wins_subq.c.round,
-                        ],
-                    )
-                ).label("total_wins"),
-            )
-            .where(combined_wins_subq.c.round == round_)
+            .group_by(SprintResults.driver_id)
             .subquery()
         )
 
         async with get_db_session() as sess:
             r = await sess.execute(
-                select(DriverStandings.driver_id).where(
-                    DriverStandings.year == year,
-                    DriverStandings.round == round_,
-                )
+                text(
+                    "SELECT 1 FROM driver_standings WHERE year = :year AND round = :round"
+                ),
+                {"year": year, "round": round_},
             )
-
             if r.first():
                 return
 
             r = await sess.execute(
                 select(
-                    gp_subq.c.driver_id,
-                    dc_subq.c.constructor_id,
+                    driver_wins_subq.c.driver_id,
+                    Drivers.constructor_id,
                     (
-                        coalesce(gp_subq.c.gp_total_points, 0)
-                        + coalesce(sp_subq.c.sp_total_points, 0)
+                        coalesce(gp_points_subq.c.gp_point_sum, 0)
+                        + coalesce(sp_points_subq.c.sp_point_sum, 0)
                     ).label("total_points"),
-                    coalesce(wins_with_running_total.c.total_wins, 0).label(
-                        "total_wins"
-                    ),
+                    driver_wins_subq.c.total_wins,
                 )
                 .select_from(
-                    gp_subq.outerjoin(
-                        sp_subq, gp_subq.c.driver_id == sp_subq.c.driver_id
+                    driver_wins_subq.join(
+                        Drivers, Drivers.driver_id == driver_wins_subq.c.driver_id
                     )
-                    .join(dc_subq, gp_subq.c.driver_id == dc_subq.c.driver_id)
                     .outerjoin(
-                        wins_with_running_total,
-                        gp_subq.c.driver_id == wins_with_running_total.c.driver_id,
+                        gp_points_subq,
+                        gp_points_subq.c.driver_id == driver_wins_subq.c.driver_id,
+                    )
+                    .outerjoin(
+                        sp_points_subq,
+                        sp_points_subq.c.driver_id == driver_wins_subq.c.driver_id,
                     )
                 )
                 .order_by(desc("total_points"))
@@ -917,14 +862,14 @@ class DataPoller(BasePoller):
                             "round": round_,
                             "driver_id": driver_id,
                             "constructor_id": constructor_id,
-                            "points": points,
                             "position": ind + 1,
+                            "points": total_points,
                             "wins": total_wins,
                         }
                         for ind, (
                             driver_id,
                             constructor_id,
-                            points,
+                            total_points,
                             total_wins,
                         ) in enumerate(r.all())
                     ]

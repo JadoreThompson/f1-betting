@@ -8,11 +8,10 @@ from datetime import datetime
 from json import dump
 from multiprocessing import Process, Queue
 from sqlalchemy import select
-from typing import Callable
 
 from betting_engine import Topic, MatchingEngine, DataPoller, SettlementPoller
-from config import POLLING_BASE_URL, SERVER_DATA_FOLDER
-from db_models import Markets
+from config import POLLING_BASE_URL, SERVER_DATA_FOLDER, SYNC_DB_ENGINE
+from db_models import Base, Markets
 from enums import MarketCategory, MarketStatus, Side
 from server import config
 from utils.db import get_db_session
@@ -46,41 +45,40 @@ async def settlement_pipeline(queue: Queue) -> None:
         queue (Queue): Multiprocessing queue for sending settlement data
                       to the matching engine.
     """
-    race_data = await SettlementPoller().poll()
-
-    async with get_db_session() as s:
-        res = await s.execute(
-            select(Markets.market_id, Markets.category, Markets.title).where(
-                Markets.market_status == MarketStatus.CLOSED.value
+    async for race_data in SettlementPoller().poll():
+        async with get_db_session() as s:
+            res = await s.execute(
+                select(Markets.market_id, Markets.category, Markets.title).where(
+                    Markets.market_status == MarketStatus.CLOSED.value
+                )
             )
+            markets = res.all()
+
+        top3_drivers: tuple[str, ...] = tuple(
+            r["Driver"]["driverId"] for r in race_data if int(r["position"]) < 4
         )
-        markets = res.all()
-
-    top3_drivers: tuple[str, ...] = tuple(
-        r["Driver"]["driverId"] for r in race_data if int(r["position"]) < 4
-    )
-    winner: tuple[str] = tuple(
-        r["Driver"]["driverId"] for r in race_data if int(r["position"]) == 1
-    )
-
-    for m in markets:
-        if m[1] == MarketCategory.TOP3.value:
-            if m[2] in top3_drivers:
-                winners = Side.BACK
-            else:
-                winners = Side.LAY
-        else:
-            if m[2] in winner:
-                winners = Side.BACK
-            else:
-                winners = Side.LAY
-
-        queue.put(
-            {
-                "topic": Topic.SETTLE,
-                "settle_data": {"winners": winners, "market_id": m[0]},
-            }
+        winner: tuple[str] = tuple(
+            r["Driver"]["driverId"] for r in race_data if int(r["position"]) == 1
         )
+
+        for m in markets:
+            if m[1] == MarketCategory.TOP3.value:
+                if m[2] in top3_drivers:
+                    winners = Side.BACK
+                else:
+                    winners = Side.LAY
+            else:
+                if m[2] in winner:
+                    winners = Side.BACK
+                else:
+                    winners = Side.LAY
+
+            queue.put(
+                {
+                    "topic": Topic.SETTLE,
+                    "settle_data": {"winners": winners, "market_id": m[0]},
+                }
+            )
 
 
 def run_settlement_pipeline(queue: Queue) -> None:
@@ -169,10 +167,10 @@ def main() -> None:
     matching_engine_queue = Queue()  # TODO: Change to async queue.
 
     args = (
-        (run_server, "server", True),
-        (run_engine, "matching_engine", True),
         (run_settlement_pipeline, "settlement_pipeline", True),
         (run_data_pipeline, "data_pipeline", False),
+        (run_engine, "matching_engine", True),
+        (run_server, "server", True),
     )
 
     ps: list[Process] = [
@@ -202,9 +200,7 @@ def main() -> None:
 
             time.sleep(0.5)
     except BaseException:
-        import traceback
-
-        traceback.print_exc()
+        import traceback; traceback.print_exc()
         print("Shutting down...")
         for p in ps:
             p.terminate()
@@ -212,5 +208,13 @@ def main() -> None:
         print("Shutdown complete.")
 
 
+def main_test_wrapper():
+    try:
+        Base.metadata.create_all(bind=SYNC_DB_ENGINE)
+        main()
+    finally:
+        Base.metadata.drop_all(bind=SYNC_DB_ENGINE)
+
+
 if __name__ == "__main__":
-    main()
+    main_test_wrapper()

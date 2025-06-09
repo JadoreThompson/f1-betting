@@ -5,14 +5,16 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
-from config import DB_ENGINE, DB_URL
+from config import ASYNC_DB_ENGINE, DB_URL
 
-smaker = sessionmaker(bind=DB_ENGINE, class_=AsyncSession, expire_on_commit=False)
+smaker = sessionmaker(bind=ASYNC_DB_ENGINE, class_=AsyncSession, expire_on_commit=False)
 
 
 def write_sqlalchemy_url() -> None:
     """Writes db url into the alamebic.ini file."""
-    sqlalc_uri = DB_URL.replace("+asyncpg", "").replace("%", "%%")
+    sqlalc_uri = (
+        DB_URL.replace("+asyncpg", "").replace("%", "%%")
+    )
     config = configparser.ConfigParser(interpolation=None)
     config.read("alembic.ini")
 

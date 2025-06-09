@@ -1,9 +1,9 @@
-import json
-from typing import Any, Optional
 from aiohttp import ClientSession
 from asyncio import sleep
-from config import POLLING_BASE_URL
 from datetime import datetime, UTC
+from typing import Any, AsyncGenerator, Optional
+
+from config import POLLING_BASE_URL
 from .base_poller import BasePoller
 from .exc import TargetNotFound
 
@@ -16,7 +16,7 @@ class SettlementPoller(BasePoller):
     def __init__(self, sleep_duration: int = 5) -> None:
         super().__init__(sleep_duration)
 
-    async def poll(self) -> list[dict[str, Any]]:
+    async def poll(self) -> AsyncGenerator[list[dict[str, Any]], None]:
         """Polls jolpica to check if the grand prix has ended.
 
         Args:
@@ -33,39 +33,41 @@ class SettlementPoller(BasePoller):
                 withib the grand prix.
         """
         async with ClientSession() as sess:
-            schedule = await super()._fetch_schedule(sess)            
-            target_data = self._get_target(schedule)
-
-            if target_data is None:
-                raise TargetNotFound
-
-            round_number, round_time = target_data
-            time_left = round_time.timestamp() - datetime.now(UTC).timestamp()
-            print(
-                f"Target round: {round_number}, time left until start: {time_left:.2f} seconds."
-            )
-
-            await sleep(time_left)
-            print(f"Finished Sleeping")
-
-            endpoint = POLLING_BASE_URL + f"/{datetime.now().date().year}/{round_number}"
-            print(f"Polling endpoint: {endpoint}")
-
             while True:
-                async with sess.get(endpoint) as rsp:
-                    if rsp.status != 200:
-                        raise Exception(f"{endpoint} threw status code: {rsp.status}")
+                schedule = await self._fetch_schedule(sess, datetime.now().date().year)            
+                target_data = self._get_target(schedule)
 
-                    data = await rsp.json()                                        
+                if target_data is None:
+                    raise TargetNotFound
 
-                    if race_data := data["MRData"]["RaceTable"]["Races"][0]["Results"]:
-                        print("Race results found!")
-                        return race_data
+                round_number, round_time = target_data
+                time_left = round_time.timestamp() - datetime.now(UTC).timestamp()
+                print(
+                    f"Target round: {round_number}, time left until start: {time_left:.2f} seconds."
+                )
 
-                    print(
-                        f"No results yet. Sleeping for {self._sleep_duration} seconds..."
-                    )
-                    await sleep(self._sleep_duration)
+                await sleep(time_left)
+                print(f"Finished Sleeping")
+
+                endpoint = POLLING_BASE_URL + f"/{datetime.now().date().year}/{round_number}"
+                print(f"Polling endpoint: {endpoint}")
+                
+                while True:
+                    async with sess.get(endpoint) as rsp:
+                        if rsp.status != 200:
+                            raise Exception(f"{endpoint} threw status code: {rsp.status}")
+
+                        data = await rsp.json()                                        
+
+                        if race_data := data["MRData"]["RaceTable"]["Races"][0]["Results"]:
+                            print("Race results found!")
+                            yield race_data
+                            break
+
+                        print(
+                            f"No results yet. Sleeping for {self._sleep_duration} seconds..."
+                        )
+                        await sleep(self._sleep_duration)
 
     def _get_target(self, data: dict[str, Any]) -> Optional[tuple[int, datetime]]:
         """Returns the next round coming up and the time it starts

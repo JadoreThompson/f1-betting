@@ -51,10 +51,12 @@ class Pipeline:
 
     def _init(self) -> None:
         """Initialize models from disk"""
-        self._winner_model = pickle.load(open(os.path.join(MPATH, "winner-log-reg-v1.pkl"), "rb"))
+        self._winner_model = pickle.load(
+            open(os.path.join(MPATH, "winner-log-reg-v1.pkl"), "rb")
+        )
         self._top3_model = load_model(os.path.join(MPATH, "top3_v2"))
 
-    async def start(self):
+    async def run(self):
         """Start the pipeline process to generate and store market predictions.
 
         Loads datasets, applies feature engineering, makes predictions for

@@ -401,7 +401,6 @@ class Bets(Base):
         DateTime(timezone=True),
         nullable=False,
         default=datetime_now,
-        server_default=text("CURRENT_TIMESTAMP_WITH_TIMEZONE"),
     )
     closed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True, server_default=None
