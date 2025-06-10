@@ -3,7 +3,6 @@ import os
 import pickle
 import pandas as pd
 
-
 from sklearn.preprocessing import StandardScaler
 from sqlalchemy import insert, select
 from ydf import load_model
@@ -56,7 +55,7 @@ class Pipeline:
         )
         self._top3_model = load_model(os.path.join(MPATH, "top3_v2"))
 
-    async def run(self):
+    async def run(self, year: int, round_: int):
         """Start the pipeline process to generate and store market predictions.
 
         Loads datasets, applies feature engineering, makes predictions for
@@ -74,15 +73,17 @@ class Pipeline:
         result = self._get_winner_preds(merged_df)
         if result is not None:
             drivers, preds = result
-            winner_markets = self._generate_odds_lr(
-                preds, drivers, MarketCategory.WINNER
+            winner_markets = self._generate_markets_lr(
+                preds, drivers, MarketCategory.WINNER, year, round_
             )
             await self._persist_markets(winner_markets)
 
         result = self._get_top3_preds(merged_df)
         if result is not None:
             drivers, preds = result
-            top3_markets = self._generate_odds_lr(preds, drivers, MarketCategory.TOP3)
+            top3_markets = self._generate_markets_lr(
+                preds, drivers, MarketCategory.TOP3, year, round_
+            )
             await self._persist_markets(top3_markets)
 
     async def _get_datasets(self) -> dict[str, pd.DataFrame]:
@@ -313,11 +314,13 @@ class Pipeline:
         preds = self._top3_model.predict(df)
         return drivers, preds
 
-    def _generate_odds_lr(
+    def _generate_markets_lr(
         self,
         preds: list[tuple[float, float]],
         drivers: list[str],
         category: MarketCategory,
+        year: int,
+        round_: int,
     ) -> tuple[dict[str, str | float | int], ...]:
         """Convert predicted probabilities into betting odds.
 
@@ -333,10 +336,12 @@ class Pipeline:
             {
                 "title": drivers[ind],
                 "category": category.value,
-                "numerator": round(1 / pred_pos),
+                "numerator": round(1 / prob),
                 "denomiator": 1,
+                "year": year,
+                "round": round_,
             }
-            for ind, (_, pred_pos) in preds
+            for ind, (_, prob) in preds
         )
 
     async def _persist_markets(self, markets: list[dict[str, str | float | int]]):

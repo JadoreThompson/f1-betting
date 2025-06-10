@@ -1,9 +1,13 @@
 from aiohttp import ClientSession
 from asyncio import sleep
 from datetime import datetime
+from sqlalchemy import update
 from typing import Any, AsyncGenerator, Optional
 
 from config import POLLING_BASE_URL
+from db_models import Markets
+from enums import MarketStatus
+from utils.db import get_db_session
 from utils.utils import get_datetime
 from .base_poller import BasePoller
 from .exc import TargetNotFound
@@ -35,7 +39,8 @@ class SettlementPoller(BasePoller):
         """
         async with ClientSession() as sess:
             while True:
-                schedule = await self._fetch_schedule(sess, datetime.now().date().year)            
+                year = datetime.now().date().year
+                schedule = await self._fetch_schedule(sess, year)
                 target_data = self._get_target(schedule)
 
                 if target_data is None:
@@ -49,18 +54,23 @@ class SettlementPoller(BasePoller):
 
                 await sleep(time_left)
                 print(f"Finished Sleeping")
+                await self._close_open_markets(year, round_number)
 
-                endpoint = POLLING_BASE_URL + f"/{datetime.now().date().year}/{round_number}"
+                endpoint = POLLING_BASE_URL + f"/{year}/{round_number}"
                 print(f"Polling endpoint: {endpoint}")
-                
+
                 while True:
                     async with sess.get(endpoint) as rsp:
                         if rsp.status != 200:
-                            raise Exception(f"{endpoint} threw status code: {rsp.status}")
+                            raise Exception(
+                                f"{endpoint} threw status code: {rsp.status}"
+                            )
 
-                        data = await rsp.json()                                        
+                        data = await rsp.json()
 
-                        if race_data := data["MRData"]["RaceTable"]["Races"][0]["Results"]:
+                        if race_data := data["MRData"]["RaceTable"]["Races"][0][
+                            "Results"
+                        ]:
                             print("Race results found!")
                             yield race_data
                             break
@@ -87,3 +97,13 @@ class SettlementPoller(BasePoller):
             round_datetime = datetime.fromisoformat(f"{d["date"]}T{d["time"]}")
             if round_datetime > cur_datetime:
                 return (int(d["round"]), round_datetime)
+
+    # Finish func
+    async def _close_open_markets(self, year: int, round_: int) -> None:
+        async with get_db_session() as sess:
+            await sess.execute(
+                update(Markets)
+                .values(market_status=MarketStatus.CLOSED.value)
+                .where(Markets.year == year, Markets.round == round_)
+            )
+            await sess.commit()

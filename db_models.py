@@ -364,6 +364,8 @@ class Markets(Base):
     )
     numerator: Mapped[int] = mapped_column(Integer, nullable=False)
     denominator: Mapped[int] = mapped_column(Integer, nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

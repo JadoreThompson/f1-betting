@@ -4,7 +4,7 @@ from sqlalchemy import insert, select
 
 from betting_engine import Topic
 from db_models import Bets, Markets, Transactions
-from enums import TransactionType
+from enums import MarketStatus, TransactionType
 from server.middleware import verify_jwt
 from server.typing import JWTPayload
 from utils.db import get_db_session
@@ -21,17 +21,26 @@ async def create_bet(body: Bet, jwt_payload: JWTPayload = Depends(verify_jwt)):
     async with lock:
         async with get_db_session() as sess:
             res = await sess.execute(
-                select(Markets).where(Markets.market_id == body.market_id)
+                select(
+                    Markets.market_id,
+                    Markets.numerator,
+                    Markets.denominator,
+                    Markets.market_status,
+                ).where(Markets.market_id == body.market_id)
             )
-            market = res.scalar_one()
+            market = res.first()
             if not market:
                 raise HTTPException(status_code=404, detail="Market not found")
 
+            market_id, numerator, denominator, market_status = market
+            if market_status != MarketStatus.OPEN.value:
+                raise HTTPException(status_code=423, detail=f"Market {market_id} is not open.")
+            
             res = await sess.execute(
                 insert(Bets)
                 .values(
                     user_id=jwt_payload.sub,
-                    market_id=market.market_id,
+                    market_id=market_id,
                     side=body.side,
                     amount=body.amount,
                     wallet_address=body.wallet_address,
@@ -56,9 +65,9 @@ async def create_bet(body: Bet, jwt_payload: JWTPayload = Depends(verify_jwt)):
     push_to_engine(
         Topic.CREATE,
         market={
-            "market_id": market.market_id,
-            "numerator": market.numerator,
-            "denominator": market.denominator,
+            "market_id": market_id,
+            "numerator": numerator,
+            "denominator": denominator,
         },
         bet=dump_sqlalchemy_object(placed_bet),
     )
