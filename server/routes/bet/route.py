@@ -67,25 +67,3 @@ async def create_bet(body: Bet, jwt_payload: JWTPayload = Depends(verify_jwt)):
         status_code=201,
         content={"message": "Bet placed successfully", "bet_id": placed_bet.bet_id},
     )
-
-
-@bet_route.delete("/cancel")
-async def cancel_bet(bet_id: str, jwt_payload: JWTPayload = Depends(verify_jwt)):
-    async with lock:
-        async with get_db_session() as sess:
-            res = await sess.execute(
-                select(Bets).where(
-                    Bets.bet_id == bet_id, Bets.user_id == jwt_payload.sub
-                )
-            )
-
-            bet: Bets | None = res.scalars().first()
-
-            if not bet:
-                raise HTTPException(status_code=404, detail="Bet not found")
-
-    push_to_engine(
-        Topic.CLOSE,
-        market_id=bet.market_id,
-        bet=dump_sqlalchemy_object(bet),
-    )

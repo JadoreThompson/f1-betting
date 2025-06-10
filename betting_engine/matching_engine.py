@@ -4,11 +4,11 @@ from r_mutex import LockClient
 
 from betting_engine.pusher import Pusher
 from config import LOCK_CHANNEL, REDIS_CLIENT
-from enums import Side, BetStatus
+from enums import Side
 from .enums import OrderStatus, Topic
 from .order import Order
 from .orderbook import OrderBook
-from .typing import EnginePayload, Payload, SettlePayload
+from .typing import EnginePayload, SettlePayload
 
 
 class MatchingEngine:
@@ -50,8 +50,6 @@ class MatchingEngine:
 
             if payload["topic"] == Topic.CREATE:
                 self._place_order(payload)
-            elif payload["topic"] == Topic.CLOSE:
-                self._close_order(payload)
             elif payload["topic"] == Topic.SETTLE:
                 await self._settle_orderbook(payload)
             else:
@@ -95,24 +93,6 @@ class MatchingEngine:
         
         if prev_bs != order.payload["bet_status"]:
             self._pusher.append(order.payload)
-
-    def _close_order(self, payload: Payload) -> None:
-        """
-        Removes a specific order from the orderbook and updates its status.
-
-        Args:
-            payload (Payload): Contains order ID, market ID, and current bet status.
-        """
-        orderbook = self._orderbooks[payload["market_id"]]
-        orderbook.remove(payload)
-
-        if payload["bet_status"] == BetStatus.OPEN:
-            payload["bet_status"] = BetStatus.CLOSED.value
-        else:
-            payload["bet_status"] = BetStatus.CANCELLED.value
-        payload["closed_at"] = datetime.now()
-            
-        self._pusher.append(payload)
 
     def _match_order(
         self,

@@ -12,5 +12,4 @@ class OrderStatus(int, Enum):
 
 class Topic(int, Enum):
     CREATE = 0
-    CLOSE = 1
     SETTLE = 2
