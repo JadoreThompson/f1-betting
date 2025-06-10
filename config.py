@@ -36,14 +36,11 @@ REDIS_DB = int(os.getenv("REDIS_DB"))
 REDIS_CLIENT = redis.asyncio.Redis(
     host=REDIS_HOST,
     port=REDIS_PORT,
-    decode_responses=True,
-    db=0,
     connection_pool=redis.asyncio.ConnectionPool(
         connection_class=redis.asyncio.Connection,
         max_connections=100,
         host=REDIS_HOST,
         port=REDIS_PORT,
-        db=REDIS_DB,
         retry_on_timeout=True,
     ),
 )

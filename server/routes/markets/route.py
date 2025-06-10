@@ -1,7 +1,7 @@
 import os
 
 from datetime import datetime, timedelta
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from json import load
 from sqlalchemy import desc, select, case
 from sqlalchemy.sql.functions import sum as sql_sum, coalesce
@@ -38,7 +38,7 @@ async def get_markets() -> MarketResponse:
             )
             .limit(limit)
         )
-        top3_markets = res.all()
+        top3_markets = res.all() or []
 
         res = await sess.execute(
             select(*cols)
@@ -48,7 +48,7 @@ async def get_markets() -> MarketResponse:
             )
             .limit(limit)
         )
-        winner_markets = res.all()
+        winner_markets = res.all() or []
 
     return MarketResponse(
         titles=[col.name for col in cols],
@@ -112,10 +112,11 @@ async def overview():
             .order_by(desc(Transactions.created_at))
             .limit(1)
         )
-
-        lb_amount, lb_category, lb_title = (
-            await sess.execute(latest_bet_query)
-        ).first()
+        data = (await sess.execute(latest_bet_query)).first()
+        if not data:
+            raise HTTPException(204)
+        
+        lb_amount, lb_category, lb_title = data
 
         # Get most backed market
         most_backed_query = (
@@ -142,3 +143,13 @@ async def overview():
         most_backed_category=mb_category,
         most_backed_title=mb_title,
     )
+
+
+@markets_route.get("/health")
+async def health(market_id: int):
+    async with get_db_session() as sess:
+        r = await sess.execute(select(Markets.market_id).where(Markets.market_id == market_id, Markets.market_status == MarketStatus.OPEN.value))
+        d = r.first()
+    
+    return {"health": bool(d)}
+        

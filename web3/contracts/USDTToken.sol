@@ -69,7 +69,7 @@ contract USDTToken is IERC20 {
         return true;
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) public {
         require(to != address(0), "Mint to zero address");
         
         _totalSupply += amount;

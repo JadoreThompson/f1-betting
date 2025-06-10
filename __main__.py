@@ -11,7 +11,14 @@ from r_mutex import LockManager, LockClient
 from sqlalchemy import select
 
 from betting_engine import Topic, MatchingEngine, DataPoller, SettlementPoller
-from config import LOCK_CHANNEL, ORDER_UPDATE_CHANNEL, POLLING_BASE_URL, REDIS_CLIENT, SERVER_DATA_FOLDER, SYNC_DB_ENGINE
+from config import (
+    LOCK_CHANNEL,
+    ORDER_UPDATE_CHANNEL,
+    POLLING_BASE_URL,
+    REDIS_CLIENT,
+    SERVER_DATA_FOLDER,
+    SYNC_DB_ENGINE,
+)
 from db_models import Base, Markets
 from enums import MarketCategory, MarketStatus, Side
 from server import config
@@ -131,14 +138,14 @@ def run_server(queue: Queue) -> None:
 
     async def helper() -> None:
         """Inner async function to configure and start the uvicorn server."""
-        from server.routes.bet import utils as bet_utils
-        
-        bet_utils.lock = LockClient(REDIS_CLIENT, LOCK_CHANNEL, False)
-        await bet_utils.lock.run()
-        
-        fetch_shedule()
-        
         config.MATCHING_ENGINE_QUEUE = queue
+
+        from server.routes.bet import utils as bet_utils
+
+        await bet_utils.lock.run()
+
+        fetch_shedule()
+
         server_config = uvicorn.Config(
             "server.app:app",
             host="0.0.0.0",
@@ -172,7 +179,7 @@ async def main() -> None:
     Uncomment other processes as needed for full system operation.
     """
     matching_engine_queue = Queue()  # TODO: Change to async queue.
-    lock_manager = LockManager(REDIS_CLIENT, ORDER_UPDATE_CHANNEL)
+    lock_manager = LockManager(REDIS_CLIENT, LOCK_CHANNEL)
 
     args = (
         (run_settlement_pipeline, "settlement_pipeline", True),
@@ -187,8 +194,12 @@ async def main() -> None:
     ]
 
     # Initialising
-    asyncio.create_task(lock_manager.run())
+    lm_task = asyncio.create_task(lock_manager.run())
     
+    while not lock_manager.is_running:
+        await asyncio.sleep(1)
+        print("LockManager not running...")
+
     for p in ps:
         p.start()
 
@@ -209,9 +220,11 @@ async def main() -> None:
                     p.start()
                     ps[ind] = p
 
-            time.sleep(0.5)
+            await asyncio.sleep(0.1)
     except BaseException:
         import traceback; traceback.print_exc()
+        lm_task.cancel()
+        
         print("Shutting down...")
         for p in ps:
             p.terminate()
@@ -228,4 +241,4 @@ def wrapped_main():
 
 
 if __name__ == "__main__":
-    wrapped_main()
+    asyncio.run(main())
