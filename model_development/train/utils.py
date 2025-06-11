@@ -23,10 +23,9 @@ from ..config import (
     TRAINED_MODEL,
     TARGET_LABEL,
 )
-from ..features.build_features import get_dataset, drop_features
+from ..features.build_features import build_features, drop_features
 from ..features.utils import PosCat, get_position_category
-
-Report = Dict[str, Dict[str, float]]
+from ..typing import Report
 
 
 @runtime_checkable
@@ -54,7 +53,7 @@ def get_files(
 
     return (
         folder,
-        template.format(len(os.listdir(folder)) - 1),
+        template.format(max(0, len(os.listdir(folder)) - 1)),
         template.format(len(os.listdir(folder))),
     )
 
@@ -108,29 +107,30 @@ def save_train_configs_forest(
     gain = False
     old_top_range = old_whole = 0.0
 
-    if (
-        top_range_2024_success is not None
-        and top_range_test_success is not None
-        and whole_2024_success is not None
-        and whole_test_success is not None
-    ):
-        gain = top_range_2024_success > (
-            old_top_range := content.get("top_range", {}).get("2024", 0.0)
-        ) and whole_2024_success > (
-            old_whole := content.get("whole", {}).get("2024", 0.0)
-        )
+    # if (
+    #     top_range_2024_success is not None
+    #     and top_range_test_success is not None
+    #     and whole_2024_success is not None
+    #     and whole_test_success is not None
+    # ):
+    #     gain = top_range_2024_success > (
+    #         old_top_range := content.get("top_range", {}).get("2024", 0.0)
+    #     ) and whole_2024_success > (
+    #         old_whole := content.get("whole", {}).get("2024", 0.0)
+    #     )
 
-        if gain:
-            new_content["top_range"] = {
-                "test": top_range_test_success,
-                "2024": top_range_2024_success,
-            }
-            new_content["whole"] = {
-                "test": whole_test_success,
-                "2024": whole_2024_success,
-            }
+    #     if gain:
+    #         new_content["top_range"] = {
+    #             "test": top_range_test_success,
+    #             "2024": top_range_2024_success,
+    #         }
+    #         new_content["whole"] = {
+    #             "test": whole_test_success,
+    #             "2024": whole_2024_success,
+    #         }
 
-    elif top_range_2024_success is not None and top_range_test_success is not None:
+    if top_range_2024_success is not None and top_range_test_success is not None:
+
         gain = top_range_2024_success > (
             old_top_range := content.get("top_range", {}).get("2024", 0.0)
         )
@@ -177,91 +177,6 @@ def save_train_configs_forest(
                 indent=4,
             )
         )
-
-
-def get_classification_report(preds: Iterable[Any], actuals: Iterable[Any]) -> Report:
-    assert len(preds) == len(actuals), "Predictions and actuals must be the same length"
-
-    all_categories = set(actuals)
-
-    true_positives = defaultdict(int)
-    false_positives = defaultdict(int)
-    false_negatives = defaultdict(int)
-
-    total_predictions = len(actuals)
-    total_correct_predictions = 0
-
-    for p, a in zip(preds, actuals):
-        if p == a:
-            true_positives[a] += 1
-            total_correct_predictions += 1
-        else:
-            false_positives[p] += 1
-            false_negatives[a] += 1
-
-    report: Report = {}
-
-    for category in all_categories:
-        tp = true_positives[category]
-        fp = false_positives[category]
-        fn = false_negatives[category]
-
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = (
-            (2 * precision * recall) / (precision + recall)
-            if (precision + recall) > 0
-            else 0.0
-        )
-
-        report[category] = {
-            "precision": round(precision, 4),
-            "recall": round(recall, 4),
-            "f1_score": round(f1, 4),
-        }
-
-    return report
-
-
-def save_train_configs_regression(
-    pos_cat: PosCat, df: DataFrame, report: Report
-) -> None:
-    """
-    Save model configuration and performance metrics if improvement is detected.
-    """
-    folder, old_fname, new_fname = get_files(pos_cat, "regression")
-
-    try:
-        content = json.load(open(os.path.join(folder, old_fname), "r"))
-    except FileNotFoundError:
-        content = {}
-
-    new_content: dict[str, Report | Iterable[str]] = {
-        "report": report,
-        "features": df.columns.tolist(),
-    }
-
-    old_report = content.get("report", {})
-
-    new_content["report"] = {
-        (str(k) if isinstance(k, np.int64) else k): v
-        for k, v in new_content["report"].items()
-    }
-
-    if any(
-        v > old_report.get(f, {}).get(k, 0.0)
-        for f, fdata in report.items()
-        for k, v in fdata.items()
-    ):
-
-        json.dump(
-            new_content,
-            open(os.path.join(folder, new_fname), "w"),
-            indent=4,
-        )
-        print("Improvements made\n", json.dumps(new_content["report"], indent=4))
-    else:
-        print("No improvement in metrics\n", json.dumps(old_report, indent=4))
 
 
 def get_top_range_funcs(pos_cat: PosCat) -> Callable[[str, int, Series], bool]:
@@ -444,7 +359,7 @@ def compute_success_rate(
         success, pred_values = handle_regression(dataset, model, top_range, pos_cat)
 
     dataset["prediction"] = pred_values
-    return success
+    return success, dataset
 
 
 def get_train_test(
@@ -465,7 +380,7 @@ def get_train_test(
     Returns:
         (train_df, test_df)
     """
-    df = get_dataset(pos_cat)
+    df = build_features(pos_cat)
     df = df[(df["year"] >= min_year) & (df["year"] <= max_year)]
     train_df, test_df = (
         df[df["year"] <= split_year],
@@ -501,3 +416,47 @@ def balance_classes(df: DataFrame) -> DataFrame:
     x_rs, y_rs = smote.fit_resample(x, y)
     x_rs["target"] = y_rs
     return x_rs
+
+
+def get_classification_report(preds: Iterable[Any], actuals: Iterable[Any]) -> Report:
+    assert len(preds) == len(actuals), "Predictions and actuals must be the same length"
+
+    all_categories = set(actuals)
+
+    true_positives = defaultdict(int)
+    false_positives = defaultdict(int)
+    false_negatives = defaultdict(int)
+
+    total_predictions = len(actuals)
+    total_correct_predictions = 0
+
+    for p, a in zip(preds, actuals):
+        if p == a:
+            true_positives[a] += 1
+            total_correct_predictions += 1
+        else:
+            false_positives[p] += 1
+            false_negatives[a] += 1
+
+    report: Report = {}
+
+    for category in all_categories:
+        tp = true_positives[category]
+        fp = false_positives[category]
+        fn = false_negatives[category]
+
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (
+            (2 * precision * recall) / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
+
+        report[category] = {
+            "precision": round(precision, 4),
+            "recall": round(recall, 4),
+            "f1_score": round(f1, 4),
+        }
+
+    return report

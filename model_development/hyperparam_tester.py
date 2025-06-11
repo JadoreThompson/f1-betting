@@ -8,7 +8,7 @@ from typing import Any, Dict, Type, TypedDict
 
 from .features.build_features import (
     drop_features,
-    get_dataset,
+    build_features,
 )
 from .features.utils import PosCat
 from .train.utils import compute_success_rate, get_train_test
@@ -114,7 +114,7 @@ class HyperParamTester:
         self._top_range = top_range
         self._hparams = hparams
 
-        df = get_dataset(self._pos_cat)
+        df = build_features(self._pos_cat)
         self._eval_df = drop_features(df[df["year"] == 2024])
         self._train_df, _ = get_train_test(self._pos_cat, 2017, 2023, 2022)
 

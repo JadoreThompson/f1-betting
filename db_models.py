@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from sqlalchemy.sql import text
 from sqlalchemy import (
     UUID,
@@ -14,9 +14,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from uuid import uuid4
 from enums import MarketStatus, BetStatus
 from utils.utils import get_datetime
-
-
-
 
 
 class Base(DeclarativeBase):
@@ -375,9 +372,9 @@ class Markets(Base):
     closed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True, server_default=None
     )
-    
+
     market_transactions = relationship(
-        "Transactions", back_populates="market"#, cascade="all, delete-orphan"
+        "Transactions", back_populates="market"
     )
 
 

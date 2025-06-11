@@ -4,285 +4,274 @@ import pandas as pd
 import pickle
 import ydf
 
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    mean_squared_error,
-    mean_absolute_error,
-    r2_score,
-)
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from typing import Optional
+from typing import Literal, Optional
 
 from .utils import (
     balance_classes,
     compute_success_rate,
     get_classification_report,
+    get_files,
     save_train_configs_forest,
     get_train_test,
-    save_train_configs_regression,
 )
 from ..config import (
     LEARNER_TYPE,
-    MDPATH,
     MODEL_TYPE,
     MPATH,
     TARGET_LABEL,
 )
-from ..features.build_features import get_dataset, drop_features
+from ..features.build_features import build_features, drop_features
 from ..features.utils import PosCat
-from ..hyperparam_tester import HyperParamTester
+from ..preprocessing import merge_datasets
 
+# Model hyperparameters and learner definition
 HYERPARAMS = {
-    # "max_depth": 90,
-    # "num_trees": 500,
     "max_depth": 5,
     "num_trees": 100,
-    # "focal_loss_alpha": 0.8,
     "min_examples": 1,
     "growing_strategy": "BEST_FIRST_GLOBAL",
     "task": ydf.Task.CLASSIFICATION,
 }
 LEARNER: LEARNER_TYPE = LEARNER_TYPE(label=TARGET_LABEL, **HYERPARAMS)
-TOP_RANGE = False
 
 
 class EmptyDataFrame(Exception):
+    """Raised when a DataFrame is unexpectedly empty during training or evaluation."""
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
 
-def train_model(
-    pos_cat: PosCat,
+def evalute_performance_forest(
+    eval_pos_cat: PosCat,
+    top_range_test_success: Optional[float] = None,
+    top_range_eval_success: Optional[float] = None,
+    whole_test_success: Optional[float] = None,
+    whole_eval_success: Optional[float] = None,
+) -> bool:
+    """
+    Compares current model performance to previous saved metrics and determines
+    whether the current model has improved.
+
+    Args:
+        eval_pos_cat (PosCat): Evaluation label category.
+        top_range_test_success (Optional[float]): Top-range test success rate.
+        top_range_eval_success (Optional[float]): Top-range eval success rate.
+        whole_test_success (Optional[float]): Full test set success rate.
+        whole_eval_success (Optional[float]): Full eval set success rate.
+
+    Returns:
+        bool: True if the model outperforms previous configurations in any tracked metric.
+    """
+    folder, old_fname, _ = get_files(eval_pos_cat, "forest")
+
+    try:
+        prev_content = json.load(open(os.path.join(folder, old_fname), "r"))
+    except FileNotFoundError:
+        prev_content = {}
+
+    if (
+        top_range_eval_success is not None
+        and prev_content.get("top_range", {}).get("eval") is not None
+    ):
+        if top_range_eval_success > prev_content["top_range"]["eval"]:
+            return True
+
+    if (
+        top_range_test_success is not None
+        and prev_content.get("top_range", {}).get("test") is not None
+    ):
+        if top_range_test_success > prev_content["top_range"]["test"]:
+            return True
+
+    if (
+        whole_eval_success is not None
+        and prev_content.get("whole", {}).get("eval") is not None
+    ):
+        if whole_eval_success > prev_content["whole"]["eval"]:
+            return True
+
+    if (
+        whole_test_success is not None
+        and prev_content.get("whole", {}).get("test") is not None
+    ):
+        if whole_test_success > prev_content["whole"]["test"]:
+            return True
+
+    return False
+
+
+def save_train_configs(
+    mtype: Literal["forest"],
+    eval_pos_cat: PosCat,
+    features: list[str],
+    top_range_test_success: Optional[float] = None,
+    top_range_eval_success: Optional[float] = None,
+    whole_test_success: Optional[float] = None,
+    whole_eval_success: Optional[float] = None,
+) -> None:
+    """
+    Saves current model configuration and evaluation performance to disk for future comparison.
+
+    Args:
+        mtype (Literal["forest"]): Model type.
+        eval_pos_cat (PosCat): Evaluation label category.
+        features (list[str]): List of feature names used in training.
+        top_range_test_success (Optional[float]): Success rate on top-range test.
+        top_range_eval_success (Optional[float]): Success rate on top-range eval.
+        whole_test_success (Optional[float]): Success rate on entire test set.
+        whole_eval_success (Optional[float]): Success rate on entire eval set.
+    """
+    config = {
+        "features": features,
+        "hparams": {
+            k: (str(v) if isinstance(v, ydf.Task) else v) for k, v in HYERPARAMS.items()
+        },
+        "top_range": {
+            "test": round(top_range_test_success, 2),
+            "eval": round(top_range_eval_success, 2),
+        },
+        "whole": {
+            "test": round(whole_test_success, 2),
+            "eval": round(whole_eval_success, 2),
+        },
+    }
+
+    folder, _, fname = get_files(eval_pos_cat, mtype)
+    os.makedirs(folder, exist_ok=True)
+    json.dump(config, open(os.path.join(folder, fname), "w"))
+
+    print(f"Training configuration saved to {os.path.join(folder, fname)}")
+
+
+def _train_forest_model(
+    *,
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
-    *,
-    save_model: bool = False,
-    model_name: str = "model_x",
+    top_range: bool,
+    eval_pos_cat: PosCat,
+    log: bool = True,
 ) -> tuple[MODEL_TYPE, float]:
-    global TOP_RANGE
+    """
+    Trains a forest model and evaluates it on the test set.
 
-    if test_df.empty:
-        raise EmptyDataFrame("Empty test dataset.")
+    Args:
+        train_df (pd.DataFrame): Training data.
+        test_df (pd.DataFrame): Test data.
+        top_range (bool): Whether to compute success based on top-N predictions.
+        eval_pos_cat (PosCat): Category for positive class evaluation.
+        log (bool): Whether to print training info.
 
-    train_df["elo"] *= 2
-    train_df["elo_change"] *= 2
-    model: MODEL_TYPE = LEARNER.train(train_df)
-    print("Features:", model.input_feature_names())
-    print("Classes:", model.label_classes())
+    Returns:
+        tuple[MODEL_TYPE, float]: Trained model and test success rate.
+    """
+    model = LEARNER.train(train_df)
 
-    success_rate = compute_success_rate(test_df, model, pos_cat, top_range=TOP_RANGE)
+    if log:
+        print("Features:")
+        for feature in model.input_feature_names():
+            print(f"  - {feature}")
 
-    print(f"Training success rate: {success_rate:.2%}")
+        print("\nClasses:")
+        for label in model.label_classes():
+            print(f"  - {label}")
 
-    if save_model:
-        model.save(os.path.join(MPATH, model_name))
-        train_df.to_csv(
-            os.path.join(MDPATH, f"{model_name}_train_dataset.csv"), index=False
-        )
-        test_df.to_csv(
-            os.path.join(MDPATH, f"{model_name}_test_dataset.csv"), index=False
-        )
+    success_rate, _ = compute_success_rate(
+        test_df, model, eval_pos_cat, top_range=top_range
+    )
+
+    if log:
+        print(f"Testing success rate: {success_rate:.2%}")
 
     return model, success_rate
 
 
-def evaluate_2024(
-    pos_cat: PosCat, df: Optional[pd.DataFrame] = None, model=None
-) -> tuple[float, pd.DataFrame]:
-    global TOP_RANGE
-
-    if df is None:
-        raw_df = get_dataset(pos_cat)
-        raw_df = raw_df[raw_df["year"] == 2024]
-        df = drop_features(raw_df)
-
-    success = compute_success_rate(df, model, pos_cat, top_range=TOP_RANGE)
-    print(f"2024 success rate: {success:.2%}")
-    return success, df
-
-
 def train_forest(
+    dataset_pos_cat: PosCat,
     eval_pos_cat: PosCat,
-    dataset_pos_cat: Optional[PosCat],
-    show_importances: bool = False,
-    **kwargs,
+    *,
+    min_year: int = 2017,
+    max_year: int = 2023,
+    split_year: int = 2022,
+    eval_year: int = 2024,
 ) -> MODEL_TYPE:
-    global TOP_RANGE
+    """
+    Orchestrates the full training pipeline for a forest model:
+    data preparation, feature engineering, model training, and performance evaluation.
 
-    if not kwargs:
-        kwargs = {
-            "min_year": 2017,
-            "max_year": 2023,
-            "split_year": 2022,
-        }
+    Args:
+        dataset_pos_cat (PosCat): Positive class for training dataset.
+        eval_pos_cat (PosCat): Positive class for evaluation dataset.
+        min_year (int): Minimum year to include in training.
+        max_year (int): Year used for test set.
+        split_year (int): Max year for training data.
+        eval_year (int): Year used for evaluation set.
 
-    raw_df = get_dataset(dataset_pos_cat)
+    Returns:
+        MODEL_TYPE: The trained forest model.
+    """
+    raw_df: pd.DataFrame = merge_datasets()
+    features_df: pd.DataFrame = build_features(raw_df, dataset_pos_cat)
 
-    # training
-    train_df, test_df = (
-        raw_df[
-            (raw_df["year"] >= kwargs["min_year"])
-            & (raw_df["year"] <= kwargs["split_year"])
-        ],
-        raw_df[raw_df["year"] == kwargs["max_year"]],
+    train_df = features_df[
+        (features_df["year"] >= min_year) & (features_df["year"] <= split_year)
+    ]
+    test_df = features_df[features_df["year"] == max_year]
+    eval_df = features_df[features_df["year"] == eval_year]
+
+    train_df = drop_features(train_df)
+    test_df = drop_features(test_df)
+    eval_df = drop_features(eval_df)
+
+    # Whole population training
+    top_range = False
+    model, whole_test_success = _train_forest_model(
+        train_df=train_df,
+        test_df=test_df,
+        top_range=top_range,
+        eval_pos_cat=eval_pos_cat,
     )
-    raw_df_2024 = raw_df[raw_df["year"] == 2024]
-
-    train_df, test_df, df_2024 = (
-        drop_features(train_df).dropna(),
-        drop_features(test_df).dropna(),
-        drop_features(raw_df_2024).dropna(),
+    whole_eval_success, _ = compute_success_rate(
+        eval_df, model, eval_pos_cat, top_range=top_range
     )
 
-    TOP_RANGE = False
-    model, whole_test_success = train_model(
-        eval_pos_cat, train_df=train_df, test_df=test_df
+    # Top-range evaluation
+    top_range = True
+    model, top_range_test_success = _train_forest_model(
+        train_df=train_df,
+        test_df=test_df,
+        top_range=top_range,
+        eval_pos_cat=eval_pos_cat,
     )
-    whole_2024_success, _ = evaluate_2024(eval_pos_cat, df_2024, model)
-
-    TOP_RANGE = True
-    model, top_range_test_success = train_model(
-        eval_pos_cat, train_df=train_df, test_df=test_df
+    top_range_eval_success, _ = compute_success_rate(
+        eval_df, model, eval_pos_cat, top_range=top_range
     )
 
-    top_range_2024_success, eval_df = evaluate_2024(eval_pos_cat, df_2024, model)
-    print(df_2024.dtypes)
-
-    save_train_configs_forest(
-        model,
+    improved = evalute_performance_forest(
         eval_pos_cat,
-        HYERPARAMS,
         top_range_test_success,
-        top_range_2024_success,
+        top_range_eval_success,
         whole_test_success,
-        whole_2024_success,
+        whole_eval_success,
     )
 
-    # eval_df.to_csv("eval.csv", index=False)
-    # df_2024.to_csv("2024.csv", index=False)
-
-    # raw_df_2024["prediction"] = df_2024["prediction"]
-    # raw_df_2024.to_csv("r.csv", index=False)
-
-    if show_importances:
-        print(json.dumps(model.variable_importances(), indent=4))
-
-    # model.save(os.path.join(MPATH, "winner_v1"))
+    if improved:
+        save_train_configs(
+            "forest",
+            eval_pos_cat,
+            [f.name for f in model.input_features()],
+            top_range_test_success,
+            top_range_eval_success,
+            whole_test_success,
+            whole_eval_success,
+        )
 
     return model
 
 
-def test_hyperparams() -> None:
-    ht = HyperParamTester(TARGET_LABEL, LEARNER_TYPE)
-    ht.run(
-        "loose",
-        {
-            "max_depth": {"min": 3, "max": 100, "step": 1},
-            "num_trees": {"min": 5, "max": 1000, "step": 5},
-            "growing_strategy": {"value": "BEST_FIRST_GLOBAL"},
-        },
-        True,
-        2000,
-        1,
-    )
-
-
-def train_regression(
-    classification: bool,
-    pos_cat: Optional[PosCat],
-    save: bool = False,
-    name: str = "log_reg_model.pkl",
-) -> None:
-    df = get_dataset(pos_cat).dropna()
-
-    df_2024 = drop_features(df[df["year"] == 2024])
-
-    df = df[df["year"] < 2024]
-    df = drop_features(df.dropna())
-    # df.to_csv("file.csv", index=False)
-
-    if classification:
-        df = balance_classes(df)
-
-    if not classification:
-        df = df[df["target"] != 27]
-
-    Y = df.pop("target")
-    X = df
-
-    df_2024_Y = df_2024.pop("target")
-    df_2024_X = df_2024
-
-    le = LabelEncoder()
-    y_encoded = le.fit_transform(Y)
-    y_encoded_2024 = le.fit_transform(df_2024_Y)
-
-    print("Class distribution:\n", pd.Series(Y).value_counts(normalize=True))
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y_encoded, test_size=0.1, random_state=42, stratify=y_encoded
-    )
-    # 2024 for evaluation, validating the findings
-    _, X_test_2024, _, y_test_2024 = train_test_split(
-        df_2024_X,
-        y_encoded_2024,
-        test_size=0.95,
-        random_state=42,
-        stratify=y_encoded_2024,
-    )
-
-    # Scaling
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    X_test_2024_scaled = scaler.transform(X_test_2024)
-
-    if classification:
-        clf = LogisticRegression(random_state=42)
-    else:
-        clf = LinearRegression()
-
-    clf.fit(X_train_scaled, y_train)
-
-    y_pred = clf.predict(X_test_scaled)
-    y_pred_2024 = clf.predict(X_test_2024_scaled)
-
-    if classification:
-        print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
-        print(
-            "Classification Report:\n",
-            classification_report(y_test, y_pred, target_names=le.classes_),
-        )
-        print(f"{' 2024 ':*^20}")
-        print("Confusion Matrix:\n", confusion_matrix(y_test_2024, y_pred_2024))
-        print(
-            "Classification Report:\n",
-            classification_report(y_test_2024, y_pred_2024, target_names=le.classes_),
-        )
-    else:
-        print("Regression Metrics on Test Set:")
-        print("Mean Absolute Error:", mean_absolute_error(y_test, y_pred))
-        print("Mean Squared Error:", mean_squared_error(y_test, y_pred))
-        print("R^2 Score:", r2_score(y_test, y_pred))
-        print("*" * 20)
-        print("Regression Metrics on 2024 Test Set:")
-        print("Mean Absolute Error:", mean_absolute_error(y_test_2024, y_pred_2024))
-        print("Mean Squared Error:", mean_squared_error(y_test_2024, y_pred_2024))
-        print("R^2 Score:", r2_score(y_test_2024, y_pred_2024))
-
-    if save:
-        rep = get_classification_report(y_pred_2024, y_test_2024)
-        save_train_configs_regression(pos_cat, df_2024, rep)
-        pickle.dump(clf, open(name, "wb"))
-
-    return clf, scaler, le
+def main() -> None:
+    ydf.verbose(0)
+    model = train_forest("loose", "top3")
 
 
 if __name__ == "__main__":
-    # train_regression(
-    #     True, "winner", False, os.path.join(MPATH, "winner-log-reg-v1.pkl")
-    # )
-    train_forest("winner", "loose")
+    main()

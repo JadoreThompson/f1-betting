@@ -6,7 +6,7 @@ from pandas import DataFrame
 from typing import Iterable, Optional
 
 from .config import MPATH, TARGET_LABEL, TRAINED_MODEL
-from .features.build_features import drop_features, get_dataset
+from .features.build_features import drop_features, build_features
 from .features.utils import PosCat
 from .typing import Prediction
 
@@ -63,7 +63,7 @@ def plot_heatmap(df: DataFrame) -> None:
 
 
 if __name__ == "__main__":
-    df = get_dataset("winner")
+    df = build_features("winner")
     df = df[df["year"] == 2024]
     df = drop_features(df)
     df["target"] = df["target"].astype("int")

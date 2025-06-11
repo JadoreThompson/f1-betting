@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from aiohttp import ClientSession
@@ -20,7 +21,7 @@ from db_models import (
     QualiResults,
     SprintResults,
 )
-from model_development.pipeline import Pipeline
+from model_development.market_pipeline import MarketPipeline
 from utils.db import get_db_session
 from utils.utils import get_datetime
 from .base_poller import BasePoller
@@ -35,7 +36,7 @@ from .models import (
     Constructor,
     Time,
 )
-from .exc import SeasonOver
+from .exc import APIError, SeasonOver
 
 T = TypeVar("T")
 
@@ -57,7 +58,7 @@ class DataPoller(BasePoller):
         """
         super().__init__(sleep_duration)
         self._db_drivers: dict[str, Driver] = {}  # driver_ref => Driver
-        self._pipeline = Pipeline()
+        self._pipeline = MarketPipeline()
 
     async def _assert_driver_and_constructor_id(self, driver: Driver) -> None:
         """Ensures driver and constructor have database IDs, persisting them if necessary.
@@ -102,7 +103,7 @@ class DataPoller(BasePoller):
         tuple[
             Callable[[list[dict[str, Any]]], Optional[tuple[int, datetime]]],
             str,
-            Callable[[ClientSession, int, int], Awaitable[dict[str, Any]]],
+            str,
             Callable[[list[dict[str, Any]], int, int, int], tuple[T, ...]],
             Callable[[Iterable[T]], None],
         ],
@@ -125,21 +126,21 @@ class DataPoller(BasePoller):
             (
                 self._get_target_quali,
                 "QualifyingResults",
-                self._fetch_quali_results,
+                "/{year}/{round_}/qualifying",
                 self._parse_quali_results,
                 self._persist_quali_result,
             ),
             (
                 self._get_target_sprint,
                 "SprintResults",
-                self._fetch_sprint_results,
+                "/{year}/{round_}/sprint",
                 self._parse_sprint_results,
                 self._persist_sprint_result,
             ),
             (
                 self._get_target_gp,
                 "Results",
-                self._fetch_grand_prix_results,
+                "/{year}/{round_}/results",
                 self._parse_grand_prix_results,
                 self._persist_grand_prix_result,
             ),
@@ -159,43 +160,54 @@ class DataPoller(BasePoller):
         The method will return if no upcoming grand prix is found.
         """
         configs = self._get_configs()
+        year = 2010
+        cur_round = 9
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
-                year = datetime.now().date().year
+                # year = datetime.now().date().year
                 schedule = await super()._fetch_schedule(sess, year)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                next_gp_info = self._get_target_gp(schedule)
+                # next_gp_info = self._get_target_gp(schedule)
 
-                if next_gp_info is None:
-                    raise SeasonOver
+                # if next_gp_info is None:
+                #     raise SeasonOver
 
-                print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
-                cur_round, _ = next_gp_info
+                # print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
+                # cur_round, _ = next_gp_info
                 circuit_id = await self._persist_circuit(schedule, cur_round)
 
                 # Fetching
                 for (
                     target_func,
                     lookup_key,
-                    fetch_func,
+                    fetch_path,
                     parse_func,
                     persist_func,
                 ) in configs:
-                    next_gp_info = target_func(schedule)
-                    if next_gp_info is None or next_gp_info[0] != cur_round:
-                        continue
+                    # next_gp_info = target_func(schedule)
+                    # if next_gp_info is None or next_gp_info[0] != cur_round:
+                    #     continue
 
-                    _, time_of_event = next_gp_info
-                    print("Sleeping until", time_of_event, "for", lookup_key)
-                    await sleep(
-                        time_of_event.timestamp() - get_datetime().timestamp()
+                    # _, time_of_event = next_gp_info
+                    # print("Sleeping until", time_of_event, "for", lookup_key)
+                    # await sleep(time_of_event.timestamp() - get_datetime().timestamp())
+
+                    # fetched_data = await fetch_path(sess, cur_round, year)
+
+                    # fetched_data = await self._fetch_results(
+                    #     sess, fetch_path.format(year=year, round_=cur_round)
+                    # )
+                    # if fetched_data is None:
+                    #     continue  # For sprint, possibly missing data
+
+                    success, fetched_data = await self._fetch_results(
+                        sess, fetch_path.format(year=year, round_=cur_round)
                     )
 
-                    fetched_data = await fetch_func(sess, cur_round, year)
-                    if fetched_data is None:
-                        continue  # For sprint, possibly missing data
+                    if not success:
+                        continue
 
                     leave = False
                     raw_results = fetched_data
@@ -209,17 +221,28 @@ class DataPoller(BasePoller):
                     if leave:
                         continue
 
+                    json.dump(
+                        fetched_data,
+                        open(f"msc/{year}-{cur_round}-{lookup_key}.json", "w"),
+                    )
+
                     parsed_data = parse_func(raw_results, year, cur_round, circuit_id)
                     await persist_func(parsed_data)
 
-                    if lookup_key != "QualifyingResults":
+                    if lookup_key != "QualifyingResults":  # TODO: Redundant?
                         await self._persist_driver_standings(year, cur_round)
                         await self._persist_constructor_standings(year, cur_round)
 
-                    await self._pipeline.run()
+                    # await self._pipeline.run()
 
                 print(f"Sleeping for {self._sleep_duration} seconds...")
                 await sleep(self._sleep_duration)
+
+                if cur_round == int(schedule[-1]["round"]):
+                    year += 1
+                    cur_round = 1
+                else:
+                    cur_round += 1
 
     def _get_target_quali(
         self, schedule: list[dict[str, Any]]
@@ -294,80 +317,22 @@ class DataPoller(BasePoller):
             if gp_datetime > cur_datetime:
                 return (int(d["round"]), gp_datetime)
 
-    async def _fetch_quali_results(
-        self, session: ClientSession, target_round: int, year: int
-    ) -> dict[str, Any]:
-        """Fetches qualifying results from the Formula 1 API.
+    async def _fetch_results(
+        self, session: ClientSession, path: str
+    ) -> tuple[bool, Optional[dict[str, Any]]]:
+        attempts = 0
+        max_attempts = 10
 
-        Makes an HTTP request to retrieve qualifying session results for a specific
-        race round and year.
+        while attempts < max_attempts:
+            rsp = await session.get(POLLING_BASE_URL + path)
 
-        Args:
-            session (ClientSession): Aiohttp client session for making requests.
-            target_round (int): The race round number to fetch results for.
-            year (int): The racing season year.
+            if rsp.status == 200:
+                return (True, await rsp.json())
 
-        Returns:
-            dict[str, Any]: JSON response containing qualifying results data.
+            attempts += 1
+            await asyncio.sleep(2**attempts)
 
-        Raises:
-            Exception: If the API request returns a non-200 status code.
-        """
-        endpoint = f"/{year}/{target_round}/qualifying"
-        rsp = await session.get(POLLING_BASE_URL + endpoint)
-        if rsp.status != 200:
-            raise Exception(f"{endpoint} threw status code: {rsp.status}")
-        return await rsp.json()
-
-    async def _fetch_sprint_results(
-        self, session: ClientSession, target_round: int, year: int
-    ) -> dict[str, Any]:
-        """Fetches sprint race results from the Formula 1 API.
-
-        Makes an HTTP request to retrieve sprint race results for a specific
-        race round and year.
-
-        Args:
-            session (ClientSession): Aiohttp client session for making requests.
-            target_round (int): The race round number to fetch results for.
-            year (int): The racing season year.
-
-        Returns:
-            dict[str, Any]: JSON response containing sprint race results data.
-
-        Raises:
-            Exception: If the API request returns a non-200 status code.
-        """
-        endpoint = f"/{year}/{target_round}/sprint"
-        rsp = await session.get(POLLING_BASE_URL + endpoint)
-        if rsp.status != 200:
-            raise Exception(f"{endpoint} threw status code: {rsp.status}")
-        return await rsp.json()
-
-    async def _fetch_grand_prix_results(
-        self, session: ClientSession, target_round: int, year: int
-    ) -> dict[str, Any]:
-        """Fetches grand prix race results from the Formula 1 API.
-
-        Makes an HTTP request to retrieve grand prix race results for a specific
-        race round and year.
-
-        Args:
-            session (ClientSession): Aiohttp client session for making requests.
-            target_round (int): The race round number to fetch results for.
-            year (int): The racing season year.
-
-        Returns:
-            dict[str, Any]: JSON response containing grand prix results data.
-
-        Raises:
-            Exception: If the API request returns a non-200 status code.
-        """
-        endpoint = f"/{year}/{target_round}/results"
-        rsp = await session.get(POLLING_BASE_URL + endpoint)
-        if rsp.status != 200:
-            raise Exception(f"{endpoint} threw status code: {rsp.status}")
-        return await rsp.json()
+        return (False, None)
 
     def _parse_quali_results(
         self,

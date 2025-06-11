@@ -59,7 +59,7 @@ def drop_features(df: DataFrame) -> DataFrame:
     )
 
 
-def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
+def build_features(df: DataFrame, pos_cat: Optional[PosCat] = None) -> DataFrame:
     """
     Returns DataFrame comprised of all necessary features for training
     or testing.
@@ -73,7 +73,6 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
     Returns:
         DataFrame: DataFrame comprised of all features.
     """
-    df: DataFrame = merge_datasets()
 
     if pos_cat is None:
         df["target"] = df["positionOrder"]
@@ -86,12 +85,12 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
     df = append_elo_change(df)
     df = append_last_n(df, "target", window=6)
     df = append_last_n_podiums(df, window=0)
+    df = append_last_season_wins(df)
+    
     return df
 
 
 if __name__ == "__main__":
-    df = get_dataset("loose")
-    # df = df.groupby("driverId").filter(lambda x: (x["elo"] < 0).any())
-    # df = df[df["driverId"] == df["driverId"].iloc[0]]
+    df = build_features("loose")
     df = drop_features(df)
     df.to_csv("file.csv", index=False)
