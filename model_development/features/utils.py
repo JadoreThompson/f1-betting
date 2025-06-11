@@ -5,7 +5,7 @@ import pandas as pd
 
 from enum import Enum
 from typing import Callable, Iterable, Literal
-from ..typing import (
+from ..enums import (
     LoosePositionCategory,
     TightPositionCategory,
     Top3PositionCategory,
@@ -41,6 +41,7 @@ def get_position_category(value: str, pos_cat: PosCat) -> str:
     Returns:
         str: Categorical label representing the finishing position, based on the chosen `pos_cat`:
     """
+
     if pos_cat == "winner":
         if value == "1":
             return WinnerPositionCategory.WINNER.value
@@ -64,13 +65,16 @@ def get_position_category(value: str, pos_cat: PosCat) -> str:
         return LoosePositionCategory.DNF.value
 
     val = int(value)
-    if val <= 3:
-        return LoosePositionCategory.TOP_3.value
-    if val <= 5:
-        return LoosePositionCategory.TOP_5.value
-    if val <= 10:
-        return LoosePositionCategory.TOP_10.value
-    return LoosePositionCategory.TOP_20.value
+    if pos_cat == "loose":
+        if val <= 3:
+            return LoosePositionCategory.TOP_3.value
+        if val <= 5:
+            return LoosePositionCategory.TOP_5.value
+        if val <= 10:
+            return LoosePositionCategory.TOP_10.value
+        return LoosePositionCategory.TOP_20.value
+
+    raise ValueError(f"{pos_cat} is not of type PosCat")
 
 
 def append_avg_position_move(
@@ -724,13 +728,13 @@ def append_last_n_podiums(
     df: pd.DataFrame, *, in_season: bool = True, window: int = 3
 ) -> pd.DataFrame:
     """
-    Apppends the last n podium finishes within the last n 
+    Apppends the last n podium finishes within the last n
     races.
 
     Args:
         df (pd.DataFrame)
         in_season (bool, optional): Defaults to True.
-        window (int, optional): Defaults to 3. If window 
+        window (int, optional): Defaults to 3. If window
             is less than 1 it returns an expanding representation
             instead of a rolling window representation.
 

@@ -1,19 +1,17 @@
 import asyncio
 import os
-import time
 import uvicorn
 import requests
 
 from datetime import datetime
 from json import dump
 from multiprocessing import Process, Queue
-from r_mutex import LockManager, LockClient
+from r_mutex import LockManager
 from sqlalchemy import select
 
 from betting_engine import Topic, MatchingEngine, DataPoller, SettlementPoller
 from config import (
     LOCK_CHANNEL,
-    ORDER_UPDATE_CHANNEL,
     POLLING_BASE_URL,
     REDIS_CLIENT,
     SERVER_DATA_FOLDER,
@@ -35,7 +33,7 @@ def run_data_pipeline() -> None:
     This function is designed to be executed in a multiprocessing context
     and will run indefinitely until the process is terminated.
     """
-    asyncio.run(DataPoller(30).poll())
+    asyncio.run(DataPoller(15).poll())
 
 
 async def settlement_pipeline(queue: Queue) -> None:
@@ -182,10 +180,10 @@ async def main() -> None:
     lock_manager = LockManager(REDIS_CLIENT, LOCK_CHANNEL)
 
     args = (
-        (run_settlement_pipeline, "settlement_pipeline", True),
+        # (run_settlement_pipeline, "settlement_pipeline", True),
         (run_data_pipeline, "data_pipeline", False),
-        (run_engine, "matching_engine", True),
-        (run_server, "server", True),
+        # (run_engine, "matching_engine", True),
+        # (run_server, "server", True),
     )
 
     ps: list[Process] = [
@@ -195,7 +193,7 @@ async def main() -> None:
 
     # Initialising
     lm_task = asyncio.create_task(lock_manager.run())
-    
+
     while not lock_manager.is_running:
         await asyncio.sleep(1)
         print("LockManager not running...")
@@ -222,9 +220,11 @@ async def main() -> None:
 
             await asyncio.sleep(0.1)
     except BaseException:
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
         lm_task.cancel()
-        
+
         print("Shutting down...")
         for p in ps:
             p.terminate()

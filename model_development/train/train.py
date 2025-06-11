@@ -56,26 +56,22 @@ class EmptyDataFrame(Exception):
 
 def train_model(
     pos_cat: PosCat,
-    train_df: Optional[pd.DataFrame] = None,
-    test_df: Optional[pd.DataFrame] = None,
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
     *,
-    min_year: int = 2017,
-    max_year: int = 2022,
-    split_year: int = 2021,
     save_model: bool = False,
     model_name: str = "model_x",
 ) -> tuple[MODEL_TYPE, float]:
     global TOP_RANGE
-    if train_df is None or test_df is None:
-        train_df, test_df = get_train_test(
-            pos_cat, min_year=min_year, max_year=max_year, split_year=split_year
-        )
 
     if test_df.empty:
         raise EmptyDataFrame("Empty test dataset.")
 
+    train_df["elo"] *= 2
+    train_df["elo_change"] *= 2
     model: MODEL_TYPE = LEARNER.train(train_df)
     print("Features:", model.input_feature_names())
+    print("Classes:", model.label_classes())
 
     success_rate = compute_success_rate(test_df, model, pos_cat, top_range=TOP_RANGE)
 
@@ -133,12 +129,12 @@ def train_forest(
         ],
         raw_df[raw_df["year"] == kwargs["max_year"]],
     )
-    df_2024 = raw_df[raw_df["year"] == 2024]
+    raw_df_2024 = raw_df[raw_df["year"] == 2024]
 
     train_df, test_df, df_2024 = (
         drop_features(train_df).dropna(),
         drop_features(test_df).dropna(),
-        drop_features(df_2024).dropna(),
+        drop_features(raw_df_2024).dropna(),
     )
 
     TOP_RANGE = False
@@ -151,7 +147,9 @@ def train_forest(
     model, top_range_test_success = train_model(
         eval_pos_cat, train_df=train_df, test_df=test_df
     )
+
     top_range_2024_success, eval_df = evaluate_2024(eval_pos_cat, df_2024, model)
+    print(df_2024.dtypes)
 
     save_train_configs_forest(
         model,
@@ -166,10 +164,13 @@ def train_forest(
     # eval_df.to_csv("eval.csv", index=False)
     # df_2024.to_csv("2024.csv", index=False)
 
+    # raw_df_2024["prediction"] = df_2024["prediction"]
+    # raw_df_2024.to_csv("r.csv", index=False)
+
     if show_importances:
         print(json.dumps(model.variable_importances(), indent=4))
-        
-    model.save(os.path.join(MPATH, "top3_v2"))
+
+    # model.save(os.path.join(MPATH, "winner_v1"))
 
     return model
 
@@ -182,7 +183,6 @@ def test_hyperparams() -> None:
             "max_depth": {"min": 3, "max": 100, "step": 1},
             "num_trees": {"min": 5, "max": 1000, "step": 5},
             "growing_strategy": {"value": "BEST_FIRST_GLOBAL"},
-            # "focal_loss_alpha": {"min": 0.01, "max": 0.99, "step": 0.01},
         },
         True,
         2000,
@@ -202,7 +202,7 @@ def train_regression(
 
     df = df[df["year"] < 2024]
     df = drop_features(df.dropna())
-    df.to_csv("file.csv", index=False)
+    # df.to_csv("file.csv", index=False)
 
     if classification:
         df = balance_classes(df)
@@ -282,5 +282,7 @@ def train_regression(
 
 
 if __name__ == "__main__":
-    # train_regression(True, "winner", True, os.path.join(MPATH, "winner-log-reg-v1.pkl"))
-    train_forest("top3", "top3")
+    # train_regression(
+    #     True, "winner", False, os.path.join(MPATH, "winner-log-reg-v1.pkl")
+    # )
+    train_forest("winner", "loose")

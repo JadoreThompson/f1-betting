@@ -1,6 +1,6 @@
+import asyncio
 import json
 import os
-import pickle
 import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
@@ -33,7 +33,7 @@ from .features import (
 from .preprocessing import merge_datasets
 
 
-class Pipeline:
+class MarketPipeline:
     """Pipeline for generating F1 betting market predictions.
 
     This class loads models and datasets, processes features,
@@ -50,12 +50,10 @@ class Pipeline:
 
     def _init(self) -> None:
         """Initialize models from disk"""
-        self._winner_model = pickle.load(
-            open(os.path.join(MPATH, "winner-log-reg-v1.pkl"), "rb")
-        )
+        self._winner_model = load_model(os.path.join(MPATH, "winner_v1"))
         self._top3_model = load_model(os.path.join(MPATH, "top3_v2"))
 
-    async def run(self, year: int, round_: int):
+    async def run(self, year: int, round_: int) -> None:
         """Start the pipeline process to generate and store market predictions.
 
         Loads datasets, applies feature engineering, makes predictions for
@@ -69,10 +67,13 @@ class Pipeline:
             return
 
         merged_df = merge_datasets(ds)
+        merged_df.to_csv("m.csv", index=False)
 
         result = self._get_winner_preds(merged_df)
+        
         if result is not None:
             drivers, preds = result
+            
             winner_markets = self._generate_markets_lr(
                 preds, drivers, MarketCategory.WINNER, year, round_
             )
@@ -235,24 +236,25 @@ class Pipeline:
             open(
                 os.path.join(
                     self._params_folder,
-                    "regression",
+                    "forest",
                     "winner",
-                    "param_tracker_winner_3.json",
+                    "param_tracker_winner_0.json",
                 ),
                 "rb",
             )
         )
         used_feats = ptracker["features"]
 
+        df.to_csv("f.csv", index=False)
         df["target"] = df["positionText"].apply(
-            lambda x: get_position_category(x, "winner")
+            lambda x: get_position_category(x, "loose")
         )
 
         df = append_elo(df)
         df = append_elo_change(df)
         df = append_last_n(df, "target", window=6)
         if df.empty:
-            return
+            return  # Checking after last_n performs df.dropna
 
         df = append_last_n_podiums(df, window=0)
         df = df.dropna()
@@ -263,11 +265,7 @@ class Pipeline:
             [col for col in df.columns if col not in used_feats and col != "target"],
             axis=1,
         )
-
-        x_scaled = self._scaler.fit_transform(df)
-        preds = self._winner_model.predict_proba(x_scaled)
-
-        return driver_refs, preds
+        return driver_refs, self._winner_model.predict(df)
 
     def _get_top3_preds(self, df: pd.DataFrame) -> tuple[list[str], list[float, float]]:
         """Generate predictions for top 3 race positions.
@@ -353,3 +351,8 @@ class Pipeline:
         async with get_db_session() as sess:
             await sess.execute(insert(Markets).values(markets))
             await sess.commit()
+
+
+if __name__ == "__main__":
+    m = MarketPipeline()
+    asyncio.run(m.run(2000, 6))

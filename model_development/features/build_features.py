@@ -90,7 +90,7 @@ def get_dataset(pos_cat: Optional[PosCat] = None) -> DataFrame:
 
 
 if __name__ == "__main__":
-    df = get_dataset("winner")
+    df = get_dataset("loose")
     # df = df.groupby("driverId").filter(lambda x: (x["elo"] < 0).any())
     # df = df[df["driverId"] == df["driverId"].iloc[0]]
     df = drop_features(df)

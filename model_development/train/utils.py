@@ -1,10 +1,10 @@
-from collections import defaultdict
 import json
 import os
 import numpy as np
 import ydf
 
 from enum import Enum
+from collections import defaultdict
 from imblearn.over_sampling import SMOTE, SMOTENC
 from pandas import DataFrame, Series
 from typing import (
@@ -391,7 +391,6 @@ def handle_regression(
                     if pred == target_s.iloc[ind]:
                         success += 1
             else:
-
                 if pred == target_s.iloc[ind]:
                     success += 1
 
@@ -437,6 +436,7 @@ def compute_success_rate(
 
     if model is None:
         model = TRAINED_MODEL
+
     dataset = dataset.copy()
     if (mtask := model.task()) == ydf.Task.CLASSIFICATION:
         success, pred_values = handle_classification(dataset, model, pos_cat, top_range)
