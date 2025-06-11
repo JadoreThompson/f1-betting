@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sqlalchemy import insert, select
 from ydf import load_model
+
 from db_models import (
     Circuits,
     ConstructorStandings,
@@ -17,9 +18,8 @@ from db_models import (
     QualiResults,
 )
 from enums import MarketCategory
-from utils.db import get_db_session
-from .config import BPATH, MPATH
-from .features import (
+from model_development.config import BPATH, MPATH
+from model_development.features import (
     get_position_category,
     append_elo,
     append_elo_change,
@@ -29,8 +29,10 @@ from .features import (
     append_constructor_encodings,
     append_last_n,
     append_last_n_podiums,
+    append_last_season_wins,
 )
-from .preprocessing import merge_datasets
+from model_development.preprocessing import merge_datasets
+from utils.db import get_db_session
 
 
 class MarketPipeline:
@@ -51,7 +53,7 @@ class MarketPipeline:
     def _init(self) -> None:
         """Initialize models from disk"""
         self._winner_model = load_model(os.path.join(MPATH, "winner_v1"))
-        self._top3_model = load_model(os.path.join(MPATH, "top3_v2"))
+        self._top3_model = load_model(os.path.join(MPATH, "top3_v1"))
 
     async def run(self, year: int, round_: int) -> None:
         """Start the pipeline process to generate and store market predictions.
@@ -70,10 +72,10 @@ class MarketPipeline:
         merged_df.to_csv("m.csv", index=False)
 
         result = self._get_winner_preds(merged_df)
-        
+
         if result is not None:
             drivers, preds = result
-            
+
             winner_markets = self._generate_markets_lr(
                 preds, drivers, MarketCategory.WINNER, year, round_
             )
@@ -292,25 +294,28 @@ class MarketPipeline:
         )
         used_feats = ptracker["features"]
 
+        df.to_csv("f.csv", index=False)
         df["target"] = df["positionText"].apply(
-            lambda x: get_position_category(x, "top3")
+            lambda x: get_position_category(x, "loose")
         )
+
         df = append_elo(df)
         df = append_elo_change(df)
-        df = append_elo_percentile(df)
-        df = append_elo_rank_in_race(df)
-        df = append_avg_position_move(df, window=1)
-        df = append_constructor_encodings(df)
+        df = append_last_n(df, "target", window=6)
+        if df.empty:
+            return  # Checking after last_n performs df.dropna
 
+        df = append_last_n_podiums(df, window=0)
+        df = append_last_season_wins(df)
         df = df.dropna()
-        drivers = df["driverRef"].tolist()
+
+        driver_refs = df["driverRef"].tolist()
+
         df = df.drop(
             [col for col in df.columns if col not in used_feats and col != "target"],
             axis=1,
         )
-
-        preds = self._top3_model.predict(df)
-        return drivers, preds
+        return driver_refs, self._winner_model.predict(df)
 
     def _generate_markets_lr(
         self,
@@ -351,8 +356,3 @@ class MarketPipeline:
         async with get_db_session() as sess:
             await sess.execute(insert(Markets).values(markets))
             await sess.commit()
-
-
-if __name__ == "__main__":
-    m = MarketPipeline()
-    asyncio.run(m.run(2000, 6))

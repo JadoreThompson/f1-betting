@@ -21,7 +21,7 @@ from db_models import (
     QualiResults,
     SprintResults,
 )
-from model_development.market_pipeline import MarketPipeline
+from betting_engine.market_pipeline import MarketPipeline
 from utils.db import get_db_session
 from utils.utils import get_datetime
 from .base_poller import BasePoller
