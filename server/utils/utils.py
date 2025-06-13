@@ -1,9 +1,8 @@
 import jwt
 
 from datetime import datetime
-from fastapi import HTTPException
-from typing import Any
 from sqlalchemy import select
+from typing import Any
 
 from config import JWT_SECRET_KEY, JWT_ALGO, JWT_EXPIRY
 from db_models import Users
@@ -38,13 +37,13 @@ async def validate_jwt_payload(payload: JWTPayload) -> JWTPayload:
     """Validate a JWT token and return the decoded payload.
 
     Args:
-        payload (dict[str, Any]): The decoded payload.
+        payload (JWTPayload): The decoded JWT payload.
 
     Raises:
-        HTTPException: If the user is not found or the token is invalid.
+        JWTError: If the user referenced in the payload does not exist.
 
     Returns:
-        JWTPayload: The decoded payload if valid.
+        JWTPayload: The validated JWT payload.
     """
     async with get_db_session() as sess:
         res = await sess.execute(
@@ -53,6 +52,6 @@ async def validate_jwt_payload(payload: JWTPayload) -> JWTPayload:
         user = res.first()
 
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid user")
+        raise JWTError("Invalid user")
 
     return payload

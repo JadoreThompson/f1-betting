@@ -9,10 +9,9 @@ from sqlalchemy.sql.functions import sum as sql_sum, coalesce
 from config import SERVER_DATA_FOLDER
 from db_models import Bets, Markets, Transactions
 from enums import BetStatus, MarketStatus, MarketCategory, TransactionType
-from server.routes.markets.models import MarketResponse
 from utils.db import get_db_session
 from utils.utils import get_datetime
-from .models import MarketSummary, NextRace, Overview
+from .models import MarketSummary, NextRace, Overview, MarketResponse
 
 markets_route = APIRouter(prefix="/markets", tags=["markets"])
 next_race: NextRace | None = None

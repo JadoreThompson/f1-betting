@@ -1,16 +1,16 @@
-from uuid import UUID
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import insert, select
 from sqlalchemy.exc import IntegrityError
+from uuid import UUID
 
 from db_models import Users
 from config import COOKIE_ALIAS
 from server.middleware import verify_jwt
-from server.routes.auth.models import LoginBody, RegisterBody
 from server.typing import JWTPayload
 from server.utils.utils import generate_jwt
 from utils.db import get_db_session
+from .models import LoginBody, RegisterBody
 
 auth_route = APIRouter(prefix="/auth", tags=["auth"])
 

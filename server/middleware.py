@@ -1,21 +1,21 @@
-from typing import Any
-from fastapi import HTTPException, Request
+from fastapi import Request
 from config import COOKIE_ALIAS
-from server.exc import JWTError
-from server.utils.utils import decode_jwt, validate_jwt_payload
+from .exc import JWTError
+from .utils.utils import decode_jwt, validate_jwt_payload
+from .typing import JWTPayload
 
 
-async def verify_jwt(req: Request) -> dict[str, Any]:
+async def verify_jwt(req: Request) -> JWTPayload:
     """Verify the JWT token from the request cookies and validate it.
 
     Args:
         req (Request)
 
     Raises:
-        HTTPException: If the JWT token is missing or invalid.
+        JWTError: If the JWT token is missing, expired, or invalid.
 
     Returns:
-        dict[str, Any]: The decoded JWT payload if valid.
+        JWTPayload: The decoded JWT payload if valid.
     """
     token = req.cookies.get(COOKIE_ALIAS)
 

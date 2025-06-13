@@ -1,7 +1,6 @@
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 from pydantic import BaseModel
+from typing import Any
 
 
 class MarketResponse(BaseModel):

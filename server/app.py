@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from server.exc import JWTError
+from .exc import JWTError
 from .routes import auth_route, bet_route, markets_route, user_route
 
 app = FastAPI()
