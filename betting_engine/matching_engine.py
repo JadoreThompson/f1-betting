@@ -94,6 +94,7 @@ class MatchingEngine:
         if prev_bs != order.payload["bet_status"]:
             self._pusher.append(order.payload)
 
+    # TODO: Ensure orders are filled. Need partial filles ~0
     def _match_order(
         self,
         order: Order,

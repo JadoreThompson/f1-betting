@@ -25,6 +25,7 @@ BE_CONTRACT: AsyncContract = PROVIDER.eth.contract(
         ]
     ),
 )
+
 USDT_CONTRACT: AsyncContract = PROVIDER.eth.contract(
     address=USDT_CONTRACT_ADDR,
     abi=dumps(

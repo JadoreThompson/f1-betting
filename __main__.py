@@ -180,10 +180,10 @@ async def main() -> None:
     lock_manager = LockManager(REDIS_CLIENT, LOCK_CHANNEL)
 
     args = (
-        # (run_settlement_pipeline, "settlement_pipeline", True),
+        (run_settlement_pipeline, "settlement_pipeline", True),
         (run_data_pipeline, "data_pipeline", False),
-        # (run_engine, "matching_engine", True),
-        # (run_server, "server", True),
+        (run_engine, "matching_engine", True),
+        (run_server, "server", True),
     )
 
     ps: list[Process] = [

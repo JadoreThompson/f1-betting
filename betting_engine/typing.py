@@ -2,7 +2,6 @@ from typing import Any, TypedDict
 from enums import Side
 from .enums import Topic
 
-Payload = dict[str, str | int]
 
 class SettlePayload(TypedDict):
     market_id: int

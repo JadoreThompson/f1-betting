@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import pandas as pd
@@ -23,10 +22,6 @@ from model_development.features import (
     get_position_category,
     append_elo,
     append_elo_change,
-    append_elo_percentile,
-    append_elo_rank_in_race,
-    append_avg_position_move,
-    append_constructor_encodings,
     append_last_n,
     append_last_n_podiums,
     append_last_season_wins,
@@ -69,7 +64,6 @@ class MarketPipeline:
             return
 
         merged_df = merge_datasets(ds)
-        merged_df.to_csv("m.csv", index=False)
 
         result = self._get_winner_preds(merged_df)
 

@@ -160,22 +160,24 @@ class DataPoller(BasePoller):
         The method will return if no upcoming grand prix is found.
         """
         configs = self._get_configs()
-        year = 2010
-        cur_round = 9
+        # Debugging
+        # year = 2010
+        # cur_round = 9
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
-                # year = datetime.now().date().year
+                year = datetime.now().date().year
                 schedule = await super()._fetch_schedule(sess, year)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                # next_gp_info = self._get_target_gp(schedule)
+                next_gp_info = self._get_target_gp(schedule)
 
-                # if next_gp_info is None:
-                #     raise SeasonOver
+                if next_gp_info is None:
+                    await asyncio.sleep(60 * 60 * 24)
+                    continue
 
-                # print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
-                # cur_round, _ = next_gp_info
+                print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
+                cur_round, _ = next_gp_info
                 circuit_id = await self._persist_circuit(schedule, cur_round)
 
                 # Fetching
@@ -186,21 +188,21 @@ class DataPoller(BasePoller):
                     parse_func,
                     persist_func,
                 ) in configs:
-                    # next_gp_info = target_func(schedule)
-                    # if next_gp_info is None or next_gp_info[0] != cur_round:
-                    #     continue
+                    next_gp_info = target_func(schedule)
+                    if next_gp_info is None or next_gp_info[0] != cur_round:
+                        continue
 
-                    # _, time_of_event = next_gp_info
-                    # print("Sleeping until", time_of_event, "for", lookup_key)
-                    # await sleep(time_of_event.timestamp() - get_datetime().timestamp())
+                    _, time_of_event = next_gp_info
+                    print("Sleeping until", time_of_event, "for", lookup_key)
+                    await sleep(time_of_event.timestamp() - get_datetime().timestamp())
 
-                    # fetched_data = await fetch_path(sess, cur_round, year)
+                    fetched_data = await fetch_path(sess, cur_round, year)
 
-                    # fetched_data = await self._fetch_results(
-                    #     sess, fetch_path.format(year=year, round_=cur_round)
-                    # )
-                    # if fetched_data is None:
-                    #     continue  # For sprint, possibly missing data
+                    fetched_data = await self._fetch_results(
+                        sess, fetch_path.format(year=year, round_=cur_round)
+                    )
+                    if fetched_data is None:
+                        continue  # For sprint, possibly missing data
 
                     success, fetched_data = await self._fetch_results(
                         sess, fetch_path.format(year=year, round_=cur_round)
@@ -221,10 +223,11 @@ class DataPoller(BasePoller):
                     if leave:
                         continue
 
-                    json.dump(
-                        fetched_data,
-                        open(f"msc/{year}-{cur_round}-{lookup_key}.json", "w"),
-                    )
+                    # Debugging
+                    # json.dump(
+                    #     fetched_data,
+                    #     open(f"msc/{year}-{cur_round}-{lookup_key}.json", "w"),
+                    # )
 
                     parsed_data = parse_func(raw_results, year, cur_round, circuit_id)
                     await persist_func(parsed_data)
@@ -233,16 +236,17 @@ class DataPoller(BasePoller):
                         await self._persist_driver_standings(year, cur_round)
                         await self._persist_constructor_standings(year, cur_round)
 
-                    # await self._pipeline.run()
+                    await self._pipeline.run()
 
                 print(f"Sleeping for {self._sleep_duration} seconds...")
                 await sleep(self._sleep_duration)
 
-                if cur_round == int(schedule[-1]["round"]):
-                    year += 1
-                    cur_round = 1
-                else:
-                    cur_round += 1
+                # Debugging
+                # if cur_round == int(schedule[-1]["round"]):
+                #     year += 1
+                #     cur_round = 1
+                # else:
+                #     cur_round += 1
 
     def _get_target_quali(
         self, schedule: list[dict[str, Any]]
@@ -753,9 +757,9 @@ class DataPoller(BasePoller):
         driver_wins_subq = (
             select(
                 GrandPrixResults.driver_id,
-                sql_sum(case((GrandPrixResults.position == 1, 1), else_=0)).label(
-                    "total_wins"
-                ),
+                coalesce(
+                    sql_sum(case((GrandPrixResults.position == 1, 1), else_=0)), 0
+                ).label("total_wins"),
             )
             .where(GrandPrixResults.year == year)
             .group_by(GrandPrixResults.driver_id)

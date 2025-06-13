@@ -9,7 +9,7 @@ def dump_sqlalchemy_object(obj: DeclarativeBase) -> dict[str, Any]:
     return {k: v for k, v in vars(obj).items() if k != "_sa_instance_state"}
 
 
-def dump_obj(obj: dict) -> dict[str, str | int | float | bool]:
+def dump_obj(obj: dict) -> dict[str, Any]:
     """Converts datetime and UUID fields to str"""
     return {
         k: (str(v) if isinstance(v, (datetime, UUID)) else v) for k, v in obj.items()

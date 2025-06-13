@@ -1,6 +1,7 @@
 from aiohttp import ClientSession
 from typing import Any, override
 from config import POLLING_BASE_URL
+from .exc import APIError
 
 
 class BasePoller:
@@ -12,7 +13,7 @@ class BasePoller:
     ) -> dict[str, Any]:
         async with session.get(POLLING_BASE_URL + f"/{year}") as rsp:
             if rsp.status != 200:
-                raise Exception(
+                raise APIError(
                     f"Error fetching season schedule. status code: {rsp.status}"
                 )
             return await rsp.json()

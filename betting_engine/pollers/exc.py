@@ -1,8 +1,9 @@
 class APIError(Exception):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
+    """Error fetching response from external API."""
+    pass
 
 class TargetNotFound(Exception):
+    """Next round in season not found"""
     def __init__(self) -> None:
         super().__init__("No target round was found. Season possibly over.")
         

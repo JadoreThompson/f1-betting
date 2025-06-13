@@ -2,7 +2,6 @@ from enum import Enum
 
 
 class OrderStatus(int, Enum):
-    """Order Status to be used within the matching engine."""
     PENDING = 0
     PARTIALLY_FILLED = 1
     FILLED = 2
@@ -11,5 +10,10 @@ class OrderStatus(int, Enum):
 
 
 class Topic(int, Enum):
+    """
+    Defines the action to be partaken
+    within the matching engine.
+    """
+
     CREATE = 0
     SETTLE = 2

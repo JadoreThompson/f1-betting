@@ -1,4 +1,5 @@
 import warnings
+
 from sqlalchemy import insert, update
 from typing import Iterable
 from web3.exceptions import ContractLogicError
@@ -151,7 +152,7 @@ class OrderBook:
                     "closed_at": close_time,
                 }
             )
-
+                
     async def settle(self, side: Side) -> None:
         """
         Settles all orders on the specified side (BACK or LAY).
