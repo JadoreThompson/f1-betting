@@ -120,12 +120,9 @@ class OrderBook:
         for o in orders:
             wallet_addr = o.payload["wallet_address"]
             payout = o.payload["amount"] * k
-            payout_usdt = payout * 10**usdt_decimals
 
-            txn = await BE_CONTRACT.functions.withdraw(
-                self._market_id,
-                wallet_addr,
-                int(payout_usdt),
+            txn = await BE_CONTRACT.functions.withdraw_(
+                self._market_id, wallet_addr, k
             ).build_transaction(
                 {
                     "nonce": await PROVIDER.eth.get_transaction_count(wallet_addr),
@@ -152,7 +149,8 @@ class OrderBook:
                     "closed_at": close_time,
                 }
             )
-                
+
+    # TODO: Payout all unfilled orders.
     async def settle(self, side: Side) -> None:
         """
         Settles all orders on the specified side (BACK or LAY).

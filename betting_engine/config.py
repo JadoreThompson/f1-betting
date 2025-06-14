@@ -15,7 +15,7 @@ BE_CONTRACT: AsyncContract = PROVIDER.eth.contract(
                 "inputs": [
                     {"name": "marketId", "type": "uint256"},
                     {"name": "winner", "type": "address"},
-                    {"name": "amount", "type": "uint256"},
+                    {"name": "multiplier", "type": "uint16"},
                 ],
                 "name": "withdraw",
                 "outputs": [],

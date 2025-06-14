@@ -8,8 +8,11 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 // TODO: Improve robustness
 contract BettingEscrow is Ownable, ReentrancyGuard {
     IERC20 public usdtToken;
-    mapping(uint256 => address[]) public marketParticipants;
+    
+    mapping(uint256 => mapping(address => uint256)) public marketParticipantAmounts; // marketId => address => amount
+    mapping(uint256 => mapping(address => bool)) public marketParticipantExists;
     mapping(uint256 => uint256) public marketEscrow;
+    
     uint256 public volume;
     uint256 public activeBetCount;
 
@@ -25,13 +28,7 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
         uint256 marketId,
         address participant
     ) public view returns (bool) {
-        address[] storage participants = marketParticipants[marketId];
-        for (uint256 i = 0; i < participants.length; i++) {
-            if (participants[i] == participant) {
-                return true;
-            }
-        }
-        return false;
+        return marketParticipantExists[marketId][participant];
     }
 
     function placeBet(
@@ -39,35 +36,34 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
         uint256 amount
     ) external nonReentrant {
         require(msg.sender != address(0), "Invalid sender address");
-        require(!containsParticipant(marketId, msg.sender), "Already participated in this market");
         require(amount > 0, "Bet amount must be greater than zero");
         require(usdtToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
 
         activeBetCount += 1;
         volume += amount;
+        
         marketEscrow[marketId] += amount;
-        marketParticipants[marketId].push(msg.sender);
+        marketParticipantExists[marketId][msg.sender] = true;
+        marketParticipantAmounts[marketId][msg.sender] += amount;
+
         emit BetPlaced(msg.sender, marketId, amount);
     }
 
+
     function removeParticipant(uint256 marketId, address participant) internal {
-        address[] storage participants = marketParticipants[marketId];
-        for (uint256 i = 0; i < participants.length; i++) {
-            if (participants[i] == participant) {
-                participants[i] = participants[participants.length - 1];
-                participants.pop();
-                break;
-            }
-        }
+        delete marketParticipantExists[marketId][participant];
+        delete marketParticipantAmounts[marketId][participant];
     }
 
     function withdraw(
         uint256 marketId,
         address winner,
-        uint256 amount
+        uint16 mutliplier
     ) external onlyOwner nonReentrant {
         require(winner != address(0), "Invalid winner address");
         require(containsParticipant(marketId, winner), "Winner did not participate in this market");
+        
+        uint256 amount = marketParticipantAmounts[marketId][winner] * mutliplier;
         require(marketEscrow[marketId] >= amount, "Insufficient escrowed funds");
         require(usdtToken.transfer(winner, amount), "Transfer failed");
 

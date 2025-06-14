@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\ADMIN\\MyProjects\\f1-betting\\web3\\contracts\\BettingEscrow.sol": {
-      "lastModificationDate": 1749589251613,
-      "contentHash": "fceb39941499af3a5a181549a653c5f9",
+      "lastModificationDate": 1749927461809,
+      "contentHash": "43e81c0066c162170d3ab1386f8b7212",
       "sourceName": "contracts/BettingEscrow.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -39,6 +39,42 @@
       ],
       "artifacts": [
         "BettingEscrow"
+      ]
+    },
+    "C:\\Users\\ADMIN\\MyProjects\\f1-betting\\web3\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\IERC20.sol": {
+      "lastModificationDate": 1748637076778,
+      "contentHash": "8f19f64d2adadf448840908bbaf431c8",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IERC20"
       ]
     },
     "C:\\Users\\ADMIN\\MyProjects\\f1-betting\\web3\\node_modules\\@openzeppelin\\contracts\\access\\Ownable.sol": {
@@ -115,42 +151,6 @@
         "ReentrancyGuard"
       ]
     },
-    "C:\\Users\\ADMIN\\MyProjects\\f1-betting\\web3\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\IERC20.sol": {
-      "lastModificationDate": 1748637076778,
-      "contentHash": "8f19f64d2adadf448840908bbaf431c8",
-      "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "evmVersion": "paris",
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.20"
-      ],
-      "artifacts": [
-        "IERC20"
-      ]
-    },
     "C:\\Users\\ADMIN\\MyProjects\\f1-betting\\web3\\node_modules\\@openzeppelin\\contracts\\utils\\Context.sol": {
       "lastModificationDate": 1748637076564,
       "contentHash": "67bfbc07588eb8683b3fd8f6f909563e",
@@ -185,6 +185,43 @@
       ],
       "artifacts": [
         "Context"
+      ]
+    },
+    "C:\\Users\\ADMIN\\MyProjects\\f1-betting\\web3\\contracts\\USDTToken.sol": {
+      "lastModificationDate": 1749927325327,
+      "contentHash": "61384242d850729266537d6349243ec3",
+      "sourceName": "contracts/USDTToken.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC20",
+        "USDTToken"
       ]
     }
   }

@@ -17,10 +17,9 @@ async function deployUSDTToken() {
   );
 }
 
-
 async function deployBettingEscrow() {
-  // const usdtAddress = "0x0fe922d26FDe4a9160Bb2D145e851e2d9c2f3f84";
   const usdtAddress = "0x92A1c620751ba38e885461c3e356D41a226962f3";
+
   const bettingEscrowContract = await (
     await ethers.getContractFactory("BettingEscrow")
   ).deploy(usdtAddress);
