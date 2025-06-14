@@ -196,8 +196,6 @@ class DataPoller(BasePoller):
                     print("Sleeping until", time_of_event, "for", lookup_key)
                     await sleep(time_of_event.timestamp() - get_datetime().timestamp())
 
-                    fetched_data = await fetch_path(sess, cur_round, year)
-
                     fetched_data = await self._fetch_results(
                         sess, fetch_path.format(year=year, round_=cur_round)
                     )
