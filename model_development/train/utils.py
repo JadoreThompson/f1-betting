@@ -107,28 +107,6 @@ def save_train_configs_forest(
     gain = False
     old_top_range = old_whole = 0.0
 
-    # if (
-    #     top_range_2024_success is not None
-    #     and top_range_test_success is not None
-    #     and whole_2024_success is not None
-    #     and whole_test_success is not None
-    # ):
-    #     gain = top_range_2024_success > (
-    #         old_top_range := content.get("top_range", {}).get("2024", 0.0)
-    #     ) and whole_2024_success > (
-    #         old_whole := content.get("whole", {}).get("2024", 0.0)
-    #     )
-
-    #     if gain:
-    #         new_content["top_range"] = {
-    #             "test": top_range_test_success,
-    #             "2024": top_range_2024_success,
-    #         }
-    #         new_content["whole"] = {
-    #             "test": whole_test_success,
-    #             "2024": whole_2024_success,
-    #         }
-
     if top_range_2024_success is not None and top_range_test_success is not None:
 
         gain = top_range_2024_success > (

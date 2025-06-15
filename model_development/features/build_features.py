@@ -85,7 +85,6 @@ def build_features(df: DataFrame, pos_cat: Optional[PosCat] = None) -> DataFrame
     df = append_elo_change(df)
     df = append_last_n(df, "target", window=6)
     df = append_last_n_podiums(df, window=0)
-    df = append_last_season_wins(df)
     
     return df
 

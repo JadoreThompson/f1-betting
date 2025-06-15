@@ -103,8 +103,7 @@ def merge_datasets(datasets: Optional[dict[str, pd.DataFrame]] = None) -> pd.Dat
         on=["driverId", "raceId"],
         suffixes=("", "_quali"),
     )
-    # print(df)
-    # print(df.columns)
+    
     df = df.sort_values(["year", "round"])
 
     for key in ("wins", "points", "position_driver_standings"):
