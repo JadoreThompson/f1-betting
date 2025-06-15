@@ -45,7 +45,7 @@ class Driver:
     dob: datetime
     driver_id: Optional[int] = None  # Drivers DB ID.
     constructor: Optional[Constructor] = (
-        None  # Optional: not always tied in non-race result
+        None  # Optional: not always tied in non-race result # TODO: Double check
     )
 
 

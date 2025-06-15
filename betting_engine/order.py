@@ -51,7 +51,7 @@ class Order:
         if isinstance(value, dict):
             return self._payload["bet_id"] == value["bet_id"]
 
-        raise ValueError(f"Invalid object of type {type(value)}.")
+        return id(self) == id(value)
 
     @property
     def payload(self) -> dict[str, str | int]:

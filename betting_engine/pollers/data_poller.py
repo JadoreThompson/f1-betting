@@ -1,16 +1,13 @@
 import asyncio
-import json
-import re
 
 from aiohttp import ClientSession
 from asyncio import sleep
-from bs4 import BeautifulSoup
 from dataclasses import asdict
 from datetime import datetime
 from sqlalchemy import insert, select, desc, case, text
 from sqlalchemy.dialects.postgresql import insert as ps_insert
-from sqlalchemy.sql.functions import sum as sql_sum, coalesce, count
-from typing import Any, Callable, Iterable, Literal, Optional, Tuple, TypeVar
+from sqlalchemy.sql.functions import sum as sql_sum, coalesce
+from typing import Any, Callable, Iterable, Optional, Tuple, TypeVar
 
 from config import POLLING_BASE_URL
 from db_models import (
@@ -26,7 +23,6 @@ from db_models import (
 from utils.db import get_db_session
 from utils.utils import get_datetime
 from .base_poller import BasePoller
-from .exc import APIError
 from .models import (
     AverageSpeed,
     Driver,
@@ -163,23 +159,23 @@ class DataPoller(BasePoller):
         """
         configs = self._get_configs()
         # Debugging
-        year = 2025
-        cur_round = 10
+        # year = 2010
+        # cur_round = 1
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
-                # year = datetime.now().date().year
+                year = datetime.now().date().year
                 schedule = await super()._fetch_schedule(sess, year)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                # next_gp_info = self._get_target_gp(schedule)
+                next_gp_info = self._get_target_gp(schedule)
 
-                # if next_gp_info is None:
-                #     await asyncio.sleep(60 * 60 * 24)
-                #     continue
+                if next_gp_info is None:
+                    await asyncio.sleep(60 * 60 * 24)
+                    continue
 
-                # print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
-                # cur_round, _ = next_gp_info
+                print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
+                cur_round, _ = next_gp_info
                 circuit_id, circuit_ref = await self._persist_circuit(
                     schedule, cur_round
                 )
@@ -192,13 +188,13 @@ class DataPoller(BasePoller):
                     parse_func,
                     persist_func,
                 ) in configs:
-                    # next_gp_info = target_func(schedule)
-                    # if next_gp_info is None or next_gp_info[0] != cur_round:
-                    #     continue
+                    next_gp_info = target_func(schedule)
+                    if next_gp_info is None or next_gp_info[0] != cur_round:
+                        continue
 
-                    # _, time_of_event = next_gp_info
-                    # print("Sleeping until", time_of_event, "for", lookup_key)
-                    # await sleep(time_of_event.timestamp() - get_datetime().timestamp())
+                    _, time_of_event = next_gp_info
+                    print("Sleeping until", time_of_event, "for", lookup_key)
+                    await sleep(time_of_event.timestamp() - get_datetime().timestamp())
 
                     fetched_data = await self._fetch_results(
                         sess, fetch_path.format(year=year, round_=cur_round)
@@ -225,20 +221,13 @@ class DataPoller(BasePoller):
                     if leave:
                         continue
 
-                    # Debugging
-                    # json.dump(
-                    #     fetched_data,
-                    #     open(f"msc/{year}-{cur_round}-{lookup_key}.json", "w"),
-                    # )
-
                     parsed_data = parse_func(raw_results, year, cur_round, circuit_id)
                     await persist_func(parsed_data)
 
-                    if lookup_key != "QualifyingResults":  # TODO: Redundant?
+                    if lookup_key != "QualifyingResults":
                         await self._persist_driver_standings(year, cur_round)
                         await self._persist_constructor_standings(year, cur_round)
                     else:
-                        # print(parsed_data)
                         await self._market_pipeline.run(
                             year,
                             cur_round,

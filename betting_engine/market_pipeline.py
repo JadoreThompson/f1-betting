@@ -1,10 +1,10 @@
 import json
 import os
-from typing import List, Optional
 import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 from sqlalchemy import insert, select
+from typing import List
 from ydf import load_model
 
 from db_models import (
@@ -19,7 +19,7 @@ from db_models import (
 )
 from enums import MarketCategory
 from model_development.config import BPATH, MPATH
-from model_development.enums import LoosePositionCategory, WinnerPositionCategory
+from model_development.enums import LoosePositionCategory
 from model_development.features import (
     get_position_category,
     append_elo,
@@ -33,22 +33,16 @@ from utils.db import get_db_session
 
 
 class MarketPipeline:
-    """Pipeline for generating F1 betting market predictions.
-
-    This class loads models and datasets, processes features,
-    makes predictions for race winners and top 3 positions,
-    and persists market odds to the database.
-    """
+    """Generates F1 betting market predictions and saves them to the database."""
 
     def __init__(self) -> None:
-        """Initialize the Pipeline with scaler and model placeholders."""
         self._winner_model = None
         self._top3_model = None
         self._params_folder = os.path.join(BPATH, "params")
         self._scaler = StandardScaler()
 
     def _init(self) -> None:
-        """Initialize models from disk"""
+        """Load models and their feature sets from disk."""
         self._winner_model = load_model(os.path.join(MPATH, "winner_v1"))
         self._winner_model_feats = json.load(
             open(
@@ -83,30 +77,30 @@ class MarketPipeline:
         driver_ids: List[int],
         quali_positions: List[int],
     ) -> None:
-        """Start the pipeline process to generate and store market predictions.
+        """Execute the full pipeline for a given race.
 
-        Loads datasets, applies feature engineering, makes predictions for
-        winner and top 3 finishers, and stores the calculated betting odds
-        into the database.
+        Args:
+            year (int): Race year.
+            round_ (int): Race round number.
+            circuit_id (int): Circuit identifier.
+            circuit_ref (str): Circuit reference name.
+            driver_ids (List[int]): List of driver IDs.
+            quali_positions (List[int]): Corresponding qualifying positions.
         """
-        print(-1)
         if round_ < 6:  # last 6 is a feature in dataset
             return
 
-        print(-2)
         if len(driver_ids) != len(quali_positions):
             raise ValueError("length of driver_ids must be the same as quali_pos.")
 
-        print(-3)
         self._init()
-        ds: dict[str, pd.DataFrame] = await self._get_datasets(year, round_)
+        ds: dict[str, pd.DataFrame] = await self._get_datasets()
 
-        print(-4)
         if any(ds[key].empty for key in ds):
             return
 
         merged_df = merge_datasets(ds)
-        print(1)
+
         new_rows = self._generate_new_rows(
             merged_df,
             year,
@@ -116,30 +110,22 @@ class MarketPipeline:
             driver_ids,
             quali_positions,
         )
-        print(2)
-        merged_df = pd.concat([merged_df, new_rows], ignore_index=True)
-        print(3)
 
-        result = self._generate_winner_preds(merged_df)
+        merged_df = pd.concat([merged_df, new_rows], ignore_index=True)
+
+        result = self._generate_winner_preds(merged_df, year, round_)
         if result is not None:
             drivers, preds = result
-            # for i in range(len(drivers)):
-            #     print(drivers[i], preds[i])
-
             markets = self._generate_winner_markets(preds, drivers, year, round_)
-            print(markets)
             await self._persist_markets(markets)
 
-        # return
-
-        result = self._get_top3_preds(merged_df)
+        result = self._generate_top3_preds(merged_df, year, round_)
         if result is not None:
             drivers, preds = result
             markets = self._generate_top3_markets(preds, drivers, year, round_)
-            print(markets)
             await self._persist_markets(markets)
 
-    async def _get_datasets(self, year: int, round_: int) -> dict[str, pd.DataFrame]:
+    async def _get_datasets(self) -> dict[str, pd.DataFrame]:
         """Retrieve datasets from the database and structure them for modeling.
 
         Returns:
@@ -159,7 +145,7 @@ class MarketPipeline:
             results = (await sess.execute(select(GrandPrixResults))).scalars().all()
             qualifying = (await sess.execute(select(QualiResults))).scalars().all()
 
-        datasets = {
+        return {
             "circuits": pd.DataFrame(
                 [
                     {
@@ -250,8 +236,6 @@ class MarketPipeline:
             ),
         }
 
-        return datasets
-
     def _create_race_id(self, year: int, round_: int) -> int:
         """Create a unique race ID from year and round number.
 
@@ -274,8 +258,22 @@ class MarketPipeline:
         driver_ids: List[int],
         quali_pos: List[int],
     ) -> pd.DataFrame:
+        """Generate new data rows for the upcoming race.
+
+        Args:
+            df (pd.DataFrame): Historical data.
+            year (int): Race year.
+            round_ (int): Race round.
+            circuit_id (int): Circuit ID.
+            circuit_ref (str): Circuit reference.
+            driver_ids (List[int]): Driver IDs.
+            quali_pos (List[int]): Qualifying positions.
+
+        Returns:
+            pd.DataFrame: Updated rows with race features.
+        """
         quali_pos_map = dict(list(zip(driver_ids, quali_pos)))
-        new_rows = df[(df["year"] == year) & (df["round"] >= round_ - 1)]
+        new_rows = df[(df["year"] == year) & (df["round"] >= round_ - 1)].copy()
 
         new_rows["round"] = round_
         new_rows["circuitId"] = circuit_id
@@ -299,35 +297,30 @@ class MarketPipeline:
         return new_rows
 
     def _generate_winner_preds(
-        self, df: pd.DataFrame
-    ) -> tuple[list[str], list[tuple[float, float]]] | None:
-        """Generate predictions for race winners.
-
-        Applies feature engineering and uses a trained model to predict
-        winning probabilities for each driver.
+        self, df: pd.DataFrame, year: int, round_: int
+    ) -> tuple[list[str], list[list[float]]] | None:
+        """Predict race winners.
 
         Args:
-            df (pd.DataFrame): Merged dataset with race and driver features.
+            df (pd.DataFrame): Feature dataset.
+            year (int): Race year.
+            round_ (int): Race round.
 
         Returns:
-            tuple[list[str], list[tuple[float, float]]] | None:
-                A tuple of driver references and their predicted probabilities,
-                or None if the data is insufficient.
+            tuple[list[str], list[list[float]]]: Driver references and their prediction scores.
         """
         df["target"] = df["positionText"].apply(
             lambda x: get_position_category(x, "loose")
         )
-
         df = append_elo(df)
         df = append_elo_change(df)
         df = append_last_n(df, "target", window=6)
         if df.empty:
             return  # Checking after last_n performs df.dropna
-
         df = append_last_n_podiums(df, window=0)
 
         df = df.dropna()
-        df = df[(df["year"] == 2025) & (df["round"] == 10)]
+        df = df[(df["year"] == year) & (df["round"] == round_)]
         driver_refs = df["driverRef"].tolist()
         df = df.drop(
             [
@@ -338,34 +331,39 @@ class MarketPipeline:
             axis=1,
         )
 
-        return driver_refs, [p.tolist() for p in self._winner_model.predict(df)]
+        preds = [p.tolist() for p in self._winner_model.predict(df)]
+        if not preds:
+            return 
+        
+        return driver_refs, preds
 
-    def _get_top3_preds(self, df: pd.DataFrame) -> tuple[list[str], list[float, float]]:
-        """Generate predictions for top 3 race positions.
-
-        Applies feature engineering and uses a trained model to predict
-        top 3 probabilities for each driver.
+    def _generate_top3_preds(
+        self, df: pd.DataFrame, year: int, round_: int
+    ) -> tuple[list[str], list[list[float]]] | None:
+        """Predict top 3 finishers.
 
         Args:
-            df (pd.DataFrame): Merged dataset with race and driver features.
+            df (pd.DataFrame): Feature dataset.
+            year (int): Race year.
+            round_ (int): Race round.
 
         Returns:
-            tuple[list[str], list[float, float]]: A tuple of driver references and their predicted top 3 probabilities.
+            tuple[list[str], list[list[float]]]: Driver references and prediction scores
+            for the passed year and round.
         """
         df["target"] = df["positionText"].apply(
             lambda x: get_position_category(x, "loose")
         )
-
         df = append_elo(df)
         df = append_elo_change(df)
         df = append_last_n(df, "target", window=6)
         if df.empty:
             return  # Checking after last_n performs df.dropna
-
         df = append_last_n_podiums(df, window=0)
         df = append_last_season_wins(df)
 
         df = df.dropna()
+        df = df[(df["year"] == year) & (df["round"] == round_)]
         driver_refs = df["driverRef"].tolist()
         df = df.drop(
             [
@@ -375,70 +373,60 @@ class MarketPipeline:
             ],
             axis=1,
         )
-        return driver_refs, [p.tolist() for p in self._top3_model.predict(df)]
-
-    def _generate_markets_lr(
-        self,
-        preds: list[tuple[float, float]],
-        drivers: list[str],
-        category: MarketCategory,
-        year: int,
-        round_: int,
-    ) -> tuple[dict[str, str | float | int], ...]:
-        """Convert predicted probabilities into betting odds.
-
-        Args:
-            preds (list[tuple[float, float]]): Predicted probabilities for each driver.
-            drivers (list[str]): List of driver identifiers.
-            category (MarketCategory): Betting market category.
-
-        Returns:
-            tuple[dict[str, str | float | int], ...]: Betting odds data for persistence.
-        """
-        return tuple(
-            {
-                "title": drivers[ind],
-                "category": category.value,
-                "numerator": round(1 / prob),
-                "denomiator": 1,
-                "year": year,
-                "round": round_,
-            }
-            for ind, (_, prob) in preds
-        )
+        
+        preds = [p.tolist() for p in self._winner_model.predict(df)]
+        if not preds:
+            return 
+        
+        return driver_refs, preds
 
     def _generate_winner_markets(
         self, preds: list[list[float]], drivers: list[str], year: int, round_: int
     ) -> list[dict]:
-        classes = self._winner_model.label_classes()
+        """Convert winner predictions into market odds.
 
+        Args:
+            preds (list[list[float]]): Prediction probabilities.
+            drivers (list[str]): Corresponding drivers.
+            year (int): Race year.
+            round_ (int): Race round.
+
+        Returns:
+            list[dict]: Market entries for betting.
+        """
+        classes = self._winner_model.label_classes()
         try:
             winner_index = classes.index(LoosePositionCategory.TOP_3.value)
         except ValueError:
             return []
 
-        markets: list[dict] = []
-
-        for i, driver_probs in enumerate(preds):
-            prob = driver_probs[winner_index]
-
-            if 0.7 > prob > 0.05:
-                markets.append(
-                    {
-                        "title": drivers[i],
-                        "category": MarketCategory.WINNER.value,
-                        "numerator": round(1 / prob),
-                        "denominator": 1,
-                        "year": year,
-                        "round": round_,
-                    }
-                )
-
-        return markets
+        return [
+            {
+                "title": drivers[i],
+                "category": MarketCategory.WINNER.value,
+                "numerator": round(1 / prob),
+                "denominator": 1,
+                "year": year,
+                "round": round_,
+            }
+            for i, driver_probs in enumerate(preds)
+            if 0.7 > (prob := driver_probs[winner_index]) > 0.05
+        ]
 
     def _generate_top3_markets(
         self, preds: list[list[float]], drivers: list[str], year: int, round_: int
     ) -> list[dict]:
+        """Convert top 3 predictions into market odds.
+
+        Args:
+            preds (list[list[float]]): Prediction probabilities.
+            drivers (list[str]): Corresponding drivers.
+            year (int): Race year.
+            round_ (int): Race round.
+
+        Returns:
+            list[dict]: Market entries for betting.
+        """
         classes = self._top3_model.label_classes()
 
         try:
@@ -446,30 +434,26 @@ class MarketPipeline:
         except ValueError:
             return []
 
-        markets: list[dict] = []
+        return [
+            {
+                "title": drivers[i],
+                "category": MarketCategory.TOP3.value,
+                "numerator": round(1 / prob),
+                "denominator": 1,
+                "year": year,
+                "round": round_,
+            }
+            for i, driver_probs in enumerate(preds)
+            if 0.7 > (prob := driver_probs[top3_index]) > 0.05
+        ]
 
-        for i, driver_probs in enumerate(preds):
-            prob = driver_probs[top3_index]
-
-            if 0.7 > prob > 0.05:
-                markets.append(
-                    {
-                        "title": drivers[i],
-                        "category": MarketCategory.TOP3.value,
-                        "numerator": round(1 / prob),
-                        "denominator": 1,
-                        "year": year,
-                        "round": round_,
-                    }
-                )
-
-        return markets
-
-    async def _persist_markets(self, markets: list[dict[str, str | float | int]]):
-        """Persist generated betting markets to the database.
+    async def _persist_markets(
+        self, markets: list[dict[str, str | float | int]]
+    ) -> None:
+        """Insert generated markets into the database.
 
         Args:
-            markets (list[dict[str, str | float | int]]): List of market records to insert.
+            markets (list[dict]): List of market entries.
         """
         async with get_db_session() as sess:
             await sess.execute(insert(Markets).values(markets))

@@ -7,6 +7,7 @@ class SettlePayload(TypedDict):
     market_id: int
     winners: Side
 
+
 class EnginePayload(TypedDict):
     topic: Topic
     market: dict[str, Any]

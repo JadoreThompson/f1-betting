@@ -121,7 +121,7 @@ class OrderBook:
             wallet_addr = o.payload["wallet_address"]
             payout = o.payload["amount"] * k
 
-            txn = await BE_CONTRACT.functions.withdraw_(
+            txn = await BE_CONTRACT.functions.withdraw(
                 self._market_id, wallet_addr, k
             ).build_transaction(
                 {

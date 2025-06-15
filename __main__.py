@@ -34,7 +34,6 @@ def run_data_pipeline() -> None:
     and will run indefinitely until the process is terminated.
     """
     asyncio.run(DataPoller(15).poll())
-    # asyncio.run(DataPoller(15).fetch_result(2025, 'canada', "qualifying"))
 
 
 async def settlement_pipeline(queue: Queue) -> None:
@@ -181,10 +180,10 @@ async def main() -> None:
     lock_manager = LockManager(REDIS_CLIENT, LOCK_CHANNEL)
 
     args = (
-        # (run_settlement_pipeline, "settlement_pipeline", True),
+        (run_settlement_pipeline, "settlement_pipeline", True),
         (run_data_pipeline, "data_pipeline", False),
-        # (run_engine, "matching_engine", True),
-        # (run_server, "server", True),
+        (run_engine, "matching_engine", True),
+        (run_server, "server", True),
     )
 
     ps: list[Process] = [
@@ -233,7 +232,7 @@ async def main() -> None:
         print("Shutdown complete.")
 
 
-def wrapped_main():
+def wrapped_main() -> None:
     try:
         Base.metadata.create_all(bind=SYNC_DB_ENGINE)
         asyncio.run(main())
