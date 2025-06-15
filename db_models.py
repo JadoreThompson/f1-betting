@@ -31,6 +31,7 @@ class Drivers(Base):
         Integer, ForeignKey("constructors.constructor_id"), nullable=False
     )
     permanent_number: Mapped[str] = mapped_column(String, nullable=False)
+    # full_name: Mapped[str] = mapped_column(String, nullable=True) # TODO: change back to false
     code: Mapped[str] = mapped_column(String, nullable=False)
     dob: Mapped[Date] = mapped_column(Date, nullable=False)
     nationality: Mapped[str] = mapped_column(String, nullable=False)

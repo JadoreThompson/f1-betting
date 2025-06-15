@@ -77,6 +77,11 @@ def get_position_category(value: str, pos_cat: PosCat) -> str:
     raise ValueError(f"{pos_cat} is not of type PosCat")
 
 
+def get_points(position: int) -> int:
+    points_table = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+    return points_table.get(position, 0)
+
+
 def append_avg_position_move(
     df: pd.DataFrame,
     *,

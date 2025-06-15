@@ -43,7 +43,7 @@ class Driver:
     code: str
     nationality: str
     dob: datetime
-    driver_id: Optional[int] = None  # To be initialised be DataPoller.
+    driver_id: Optional[int] = None  # Drivers DB ID.
     constructor: Optional[Constructor] = (
         None  # Optional: not always tied in non-race result
     )

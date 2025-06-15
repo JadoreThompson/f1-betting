@@ -1,5 +1,6 @@
 import json
 import os
+from typing import List, Optional
 import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
@@ -18,6 +19,7 @@ from db_models import (
 )
 from enums import MarketCategory
 from model_development.config import BPATH, MPATH
+from model_development.enums import LoosePositionCategory, WinnerPositionCategory
 from model_development.features import (
     get_position_category,
     append_elo,
@@ -48,42 +50,96 @@ class MarketPipeline:
     def _init(self) -> None:
         """Initialize models from disk"""
         self._winner_model = load_model(os.path.join(MPATH, "winner_v1"))
+        self._winner_model_feats = json.load(
+            open(
+                os.path.join(
+                    self._params_folder,
+                    "forest",
+                    "winner",
+                    "param_tracker_winner_0.json",
+                ),
+                "rb",
+            )
+        )["features"]
         self._top3_model = load_model(os.path.join(MPATH, "top3_v1"))
+        self._top3_model_feats = json.load(
+            open(
+                os.path.join(
+                    self._params_folder,
+                    "forest",
+                    "top3",
+                    "param_tracker_top3_5.json",
+                ),
+                "rb",
+            )
+        )["features"]
 
-    async def run(self, year: int, round_: int) -> None:
+    async def run(
+        self,
+        year: int,
+        round_: int,
+        circuit_id: int,
+        circuit_ref: str,
+        driver_ids: List[int],
+        quali_positions: List[int],
+    ) -> None:
         """Start the pipeline process to generate and store market predictions.
 
         Loads datasets, applies feature engineering, makes predictions for
         winner and top 3 finishers, and stores the calculated betting odds
         into the database.
         """
-        self._init()
-        ds = await self._get_datasets()
+        print(-1)
+        if round_ < 6:  # last 6 is a feature in dataset
+            return
 
+        print(-2)
+        if len(driver_ids) != len(quali_positions):
+            raise ValueError("length of driver_ids must be the same as quali_pos.")
+
+        print(-3)
+        self._init()
+        ds: dict[str, pd.DataFrame] = await self._get_datasets(year, round_)
+
+        print(-4)
         if any(ds[key].empty for key in ds):
             return
 
         merged_df = merge_datasets(ds)
+        print(1)
+        new_rows = self._generate_new_rows(
+            merged_df,
+            year,
+            round_,
+            circuit_id,
+            circuit_ref,
+            driver_ids,
+            quali_positions,
+        )
+        print(2)
+        merged_df = pd.concat([merged_df, new_rows], ignore_index=True)
+        print(3)
 
-        result = self._get_winner_preds(merged_df)
-
+        result = self._generate_winner_preds(merged_df)
         if result is not None:
             drivers, preds = result
+            # for i in range(len(drivers)):
+            #     print(drivers[i], preds[i])
 
-            winner_markets = self._generate_markets_lr(
-                preds, drivers, MarketCategory.WINNER, year, round_
-            )
-            await self._persist_markets(winner_markets)
+            markets = self._generate_winner_markets(preds, drivers, year, round_)
+            print(markets)
+            await self._persist_markets(markets)
+
+        # return
 
         result = self._get_top3_preds(merged_df)
         if result is not None:
             drivers, preds = result
-            top3_markets = self._generate_markets_lr(
-                preds, drivers, MarketCategory.TOP3, year, round_
-            )
-            await self._persist_markets(top3_markets)
+            markets = self._generate_top3_markets(preds, drivers, year, round_)
+            print(markets)
+            await self._persist_markets(markets)
 
-    async def _get_datasets(self) -> dict[str, pd.DataFrame]:
+    async def _get_datasets(self, year: int, round_: int) -> dict[str, pd.DataFrame]:
         """Retrieve datasets from the database and structure them for modeling.
 
         Returns:
@@ -103,102 +159,98 @@ class MarketPipeline:
             results = (await sess.execute(select(GrandPrixResults))).scalars().all()
             qualifying = (await sess.execute(select(QualiResults))).scalars().all()
 
-            datasets = {
-                "circuits": pd.DataFrame(
-                    [
-                        {
-                            "circuitId": circuit.circuit_id,
-                            "circuitRef": circuit.circuit_ref,
-                        }
-                        for circuit in circuits
-                    ]
-                ),
-                "constructors": pd.DataFrame(
-                    [
-                        {
-                            "constructorId": constructor.constructor_id,
-                            "constructorRef": constructor.constructor_ref,
-                        }
-                        for constructor in constructors
-                    ]
-                ),
-                "constructor_standings": pd.DataFrame(
-                    [
-                        {
-                            "raceId": self._create_race_id(
-                                standing.year, standing.round
-                            ),
-                            "constructorId": standing.constructor_id,
-                            "points": standing.points,
-                            "position": standing.position,
-                        }
-                        for standing in constructor_standings
-                    ]
-                ),
-                "drivers": pd.DataFrame(
-                    [
-                        {
-                            "driverId": driver.driver_id,
-                            "driverRef": driver.driver_ref,
-                            "dob": driver.dob,
-                            "nationality": driver.nationality,
-                        }
-                        for driver in drivers
-                    ]
-                ),
-                "driver_standings": pd.DataFrame(
-                    [
-                        {
-                            "raceId": self._create_race_id(
-                                standing.year, standing.round
-                            ),
-                            "driverId": standing.driver_id,
-                            "points": standing.points,
-                            "position": standing.position,
-                            "wins": standing.wins,
-                        }
-                        for standing in driver_standings
-                    ]
-                ),
-                "results": pd.DataFrame(
-                    [
-                        {
-                            "raceId": self._create_race_id(result.year, result.round),
-                            "driverId": result.driver_id,
-                            "constructorId": result.constructor_id,
-                            "grid": result.grid,
-                            "position": result.position,
-                            "positionText": result.position_text,
-                            "positionOrder": result.position,
-                            "statusId": 1,
-                        }
-                        for result in results
-                    ]
-                ),
-                "races": pd.DataFrame(
-                    [
-                        {
-                            "raceId": self._create_race_id(result.year, result.round),
-                            "circuitId": result.circuit_id,
-                            "year": result.year,
-                            "round": result.round,
-                        }
-                        for result in results
-                    ]
-                ).drop_duplicates(),
-                "qualifying": pd.DataFrame(
-                    [
-                        {
-                            "raceId": self._create_race_id(quali.year, quali.round),
-                            "driverId": quali.driver_id,
-                            "position": quali.position,
-                        }
-                        for quali in qualifying
-                    ]
-                ),
-            }
+        datasets = {
+            "circuits": pd.DataFrame(
+                [
+                    {
+                        "circuitId": circuit.circuit_id,
+                        "circuitRef": circuit.circuit_ref,
+                    }
+                    for circuit in circuits
+                ]
+            ),
+            "constructors": pd.DataFrame(
+                [
+                    {
+                        "constructorId": constructor.constructor_id,
+                        "constructorRef": constructor.constructor_ref,
+                    }
+                    for constructor in constructors
+                ]
+            ),
+            "constructor_standings": pd.DataFrame(
+                [
+                    {
+                        "raceId": self._create_race_id(standing.year, standing.round),
+                        "constructorId": standing.constructor_id,
+                        "points": standing.points,
+                        "position": standing.position,
+                    }
+                    for standing in constructor_standings
+                ]
+            ),
+            "drivers": pd.DataFrame(
+                [
+                    {
+                        "driverId": driver.driver_id,
+                        "driverRef": driver.driver_ref,
+                        "dob": driver.dob,
+                        "nationality": driver.nationality,
+                    }
+                    for driver in drivers
+                ]
+            ),
+            "driver_standings": pd.DataFrame(
+                [
+                    {
+                        "raceId": self._create_race_id(standing.year, standing.round),
+                        "driverId": standing.driver_id,
+                        "points": standing.points,
+                        "position": standing.position,
+                        "wins": standing.wins,
+                    }
+                    for standing in driver_standings
+                ]
+            ),
+            "results": pd.DataFrame(
+                [
+                    {
+                        "raceId": self._create_race_id(result.year, result.round),
+                        "driverId": result.driver_id,
+                        "constructorId": result.constructor_id,
+                        "grid": result.grid,
+                        "position": result.position,
+                        "positionText": result.position_text,
+                        "positionOrder": result.position,
+                        "statusId": 1,
+                    }
+                    for result in results
+                ]
+            ),
+            "races": pd.DataFrame(
+                [
+                    {
+                        "raceId": self._create_race_id(result.year, result.round),
+                        "circuitId": result.circuit_id,
+                        "year": result.year,
+                        "round": result.round,
+                    }
+                    for result in results
+                ]
+            ).drop_duplicates(),
+            "qualifying": pd.DataFrame(
+                [
+                    {
+                        "raceId": self._create_race_id(quali.year, quali.round),
+                        "driverId": quali.driver_id,
+                        "position": quali.position,
+                    }
+                    for quali in qualifying
+                ]
+            ),
+        }
 
-            return datasets
+        return datasets
 
     def _create_race_id(self, year: int, round_: int) -> int:
         """Create a unique race ID from year and round number.
@@ -212,7 +264,41 @@ class MarketPipeline:
         """
         return year * 100 + round_
 
-    def _get_winner_preds(
+    def _generate_new_rows(
+        self,
+        df: pd.DataFrame,
+        year: int,
+        round_: int,
+        circuit_id: int,
+        circuit_ref: str,
+        driver_ids: List[int],
+        quali_pos: List[int],
+    ) -> pd.DataFrame:
+        quali_pos_map = dict(list(zip(driver_ids, quali_pos)))
+        new_rows = df[(df["year"] == year) & (df["round"] >= round_ - 1)]
+
+        new_rows["round"] = round_
+        new_rows["circuitId"] = circuit_id
+        new_rows["circuitRef"] = circuit_ref
+        new_rows["grid"] = new_rows["position_quali"] = new_rows["driverId"].apply(
+            lambda x: quali_pos_map.get(int(x))
+        )
+
+        new_rows["prev_points"] = new_rows["points"]
+        new_rows["prev_position_driver_standings"] = new_rows[
+            "position_driver_standings"
+        ]
+        new_rows["prev_wins"] = new_rows["wins"]
+        new_rows["prev_points_constructor_standings"] = new_rows[
+            "points_constructor_standings"
+        ]
+        new_rows["prev_position_constructor_standings"] = new_rows[
+            "position_constructor_standings"
+        ]
+
+        return new_rows
+
+    def _generate_winner_preds(
         self, df: pd.DataFrame
     ) -> tuple[list[str], list[tuple[float, float]]] | None:
         """Generate predictions for race winners.
@@ -228,20 +314,6 @@ class MarketPipeline:
                 A tuple of driver references and their predicted probabilities,
                 or None if the data is insufficient.
         """
-        ptracker = json.load(
-            open(
-                os.path.join(
-                    self._params_folder,
-                    "forest",
-                    "winner",
-                    "param_tracker_winner_0.json",
-                ),
-                "rb",
-            )
-        )
-        used_feats = ptracker["features"]
-
-        df.to_csv("f.csv", index=False)
         df["target"] = df["positionText"].apply(
             lambda x: get_position_category(x, "loose")
         )
@@ -253,15 +325,20 @@ class MarketPipeline:
             return  # Checking after last_n performs df.dropna
 
         df = append_last_n_podiums(df, window=0)
+
         df = df.dropna()
-
+        df = df[(df["year"] == 2025) & (df["round"] == 10)]
         driver_refs = df["driverRef"].tolist()
-
         df = df.drop(
-            [col for col in df.columns if col not in used_feats and col != "target"],
+            [
+                col
+                for col in df.columns
+                if col not in self._winner_model_feats and col != "target"
+            ],
             axis=1,
         )
-        return driver_refs, self._winner_model.predict(df)
+
+        return driver_refs, [p.tolist() for p in self._winner_model.predict(df)]
 
     def _get_top3_preds(self, df: pd.DataFrame) -> tuple[list[str], list[float, float]]:
         """Generate predictions for top 3 race positions.
@@ -275,20 +352,6 @@ class MarketPipeline:
         Returns:
             tuple[list[str], list[float, float]]: A tuple of driver references and their predicted top 3 probabilities.
         """
-        ptracker = json.load(
-            open(
-                os.path.join(
-                    self._params_folder,
-                    "forest",
-                    "top3",
-                    "param_tracker_top3_5.json",
-                ),
-                "rb",
-            )
-        )
-        used_feats = ptracker["features"]
-
-        df.to_csv("f.csv", index=False)
         df["target"] = df["positionText"].apply(
             lambda x: get_position_category(x, "loose")
         )
@@ -301,15 +364,18 @@ class MarketPipeline:
 
         df = append_last_n_podiums(df, window=0)
         df = append_last_season_wins(df)
+
         df = df.dropna()
-
         driver_refs = df["driverRef"].tolist()
-
         df = df.drop(
-            [col for col in df.columns if col not in used_feats and col != "target"],
+            [
+                col
+                for col in df.columns
+                if col not in self._top3_model_feats and col != "target"
+            ],
             axis=1,
         )
-        return driver_refs, self._winner_model.predict(df)
+        return driver_refs, [p.tolist() for p in self._top3_model.predict(df)]
 
     def _generate_markets_lr(
         self,
@@ -340,6 +406,64 @@ class MarketPipeline:
             }
             for ind, (_, prob) in preds
         )
+
+    def _generate_winner_markets(
+        self, preds: list[list[float]], drivers: list[str], year: int, round_: int
+    ) -> list[dict]:
+        classes = self._winner_model.label_classes()
+
+        try:
+            winner_index = classes.index(LoosePositionCategory.TOP_3.value)
+        except ValueError:
+            return []
+
+        markets: list[dict] = []
+
+        for i, driver_probs in enumerate(preds):
+            prob = driver_probs[winner_index]
+
+            if 0.7 > prob > 0.05:
+                markets.append(
+                    {
+                        "title": drivers[i],
+                        "category": MarketCategory.WINNER.value,
+                        "numerator": round(1 / prob),
+                        "denominator": 1,
+                        "year": year,
+                        "round": round_,
+                    }
+                )
+
+        return markets
+
+    def _generate_top3_markets(
+        self, preds: list[list[float]], drivers: list[str], year: int, round_: int
+    ) -> list[dict]:
+        classes = self._top3_model.label_classes()
+
+        try:
+            top3_index = classes.index(LoosePositionCategory.TOP_3.value)
+        except ValueError:
+            return []
+
+        markets: list[dict] = []
+
+        for i, driver_probs in enumerate(preds):
+            prob = driver_probs[top3_index]
+
+            if 0.7 > prob > 0.05:
+                markets.append(
+                    {
+                        "title": drivers[i],
+                        "category": MarketCategory.TOP3.value,
+                        "numerator": round(1 / prob),
+                        "denominator": 1,
+                        "year": year,
+                        "round": round_,
+                    }
+                )
+
+        return markets
 
     async def _persist_markets(self, markets: list[dict[str, str | float | int]]):
         """Persist generated betting markets to the database.

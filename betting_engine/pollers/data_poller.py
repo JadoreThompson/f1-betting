@@ -1,14 +1,16 @@
 import asyncio
 import json
+import re
 
 from aiohttp import ClientSession
 from asyncio import sleep
+from bs4 import BeautifulSoup
 from dataclasses import asdict
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Iterable, Optional, Tuple, TypeVar
 from sqlalchemy import insert, select, desc, case, text
 from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.sql.functions import sum as sql_sum, coalesce, count
+from typing import Any, Callable, Iterable, Literal, Optional, Tuple, TypeVar
 
 from config import POLLING_BASE_URL
 from db_models import (
@@ -21,10 +23,10 @@ from db_models import (
     QualiResults,
     SprintResults,
 )
-from betting_engine.market_pipeline import MarketPipeline
 from utils.db import get_db_session
 from utils.utils import get_datetime
 from .base_poller import BasePoller
+from .exc import APIError
 from .models import (
     AverageSpeed,
     Driver,
@@ -36,7 +38,7 @@ from .models import (
     Constructor,
     Time,
 )
-from .exc import APIError, SeasonOver
+from ..market_pipeline import MarketPipeline
 
 T = TypeVar("T")
 
@@ -58,7 +60,7 @@ class DataPoller(BasePoller):
         """
         super().__init__(sleep_duration)
         self._db_drivers: dict[str, Driver] = {}  # driver_ref => Driver
-        self._pipeline = MarketPipeline()
+        self._market_pipeline = MarketPipeline()
 
     async def _assert_driver_and_constructor_id(self, driver: Driver) -> None:
         """Ensures driver and constructor have database IDs, persisting them if necessary.
@@ -161,24 +163,26 @@ class DataPoller(BasePoller):
         """
         configs = self._get_configs()
         # Debugging
-        # year = 2010
-        # cur_round = 9
+        year = 2025
+        cur_round = 10
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
-                year = datetime.now().date().year
+                # year = datetime.now().date().year
                 schedule = await super()._fetch_schedule(sess, year)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                next_gp_info = self._get_target_gp(schedule)
+                # next_gp_info = self._get_target_gp(schedule)
 
-                if next_gp_info is None:
-                    await asyncio.sleep(60 * 60 * 24)
-                    continue
+                # if next_gp_info is None:
+                #     await asyncio.sleep(60 * 60 * 24)
+                #     continue
 
-                print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
-                cur_round, _ = next_gp_info
-                circuit_id = await self._persist_circuit(schedule, cur_round)
+                # print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
+                # cur_round, _ = next_gp_info
+                circuit_id, circuit_ref = await self._persist_circuit(
+                    schedule, cur_round
+                )
 
                 # Fetching
                 for (
@@ -188,13 +192,13 @@ class DataPoller(BasePoller):
                     parse_func,
                     persist_func,
                 ) in configs:
-                    next_gp_info = target_func(schedule)
-                    if next_gp_info is None or next_gp_info[0] != cur_round:
-                        continue
+                    # next_gp_info = target_func(schedule)
+                    # if next_gp_info is None or next_gp_info[0] != cur_round:
+                    #     continue
 
-                    _, time_of_event = next_gp_info
-                    print("Sleeping until", time_of_event, "for", lookup_key)
-                    await sleep(time_of_event.timestamp() - get_datetime().timestamp())
+                    # _, time_of_event = next_gp_info
+                    # print("Sleeping until", time_of_event, "for", lookup_key)
+                    # await sleep(time_of_event.timestamp() - get_datetime().timestamp())
 
                     fetched_data = await self._fetch_results(
                         sess, fetch_path.format(year=year, round_=cur_round)
@@ -233,8 +237,16 @@ class DataPoller(BasePoller):
                     if lookup_key != "QualifyingResults":  # TODO: Redundant?
                         await self._persist_driver_standings(year, cur_round)
                         await self._persist_constructor_standings(year, cur_round)
-
-                    await self._pipeline.run()
+                    else:
+                        # print(parsed_data)
+                        await self._market_pipeline.run(
+                            year,
+                            cur_round,
+                            circuit_id,
+                            circuit_ref,
+                            [q.driver.driver_id for q in parsed_data],
+                            [q.position for q in parsed_data],
+                        )
 
                 print(f"Sleeping for {self._sleep_duration} seconds...")
                 await sleep(self._sleep_duration)
@@ -508,7 +520,9 @@ class DataPoller(BasePoller):
         self._db_drivers[driver_ref] = d
         return d
 
-    async def _persist_circuit(self, data: list[dict[str, Any]], round_: int) -> int:
+    async def _persist_circuit(
+        self, data: list[dict[str, Any]], round_: int
+    ) -> tuple[int, str]:
         """Creates or retrieves a circuit record from the database.
 
         Creates a new circuit record if the circuit at the specified round is a new entrant,
@@ -525,13 +539,13 @@ class DataPoller(BasePoller):
 
         async with get_db_session() as sess:
             r = await sess.execute(
-                select(Circuits.circuit_id).where(
+                select(Circuits.circuit_id, Circuits.circuit_ref).where(
                     Circuits.circuit_ref == circuit_data["circuitId"]
                 )
             )
-            circuit_id = r.scalar_one_or_none()
+            db_circuit_data = r.first()
 
-            if not circuit_id:
+            if not db_circuit_data:
                 r = await sess.execute(
                     ps_insert(Circuits)
                     .values(
@@ -543,13 +557,13 @@ class DataPoller(BasePoller):
                         lng=float(circuit_data["Location"]["long"]),
                     )
                     .on_conflict_do_nothing()
-                    .returning(Circuits.circuit_id)
+                    .returning(Circuits.circuit_id, Circuits.circuit_ref)
                 )
-                circuit_id = r.scalar_one_or_none()
+                db_circuit_data = r.first()
 
-            await sess.commit()
+                await sess.commit()
 
-        return circuit_id
+        return db_circuit_data
 
     async def _persist_constructor(self, constructor: Constructor) -> int:
         """Creates or retrieves a constructor record from the database.
