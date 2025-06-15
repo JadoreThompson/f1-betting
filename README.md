@@ -1,7 +1,5 @@
 # **Overview**
 
----
-
 This project is a Formula 1 betting application that integrates live market data, blockchain payments, and predictive analytics. The backend is built with FastAPI, offering a fast and scalable foundation, while transactions are handled through a custom smart contract on the blockchain to ensure security and transparency. A proprietary prediction model powers the betting insights, supported by a dedicated data pipeline. The frontend is developed using React, delivering a responsive and intuitive user experience.
 
 # **Pre-requisites**
@@ -30,7 +28,7 @@ python __main__.py # Start the whole application
 
 ## Betting Engine Module
 
-The betting_engine module is the heart of the F1 betting application's backend. It is a self-contained, asynchronous system responsible for managing the entire lifecycle of a bet, from market creation and order matching to data polling and on-chain settlement. It operates as a set of interconnected components that run in parallel to provide a real-time, robust betting experience.
+The `betting_engine` module is the heart of the F1 betting application's backend. It is a self-contained, asynchronous system responsible for managing the entire lifecycle of a bet, from market creation and order matching to data polling and on-chain settlement. It operates as a set of interconnected components that run in parallel to provide a real-time, robust betting experience.
 
 The module is primarily composed of the following key components:
 
@@ -179,5 +177,10 @@ Input Features
 - `last_target_1` to `last_target_6` *(object)* – The driver's last 6 race results, encoded categorically within the season.
 - `last_podiums_0` *(float)* – Number of podium finishes within the season so far.
 - `prev_season_wins` *(float)* – Total number of wins the driver achieved in the previous season.
+
+| **Precision** | **Score** |
+| --- | --- |
+| Precision | 88% |
+| Recall | 58% |
 
 Much like the winner_v1 model, this model was trained to classify each driver in the loose category. With inference being done using the top3 category.
