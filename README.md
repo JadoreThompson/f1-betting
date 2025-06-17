@@ -19,7 +19,13 @@ To fully understand how each part interacts, and to confidently contribute to or
 ```bash
 git clone https://github.com/JadoreThompson/f1-betting
 
-pip install -r requirements.txt # Install dependencies
+python -m venv venv
+
+.\venv\Scripts\activate
+
+pip install -r requirements.txt
+
+alembic upgrade head # Create Tables
 
 python __main__.py # Start the whole application
 ```
