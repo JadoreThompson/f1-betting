@@ -26,4 +26,4 @@ app.include_router(user_route)
 
 @app.exception_handler(JWTError)
 async def jwt_error_handler(req: Request, exc: JWTError):
-    return JSONResponse(status_code=401, content={"error": exc.message})
+    return JSONResponse(status_code=401, content={"error": str(exc)})

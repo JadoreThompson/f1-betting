@@ -117,13 +117,15 @@ class MarketPipeline:
         if result is not None:
             drivers, preds = result
             markets = self._generate_winner_markets(preds, drivers, year, round_)
-            await self._persist_markets(markets)
+            if markets:
+                await self._persist_markets(markets)
 
         result = self._generate_top3_preds(merged_df, year, round_)
         if result is not None:
             drivers, preds = result
             markets = self._generate_top3_markets(preds, drivers, year, round_)
-            await self._persist_markets(markets)
+            if markets:
+                await self._persist_markets(markets)
 
     async def _get_datasets(self) -> dict[str, pd.DataFrame]:
         """Retrieve datasets from the database and structure them for modeling.

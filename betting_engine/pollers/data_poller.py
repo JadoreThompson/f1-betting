@@ -144,38 +144,68 @@ class DataPoller(BasePoller):
             ),
         )
 
-    async def poll(self) -> None:
-        """Main polling loop that fetches and persists F1 race data.
+    async def poll(
+        self,
+        production: bool = True,
+        *,
+        year: Optional[int] = None,
+        round_: Optional[int] = None,
+    ) -> None:
+        """Main polling loop that fetches and persists F1 race weekend data.
 
-        Continuously polls for qualifying, sprint and grand prix results.
-        For each race weekend, it:
-        1. Fetches the current season schedule
-        2. Identifies the next upcoming events
-        3. Fetches results data for completed events
-        4. Parses and persists the data to the database
-        5. Sleeps for the configured duration before repeating
+        In production mode, this method continuously monitors the current F1 season,
+        polling qualifying, sprint, and Grand Prix results as they become available.
+        It processes and persists event data into the database, handles standings updates,
+        and triggers a market prediction pipeline after qualifying. The loop waits
+        until event times or a configured interval between iterations.
 
-        The method will return if no upcoming grand prix is found.
+        In non-production mode (i.e., development/testing), the method instead simulates
+        polling historical data from a specified `year` and `round_`, iterating forward
+        without real-time delays.
+
+        Args:
+            production (bool, optional): Whether to run in production mode.
+                In production mode, the poller fetches current-season live data,
+                sleeping until events occur. If False, the poller operates deterministically
+                and without delay. Defaults to True.
+
+            year (Optional[int], keyword-only): The starting season year for non-production mode.
+                Must be provided if `production` is False.
+
+            round_ (Optional[int], keyword-only): The starting race round for non-production mode.
+                Must be provided if `production` is False.
+
+        Raises:
+            ValueError: If `production` is False and either `year` or `round_` is not specified.
         """
         configs = self._get_configs()
-        # Debugging
-        # year = 2010
-        # cur_round = 1
+
+        if not production:
+            if year is None or round_ is None:
+                raise ValueError(
+                    "Year and round must be set if production is set to False."
+                )
+            year = year
+            cur_round = round_
 
         async with ClientSession() as sess:
             while True:
                 # Initialisation
-                year = datetime.now().date().year
+                if production:
+                    year = datetime.now().date().year
+
                 schedule = await super()._fetch_schedule(sess, year)
                 schedule = schedule["MRData"]["RaceTable"]["Races"]
-                next_gp_info = self._get_target_gp(schedule)
 
-                if next_gp_info is None:
-                    await asyncio.sleep(60 * 60 * 24)
-                    continue
+                if production:
+                    next_gp_info = self._get_target_gp(schedule)
+                    if next_gp_info is None:
+                        await asyncio.sleep(60 * 60 * 24)
+                        continue
+                    
+                    print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
+                    cur_round, _ = next_gp_info
 
-                print("Upcoming round", next_gp_info[0], "date", next_gp_info[1])
-                cur_round, _ = next_gp_info
                 circuit_id, circuit_ref = await self._persist_circuit(
                     schedule, cur_round
                 )
@@ -188,13 +218,16 @@ class DataPoller(BasePoller):
                     parse_func,
                     persist_func,
                 ) in configs:
-                    next_gp_info = target_func(schedule)
-                    if next_gp_info is None or next_gp_info[0] != cur_round:
-                        continue
+                    if production:
+                        next_gp_info = target_func(schedule)
+                        if next_gp_info is None or next_gp_info[0] != cur_round:
+                            continue
 
-                    _, time_of_event = next_gp_info
-                    print("Sleeping until", time_of_event, "for", lookup_key)
-                    await sleep(time_of_event.timestamp() - get_datetime().timestamp())
+                        _, time_of_event = next_gp_info
+                        print("Sleeping until", time_of_event, "for", lookup_key)
+                        await sleep(
+                            time_of_event.timestamp() - get_datetime().timestamp()
+                        )
 
                     fetched_data = await self._fetch_results(
                         sess, fetch_path.format(year=year, round_=cur_round)
@@ -241,11 +274,14 @@ class DataPoller(BasePoller):
                 await sleep(self._sleep_duration)
 
                 # Debugging
-                # if cur_round == int(schedule[-1]["round"]):
-                #     year += 1
-                #     cur_round = 1
-                # else:
-                #     cur_round += 1
+                if not production:
+                    if cur_round == int(schedule[-1]["round"]):
+                        year += 1
+                        cur_round = 1
+                    else:
+                        cur_round += 1
+
+                print("Fetching round:", cur_round, "year:", year)
 
     def _get_target_quali(
         self, schedule: list[dict[str, Any]]
