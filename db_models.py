@@ -337,12 +337,12 @@ class Users(Base):
         DateTime(timezone=True), default=get_datetime, nullable=False
     )
 
-    user_bets = relationship(
-        "Bets", back_populates="user", cascade="all, delete-orphan"
-    )
-    user_transactions = relationship(
-        "Transactions", back_populates="user", cascade="all, delete-orphan"
-    )
+    # user_bets = relationship(
+    #     "Bets", back_populates="user", cascade="all, delete-orphan"
+    # )
+    # user_transactions = relationship(
+    #     "Transactions", back_populates="user", cascade="all, delete-orphan"
+    # )
 
 
 class Markets(Base):
@@ -385,9 +385,9 @@ class Bets(Base):
     __tablename__ = "bets"
 
     bet_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False
-    )
+    # user_id: Mapped[UUID] = mapped_column(
+    #     UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False
+    # )
     market_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("markets.market_id"), nullable=False
     )
@@ -408,7 +408,7 @@ class Bets(Base):
     settle_amount: Mapped[float] = mapped_column(Float, nullable=True)
     settlement_txn: Mapped[str] = mapped_column(String, nullable=True)
 
-    user = relationship("Users", back_populates="user_bets")
+    # user = relationship("Users", back_populates="user_bets")
     bet_transactions = relationship(
         "Transactions", back_populates="bet", cascade="all, delete-orphan"
     )
@@ -421,9 +421,9 @@ class Transactions(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid4
     )
     transaction_type: Mapped[str] = mapped_column(String, nullable=False)
-    user_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False
-    )
+    # user_id: Mapped[UUID] = mapped_column(
+    #     UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False
+    # )
     market_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("markets.market_id"), nullable=False
     )
@@ -437,7 +437,7 @@ class Transactions(Base):
     address: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
     # Relationship
-    user: Mapped[Users] = relationship("Users", back_populates="user_transactions")
+    # user: Mapped[Users] = relationship("Users", back_populates="user_transactions")
     market: Mapped[Markets] = relationship(
         "Markets", back_populates="market_transactions"
     )
