@@ -144,25 +144,6 @@ def run_server(queue: Queue) -> None:
             open(os.path.join(SERVER_DATA_FOLDER, "schedule.json"), "w"),
         )
 
-    async def helper() -> None:
-        """Inner async function to configure and start the uvicorn server."""
-        config.MATCHING_ENGINE_QUEUE = queue
-
-        from server.routes.bet import utils as bet_utils
-
-        await bet_utils.lock.run()
-
-        fetch_shedule()
-
-        server_config = uvicorn.Config(
-            "server.app:app",
-            host="0.0.0.0",
-            port=8000,
-        )
-        server = uvicorn.Server(server_config)
-        await server.serve()
-
-    # asyncio.run(helper())
     fetch_shedule()
     uvicorn.run(
         "server.app:app",

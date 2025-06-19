@@ -29,7 +29,6 @@ class BetService:
         )
         while True:
             events = await bp_filter.get_new_entries()
-
             for ev in events:
                 await self._handle_bet_placed(ev)
 

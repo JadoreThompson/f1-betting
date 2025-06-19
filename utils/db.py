@@ -12,9 +12,7 @@ smaker = sessionmaker(bind=ASYNC_DB_ENGINE, class_=AsyncSession, expire_on_commi
 
 def write_sqlalchemy_url() -> None:
     """Writes db url into the alamebic.ini file."""
-    sqlalc_uri = (
-        DB_URL.replace("+asyncpg", "").replace("%", "%%")
-    )
+    sqlalc_uri = DB_URL.replace("+asyncpg", "").replace("%", "%%")
     config = configparser.ConfigParser(interpolation=None)
     config.read("alembic.ini")
 
@@ -46,7 +44,14 @@ def alembic_ugrade_head() -> None:
     remove_sqlalchemy_url()
 
 
-@asynccontextmanager
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+# @asynccontextmanager
+# async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+#     async with smaker.begin() as session:
+#         yield session
+
+
+async def requires_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with smaker.begin() as session:
         yield session
+
+get_db_session = asynccontextmanager(requires_db_session)

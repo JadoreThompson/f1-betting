@@ -47,7 +47,7 @@ class MatchingEngine:
 
         while True:
             payload: EnginePayload = self._queue.get()
-            print("[me]:\n", payload)
+
             if payload["topic"] == Topic.CREATE:
                 self._place_order(payload)
             elif payload["topic"] == Topic.SETTLE:
