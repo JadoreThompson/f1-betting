@@ -1,6 +1,6 @@
 # **Overview**
 
-This project is a Formula 1 betting application that integrates live market data, blockchain payments, and predictive analytics. The backend is built with FastAPI, offering a fast and scalable foundation, while transactions are handled through a custom smart contract on the blockchain to ensure security and transparency. A proprietary prediction model powers the betting insights, supported by a dedicated data pipeline. The frontend is developed using React, delivering a responsive and intuitive user experience.
+This project is a Formula 1 betting application that integrates live market data, blockchain payments, and predictive analytics. The backend is built with FastAPI while transactions are handled through a custom smart contract on the blockchain to ensure security and transparency. A proprietary prediction model powers the betting insights, supported by a dedicated data pipeline.
 
 # **Pre-requisites**
 
@@ -43,6 +43,7 @@ The module is primarily composed of the following key components:
 - **Matching Engine**: The core logic that processes user bets, matches opposing sides (BACK/LAY), and manages order books.
 - **Pusher**: A batching and notification service that efficiently updates the database and broadcasts state changes via Redis.
 - **Order and OrderBook**: Data structures representing individual bets and market-specific collections of bets.
+- **Betting Service:** A listener, reacting to the BetPlaced event emitted via the BettingEscrow smart contract, then acting on it by persisting the details and pushing to the Matching Engine.
 
 **Pollers (`betting_engine/pollers/`)**
 
