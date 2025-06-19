@@ -10,7 +10,7 @@ from enums import MarketStatus, Side, BetStatus, TransactionType
 from utils.db import get_db_session
 from utils.utils import get_datetime
 
-from .config import PROVIDER, USDT_CONTRACT, BE_CONTRACT
+from .config import PROVIDER, BETTING_ESCROW_CONTRACT
 from .exc import OrderBookError
 from .pusher import Pusher
 from .order import Order
@@ -18,8 +18,6 @@ from .order import Order
 
 class OrderBook:
     """
-    Manages the in-memory order book for a specific betting market.
-
     Responsible for maintaining bid (BACK) and ask (LAY) orders, handling settlements
     via on-chain transactions, pushing updates, and persisting changes to the database.
 
@@ -64,17 +62,17 @@ class OrderBook:
         Adds an order to the order book.
 
         Args:
-            order (Order): The order to add.
+            order (Order): The order to insert.
 
         Raises:
             OrderBookError: If an order with the same bet ID already exists.
         """
         bet_id = order.payload["bet_id"]
-        book = self._bids if order.side == Side.BACK else self._asks
 
-        if bet_id in book:
+        if bet_id in self._bids or bet_id in self._asks:
             raise OrderBookError("Order already exists.")
 
+        book = self._bids if order.side == Side.BACK else self._asks
         book[bet_id] = order
 
     def remove(self, order: Order | dict) -> None:
@@ -100,19 +98,20 @@ class OrderBook:
         else:
             self._asks.pop(bet_id, None)
 
-    async def _handle_payout(
-        self, k: int, usdt_decimals: int, orders: list[Order]
-    ) -> None:
+    async def _handle_payout(self, k: int, orders: list[Order]) -> None:
         """
-        Processes and sends payouts to winners via blockchain.
+        Executes payouts to wallets for a list of winning orders.
+
+        Uses the escrow contract to perform on-chain transfers, updates
+        each order's state, and logs any failed payouts.
 
         Args:
-            k (int): Payout multiplier for the order (e.g., 2 for BACK win).
-            usdt_decimals (int): USDT decimal precision.
-            orders (list[Order]): Orders to pay out.
+            k (int): Payout multiplier (e.g., 2 for BACK win, 1 for refund).
+            orders (list[Order]): Orders eligible for payout.
 
-        Modifies:
-            - Updates order payload with payout amount, transaction hash, and status.
+        Side Effects:
+            - Sends on-chain transactions.
+            - Updates order status and adds settlement metadata.
         """
         warning_template = "Settlement failed for bet {bet_id}"
         close_time = get_datetime()
@@ -121,7 +120,7 @@ class OrderBook:
             wallet_addr = o.payload["wallet_address"]
             payout = o.payload["amount"] * k
 
-            txn = await BE_CONTRACT.functions.withdraw(
+            txn = await BETTING_ESCROW_CONTRACT.functions.withdraw(
                 self._market_id, wallet_addr, k
             ).build_transaction(
                 {
@@ -153,20 +152,20 @@ class OrderBook:
     # TODO: Payout all unfilled orders.
     async def settle(self, side: Side) -> None:
         """
-        Settles all orders on the specified side (BACK or LAY).
+        Finalizes a market by settling all orders on the specified side.
 
         Performs:
-            - On-chain payouts.
-            - Local status updates.
-            - Database persistence.
-            - Market status closure.
+            - Updates in-memory orders.
+            - Sends transactions to the blockchain.
+            - Writes to the database (bets, transactions, market status).
+            - Broadcasts updates via Pusher.
 
         Args:
-            side (Side): Side of the market to settle.
+            side (Side): The winning side (BACK or LAY) to be settled.
         """
         winners = self._bids.values() if side == Side.BACK else self._asks.values()
-        filled_winners = []
-        unfilled_winners = []
+        filled_winners: list[Order] = []
+        unfilled_winners: list[Order] = []
 
         for w in winners:
             if w.payload["bet_status"] == BetStatus.OPEN.value:
@@ -175,10 +174,9 @@ class OrderBook:
                 unfilled_winners.append(w)
 
         k: int = 1 + (self._numerator if side == Side.BACK else self._denominator)
-        usdt_decimals = await USDT_CONTRACT.functions.decimals().call()
 
-        await self._handle_payout(k, usdt_decimals, filled_winners)
-        await self._handle_payout(1, usdt_decimals, unfilled_winners)
+        await self._handle_payout(k, filled_winners)
+        await self._handle_payout(1, unfilled_winners)
 
         self._pusher.append(winners)
 
@@ -188,12 +186,12 @@ class OrderBook:
                 insert(Transactions),
                 [
                     {
-                        "user_id": w.payload["user_id"],
                         "bet_id": w.payload["bet_id"],
-                        "market_id": w.payload["market_id"],
+                        "market_id": self._market_id,
                         "transaction_type": TransactionType.SETTLE.value,
                         "amount": w.payload["amount"],
                         "address": w.payload["settlement_txn"],
+                        "wallet_address": w.payload["wallet_address"],
                     }
                     for w in winners
                 ],

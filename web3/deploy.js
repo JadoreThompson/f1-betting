@@ -74,7 +74,7 @@ async function deployBettingEscrow() {
   // Now place the bet
   const walletFromContract = bettingEscrowContract.connect(WALLET);
   console.log("Placing bet...");
-  const betTx = await walletFromContract.placeBet(1, betAmount);
+  const betTx = await walletFromContract.placeBet(1, betAmount, 1);
   await betTx.wait();
   console.log("Bet placed successfully!");
 }

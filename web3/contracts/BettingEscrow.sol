@@ -8,15 +8,13 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 // TODO: Improve robustness
 contract BettingEscrow is Ownable, ReentrancyGuard {
     IERC20 public usdtToken;
-    
     mapping(uint256 => mapping(address => uint256)) public marketParticipantAmounts; // marketId => address => amount
     mapping(uint256 => mapping(address => bool)) public marketParticipantExists;
     mapping(uint256 => uint256) public marketEscrow;
-    
     uint256 public volume;
     uint256 public activeBetCount;
 
-    event BetPlaced(address indexed participant, uint256 indexed marketId, uint256 amount);
+    event BetPlaced(address indexed participant, uint256 indexed marketId, uint256 amount, uint8 side);
     event ParticipantPaidOut(address indexed participant, uint256 indexed marketId, uint256 amount);
 
     constructor(address _usdtTokenAddress) Ownable(msg.sender) {
@@ -33,8 +31,10 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
 
     function placeBet(
         uint256 marketId,
-        uint256 amount
+        uint256 amount,
+        uint8 side
     ) external nonReentrant {
+        require(side == 0 || side == 1, "Invalid side");
         require(msg.sender != address(0), "Invalid sender address");
         require(amount > 0, "Bet amount must be greater than zero");
         require(usdtToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
@@ -46,7 +46,7 @@ contract BettingEscrow is Ownable, ReentrancyGuard {
         marketParticipantExists[marketId][msg.sender] = true;
         marketParticipantAmounts[marketId][msg.sender] += amount;
 
-        emit BetPlaced(msg.sender, marketId, amount);
+        emit BetPlaced(msg.sender, marketId, amount, side);
     }
 
 

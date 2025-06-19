@@ -2,6 +2,7 @@ from .enums import Topic
 from .matching_engine import MatchingEngine
 from .pollers.settlement_poller import SettlementPoller
 from .pollers.data_poller import DataPoller
+from .services import BetService
 from .typing import EnginePayload, SettlePayload
 
 __all__ = [
@@ -12,6 +13,7 @@ __all__ = [
     "SettlePayload",
     # Engine
     "MatchingEngine",
+    "BetService",
     # Pollers
     "SettlementPoller",
     "DataPoller",

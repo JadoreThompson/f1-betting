@@ -1,48 +1,49 @@
+import math
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.sql.functions import sum as sql_sum, count, coalesce
-import math
 
-from db_models import Bets, Markets, Transactions, Users
+from db_models import Bets, Markets, Transactions
 from enums import BetStatus
-from server.middleware import verify_jwt
-from server.typing import JWTPayload
+from server.middleware import requires_wallet_address
 from utils.db import get_db_session
-from .models import Position, UserSummary, Transaction, Pagination, PositionResponse, TransactionResponse
+from .models import (
+    Position,
+    UserSummary,
+    Transaction,
+    Pagination,
+    PositionResponse,
+    TransactionResponse,
+)
 
 user_route = APIRouter(prefix="/user", tags=["user"])
 PAGE_SIZE = 10
 
 
 @user_route.get("/summary")
-async def summary(jwt_payload: JWTPayload = Depends(verify_jwt)) -> UserSummary:
-    pnl_vol_mt_q = select(
+async def summary(
+    wallet_address: str = Depends(requires_wallet_address),
+) -> UserSummary:
+    pnl_vol_markets_traded_q = select(
         coalesce(sql_sum(Bets.settle_amount), 0),
         coalesce(sql_sum(Bets.amount), 0),
-        coalesce(count(Bets.user_id), 0),
-    ).where(Bets.user_id == jwt_payload.sub)
+        coalesce(count(Bets.wallet_address), 0),
+    ).where(Bets.wallet_address == wallet_address)
 
     current_pos_value_q = select(coalesce(sql_sum(Bets.amount), 0)).where(
-        (Bets.user_id == jwt_payload.sub) & (Bets.bet_status == BetStatus.OPEN.value)
+        (Bets.wallet_address == wallet_address)
+        & (Bets.bet_status == BetStatus.OPEN.value)
     )
 
     async with get_db_session() as sess:
-        r = await sess.execute(
-            select(Users.username, Users.created_at).where(
-                Users.user_id == jwt_payload.sub
-            )
-        )
-        username, created_at = r.first()
-
-        r = await sess.execute(pnl_vol_mt_q)
+        r = await sess.execute(pnl_vol_markets_traded_q)
         pnl, volume, markets_traded = r.first()
 
         r = await sess.execute(current_pos_value_q)
-        current_pos_value = r.first()[0]
+        current_pos_value = r.scalar_one()
 
     return UserSummary(
-        username=username,
-        joined_at=created_at.date(),
         total_pos_value=current_pos_value,
         pnl=pnl,
         volume=volume,
@@ -52,7 +53,8 @@ async def summary(jwt_payload: JWTPayload = Depends(verify_jwt)) -> UserSummary:
 
 @user_route.get("/positions")
 async def positions(
-    jwt_payload: JWTPayload = Depends(verify_jwt), page: int = 1
+    wallet_address: str = Depends(requires_wallet_address),
+    page: int = 1,
 ) -> PositionResponse:
     if page < 1:
         page = 1
@@ -69,7 +71,8 @@ async def positions(
     count_query = select(count()).select_from(
         select(Bets.bet_id)
         .where(
-            (Bets.user_id == jwt_payload.sub)
+            # (Bets.user_id == wallet_address.sub)
+            (Bets.wallet_address == wallet_address)
             & (Bets.bet_status == BetStatus.OPEN.value)
         )
         .subquery()
@@ -79,7 +82,7 @@ async def positions(
         # Get total count
         total_count_result = await sess.execute(count_query)
         total_items = total_count_result.scalar()
-        
+
         # Calculate pagination info
         total_pages = math.ceil(total_items / PAGE_SIZE) if total_items > 0 else 1
         has_next = page < total_pages
@@ -97,7 +100,8 @@ async def positions(
                 market_info_subq.c.category,
             )
             .where(
-                (Bets.user_id == jwt_payload.sub)
+                # (Bets.user_id == wallet_address.sub)
+                (Bets.wallet_address == wallet_address)
                 & (Bets.bet_status == BetStatus.OPEN.value)
             )
             .offset(PAGE_SIZE * (page - 1))
@@ -110,7 +114,7 @@ async def positions(
 
         d = r.all()
 
-    positions_data = [
+    positions = [
         Position(
             title=title,
             category=category,
@@ -127,18 +131,16 @@ async def positions(
         has_prev=has_prev,
         current_page=page,
         total_pages=total_pages,
-        total_quantity=total_items
+        total_quantity=total_items,
     )
 
-    return PositionResponse(
-        data=positions_data,
-        pagination=pagination
-    )
+    return PositionResponse(data=positions, pagination=pagination)
 
 
 @user_route.get("/activity")
 async def activity(
-    jwt_payload: JWTPayload = Depends(verify_jwt), page: int = 1
+    wallet_address: str = Depends(requires_wallet_address),
+    page: int = 1,
 ) -> TransactionResponse:
     if page < 1:
         page = 1
@@ -146,7 +148,7 @@ async def activity(
     # First, get the total count for pagination
     count_query = select(count()).select_from(
         select(Transactions.transaction_id)
-        .where(Transactions.user_id == jwt_payload.sub)
+        .where(Transactions.wallet_address == wallet_address)
         .subquery()
     )
 
@@ -154,7 +156,7 @@ async def activity(
         # Get total count
         total_count_result = await sess.execute(count_query)
         total_items = total_count_result.scalar()
-        
+
         # Calculate pagination info
         total_pages = math.ceil(total_items / PAGE_SIZE) if total_items > 0 else 1
         has_next = page < total_pages
@@ -169,7 +171,7 @@ async def activity(
                 Markets.title,
                 Markets.category,
             )
-            .where(Transactions.user_id == jwt_payload.sub)
+            .where(Transactions.wallet_address == wallet_address)
             .offset(PAGE_SIZE * (page - 1))
             .limit(PAGE_SIZE)
             .join(Markets, (Markets.market_id == Transactions.market_id))
@@ -187,10 +189,7 @@ async def activity(
         has_prev=has_prev,
         current_page=page,
         total_pages=total_pages,
-        total_quantity=total_items
+        total_quantity=total_items,
     )
 
-    return TransactionResponse(
-        data=transactions_data,
-        pagination=pagination
-    )
+    return TransactionResponse(data=transactions_data, pagination=pagination)

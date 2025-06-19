@@ -6,10 +6,16 @@ import requests
 from datetime import datetime
 from json import dump
 from multiprocessing import Process, Queue
-from r_mutex import LockManager
+from r_mutex import LockClient, LockManager
 from sqlalchemy import select
 
-from betting_engine import Topic, MatchingEngine, DataPoller, SettlementPoller
+from betting_engine import (
+    Topic,
+    MatchingEngine,
+    DataPoller,
+    SettlementPoller,
+    BetService,
+)
 from config import (
     LOCK_CHANNEL,
     POLLING_BASE_URL,
@@ -21,6 +27,10 @@ from db_models import Base, Markets
 from enums import MarketCategory, MarketStatus, Side
 from server import config
 from utils.db import get_db_session
+
+
+def run_bet_service(queue: Queue) -> None:
+    asyncio.run(BetService(queue, LockClient(REDIS_CLIENT, LOCK_CHANNEL, False)).run())
 
 
 def run_data_pipeline() -> None:
@@ -152,7 +162,13 @@ def run_server(queue: Queue) -> None:
         server = uvicorn.Server(server_config)
         await server.serve()
 
-    asyncio.run(helper())
+    # asyncio.run(helper())
+    fetch_shedule()
+    uvicorn.run(
+        "server.app:app",
+        host="0.0.0.0",
+        port=8000,
+    )
 
 
 async def main() -> None:
@@ -184,8 +200,10 @@ async def main() -> None:
         (run_data_pipeline, "data_pipeline", False),
         (run_engine, "matching_engine", True),
         (run_server, "server", True),
+        (run_bet_service, "bet_service", True),
     )
 
+    # TODO: Reduce quantity of processes.
     ps: list[Process] = [
         Process(target=f, args=(matching_engine_queue,) if use_queue else (), name=name)
         for f, name, use_queue in args

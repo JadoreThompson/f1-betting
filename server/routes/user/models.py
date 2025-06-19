@@ -1,11 +1,9 @@
-from datetime import date, datetime
+from datetime import datetime
 from pydantic import BaseModel
 from enums import MarketCategory, Side, TransactionType
 
 
 class UserSummary(BaseModel):
-    username: str
-    joined_at: date
     total_pos_value: float
     pnl: float
     volume: float

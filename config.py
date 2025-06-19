@@ -1,7 +1,7 @@
-from datetime import timedelta
 import redis
 import os
 
+from datetime import timedelta
 from dotenv import load_dotenv
 from urllib.parse import quote
 from sqlalchemy import create_engine
@@ -49,6 +49,7 @@ LOCK_CHANNEL = os.getenv("LOCK_CHANNEL")
 
 # Cookie and JWT
 COOKIE_ALIAS = "f1-betting-cookie"
+WALLET_HEADER_KEY = "X-Wallet-Address"
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "secret-key")
 JWT_EXPIRY = timedelta(minutes=1e6)
 JWT_ALGO = "HS256"

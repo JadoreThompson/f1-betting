@@ -82,7 +82,7 @@ class GrandPrixResult:
     number: int
     position: int
     position_text: str
-    points: float
+    points: int
     driver: Driver
     grid: int
     laps: int

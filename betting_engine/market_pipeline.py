@@ -335,8 +335,8 @@ class MarketPipeline:
 
         preds = [p.tolist() for p in self._winner_model.predict(df)]
         if not preds:
-            return 
-        
+            return
+
         return driver_refs, preds
 
     def _generate_top3_preds(
@@ -375,11 +375,11 @@ class MarketPipeline:
             ],
             axis=1,
         )
-        
+
         preds = [p.tolist() for p in self._winner_model.predict(df)]
         if not preds:
-            return 
-        
+            return
+
         return driver_refs, preds
 
     def _generate_winner_markets(

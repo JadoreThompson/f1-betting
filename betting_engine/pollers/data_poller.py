@@ -497,7 +497,7 @@ class DataPoller(BasePoller):
                 number=int(d["number"]),
                 position=int(d["position"]),
                 position_text=d["positionText"],
-                points=float(d["points"]),
+                points=int(d["points"]),
                 driver=driver,
                 grid=int(d["grid"]),
                 laps=int(d["laps"]),

@@ -47,7 +47,7 @@ class MatchingEngine:
 
         while True:
             payload: EnginePayload = self._queue.get()
-
+            print("[me]:\n", payload)
             if payload["topic"] == Topic.CREATE:
                 self._place_order(payload)
             elif payload["topic"] == Topic.SETTLE:
@@ -69,7 +69,7 @@ class MatchingEngine:
                 payload["bet"]["market_id"],
                 payload["market"]["numerator"],
                 payload["market"]["denominator"],
-                self._pusher
+                self._pusher,
             ),
         )
 
@@ -90,7 +90,7 @@ class MatchingEngine:
 
         if not is_matched:
             orderbook.append(order)
-        
+
         if prev_bs != order.payload["bet_status"]:
             self._pusher.append(order.payload)
 
@@ -139,7 +139,7 @@ class MatchingEngine:
 
             if resting_order.status == OrderStatus.FILLED:
                 filled_orders.append(resting_order)
-            
+
             touched_payloads.append(resting_order.payload)
 
             if order.status == OrderStatus.FILLED:
@@ -148,7 +148,7 @@ class MatchingEngine:
         # Clean up filled orders
         for _order in filled_orders:
             orderbook.remove(_order)
-            
+
         self._pusher.append(touched_payloads)
 
         return order.status == OrderStatus.FILLED

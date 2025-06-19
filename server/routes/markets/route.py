@@ -83,7 +83,7 @@ async def summary() -> MarketSummary:
 
 
 @markets_route.get("/upcoming")
-async def schedule() -> NextRace | None:
+async def upcoming() -> NextRace | None:
     """Returns the upcoming race"""
     global next_race
     cur_datetime = get_datetime()
