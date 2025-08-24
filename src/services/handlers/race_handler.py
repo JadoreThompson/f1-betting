@@ -4,7 +4,7 @@ from typing import Any, Iterable, Optional, TYPE_CHECKING
 
 from sqlalchemy.dialects.postgresql import insert as ps_insert
 
-from db_models import GrandPrixResults
+from db_models import Results
 from utils.db import get_db_session
 from utils.utils import get_datetime
 from .session_handler import SessionHandler
@@ -123,7 +123,7 @@ class RaceResultHandler(SessionHandler):
 
         async with get_db_session() as sess:
             await sess.execute(
-                ps_insert(GrandPrixResults).values(data).on_conflict_do_nothing()
+                ps_insert(Results).values(data).on_conflict_do_nothing()
             )
             await sess.commit()
 

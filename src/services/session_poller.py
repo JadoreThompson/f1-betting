@@ -14,8 +14,9 @@ from db_models import (
     Constructors,
     DriverStandings,
     Drivers,
-    GrandPrixResults,
+    Results,
     SprintResults,
+    Races,
 )
 from services.exc import APIError
 from utils.db import get_db_session
@@ -163,12 +164,10 @@ class SessionPoller:
     @classmethod
     async def _fetch_schedule(
         cls, session: ClientSession, year: int
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, Any]] | None:
         async with session.get(API_BASE_URL + f"/{year}") as rsp:
             if rsp.status != 200:
-                raise APIError(
-                    f"Error fetching season schedule. status code: {rsp.status}"
-                )
+                return
             data = await rsp.json()
             return data.get("MRData", {}).get("RaceTable", {}).get("Races", [])
 
@@ -290,11 +289,10 @@ class SessionPoller:
                 insert(Drivers)
                 .values(
                     driver_ref=driver.driver_ref,
-                    permanent_number=driver.permanent_number,
+                    number=driver.permanent_number,  # Fixed: was permanent_number
                     code=driver.code,
-                    constructor_id=driver.constructor.constructor_id,
-                    dob=driver.dob,
                     nationality=driver.nationality,
+                    dob=driver.dob,
                 )
                 .returning(Drivers.driver_id)
             )
@@ -305,45 +303,60 @@ class SessionPoller:
     @classmethod
     async def _persist_driver_standings(cls, year: int, round_: int) -> None:
         async with get_db_session() as sess:
-            # Check if standings for this round already exist
-            res = await sess.execute(
-                text(
-                    "SELECT 1 FROM driver_standings WHERE year = :year AND round = :round"
-                ),
-                {"year": year, "round": round_},
+            # Get the race_id for this year and round to properly link standings
+            race_res = await sess.execute(
+                select(Races.race_id).where(Races.year == year, Races.round == round_)
             )
-            if res.first():
+            race_id = race_res.scalar_one_or_none()
+            if race_id is None:
+                print(f"No race found for year {year}, round {round_}")
                 return
 
-            # Subquery for total GP wins in the season
+            # Check if standings for this race already exist
+            existing_res = await sess.execute(
+                select(DriverStandings.driver_standings_id)
+                .where(DriverStandings.race_id == race_id)
+                .limit(1)
+            )
+            if existing_res.scalar_one_or_none():
+                return
+
+            # Subquery for total GP wins in the season up to this round
             wins_subq = (
                 select(
-                    GrandPrixResults.driver_id,
+                    Results.driver_id,
                     coalesce(
-                        sql_sum(case((GrandPrixResults.position == 1, 1), else_=0)), 0
+                        sql_sum(case((Results.position == 1, 1), else_=0)), 0
                     ).label("total_wins"),
                 )
-                .where(GrandPrixResults.year == year)
-                .group_by(GrandPrixResults.driver_id)
+                .select_from(Results.join(Races, Results.race_id == Races.race_id))
+                .where(Races.year == year, Races.round <= round_)
+                .group_by(Results.driver_id)
                 .subquery()
             )
-            # Subquery for total GP points
+
+            # Subquery for total GP points up to this round
             gp_pts_subq = (
                 select(
-                    GrandPrixResults.driver_id,
-                    coalesce(sql_sum(GrandPrixResults.points), 0).label("gp_pts"),
+                    Results.driver_id,
+                    coalesce(sql_sum(Results.points), 0).label("gp_pts"),
                 )
-                .where(GrandPrixResults.year == year)
-                .group_by(GrandPrixResults.driver_id)
+                .select_from(Results.join(Races, Results.race_id == Races.race_id))
+                .where(Races.year == year, Races.round <= round_)
+                .group_by(Results.driver_id)
                 .subquery()
             )
-            # Subquery for total sprint points
+
+            # Subquery for total sprint points up to this round
             sp_pts_subq = (
                 select(
                     SprintResults.driver_id,
                     coalesce(sql_sum(SprintResults.points), 0).label("sp_pts"),
                 )
-                .where(SprintResults.year == year)
+                .select_from(
+                    SprintResults.join(Races, SprintResults.race_id == Races.race_id)
+                )
+                .where(Races.year == year, Races.round <= round_)
                 .group_by(SprintResults.driver_id)
                 .subquery()
             )
@@ -351,7 +364,6 @@ class SessionPoller:
             standings_query = (
                 select(
                     Drivers.driver_id,
-                    Drivers.constructor_id,
                     (
                         coalesce(gp_pts_subq.c.gp_pts, 0)
                         + coalesce(sp_pts_subq.c.sp_pts, 0)
@@ -364,27 +376,30 @@ class SessionPoller:
                 .outerjoin(sp_pts_subq, Drivers.driver_id == sp_pts_subq.c.driver_id)
                 .where(
                     Drivers.driver_id.in_(
-                        select(GrandPrixResults.driver_id)
-                        .where(GrandPrixResults.year == year)
+                        select(Results.driver_id)
+                        .select_from(
+                            Results.join(Races, Results.race_id == Races.race_id)
+                        )
+                        .where(Races.year == year, Races.round <= round_)
                         .distinct()
                     )
                 )
-                .order_by(desc("total_points"))
+                .order_by(desc("total_points"), desc("total_wins"))
             )
 
             res = await sess.execute(standings_query)
             standings_data = [
                 {
-                    "year": year,
-                    "round": round_,
+                    "race_id": race_id,
                     "driver_id": d.driver_id,
-                    "constructor_id": d.constructor_id,
+                    "points": float(d.total_points),
                     "position": i + 1,
-                    "points": d.total_points,
+                    "position_text": str(i + 1),
                     "wins": d.total_wins,
                 }
                 for i, d in enumerate(res.all())
             ]
+
             if standings_data:
                 await sess.execute(insert(DriverStandings).values(standings_data))
                 await sess.commit()
@@ -392,36 +407,112 @@ class SessionPoller:
     @classmethod
     async def _persist_constructor_standings(cls, year: int, round_: int) -> None:
         async with get_db_session() as sess:
-            res = await sess.execute(
-                text(
-                    "SELECT 1 FROM constructor_standings WHERE year = :year AND round = :round"
-                ),
-                {"year": year, "round": round_},
+            # Get the race_id for this year and round
+            race_res = await sess.execute(
+                select(Races.race_id).where(Races.year == year, Races.round == round_)
             )
-            if res.first():
+            race_id = race_res.scalar_one_or_none()
+            if race_id is None:
+                print(f"No race found for year {year}, round {round_}")
                 return
 
-            # This relies on driver standings being up-to-date
-            res = await sess.execute(
+            # Check if constructor standings for this race already exist
+            existing_res = await sess.execute(
+                select(ConstructorStandings.constructor_standings_id)
+                .where(ConstructorStandings.race_id == race_id)
+                .limit(1)
+            )
+            if existing_res.scalar_one_or_none():
+                return
+
+            # Calculate constructor points by summing their drivers' points up to this round
+            # Subquery for GP points
+            gp_points_subq = (
                 select(
-                    sql_sum(DriverStandings.points).label("c_points"),
-                    DriverStandings.constructor_id,
+                    Results.constructor_id,
+                    coalesce(sql_sum(Results.points), 0).label("gp_points"),
                 )
-                .where(DriverStandings.year == year, DriverStandings.round == round_)
-                .group_by(DriverStandings.constructor_id)
-                .order_by(desc("c_points"))
+                .select_from(Results.join(Races, Results.race_id == Races.race_id))
+                .where(Races.year == year, Races.round <= round_)
+                .group_by(Results.constructor_id)
+                .subquery()
             )
 
+            # Subquery for sprint points
+            sprint_points_subq = (
+                select(
+                    SprintResults.constructor_id,
+                    coalesce(sql_sum(SprintResults.points), 0).label("sprint_points"),
+                )
+                .select_from(
+                    SprintResults.join(Races, SprintResults.race_id == Races.race_id)
+                )
+                .where(Races.year == year, Races.round <= round_)
+                .group_by(SprintResults.constructor_id)
+                .subquery()
+            )
+
+            # Subquery for constructor wins
+            wins_subq = (
+                select(
+                    Results.constructor_id,
+                    coalesce(
+                        sql_sum(case((Results.position == 1, 1), else_=0)), 0
+                    ).label("total_wins"),
+                )
+                .select_from(Results.join(Races, Results.race_id == Races.race_id))
+                .where(Races.year == year, Races.round <= round_)
+                .group_by(Results.constructor_id)
+                .subquery()
+            )
+
+            standings_query = (
+                select(
+                    Constructors.constructor_id,
+                    (
+                        coalesce(gp_points_subq.c.gp_points, 0)
+                        + coalesce(sprint_points_subq.c.sprint_points, 0)
+                    ).label("total_points"),
+                    coalesce(wins_subq.c.total_wins, 0).label("total_wins"),
+                )
+                .select_from(Constructors)
+                .outerjoin(
+                    gp_points_subq,
+                    Constructors.constructor_id == gp_points_subq.c.constructor_id,
+                )
+                .outerjoin(
+                    sprint_points_subq,
+                    Constructors.constructor_id == sprint_points_subq.c.constructor_id,
+                )
+                .outerjoin(
+                    wins_subq, Constructors.constructor_id == wins_subq.c.constructor_id
+                )
+                .where(
+                    Constructors.constructor_id.in_(
+                        select(Results.constructor_id)
+                        .select_from(
+                            Results.join(Races, Results.race_id == Races.race_id)
+                        )
+                        .where(Races.year == year, Races.round <= round_)
+                        .distinct()
+                    )
+                )
+                .order_by(desc("total_points"), desc("total_wins"))
+            )
+
+            res = await sess.execute(standings_query)
             standings_data = [
                 {
-                    "year": year,
-                    "round": round_,
+                    "race_id": race_id,
                     "constructor_id": d.constructor_id,
-                    "points": d.c_points,
+                    "points": float(d.total_points),
                     "position": i + 1,
+                    "position_text": str(i + 1),
+                    "wins": d.total_wins,
                 }
                 for i, d in enumerate(res.all())
             ]
+
             if standings_data:
                 await sess.execute(insert(ConstructorStandings).values(standings_data))
                 await sess.commit()

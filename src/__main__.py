@@ -1,25 +1,11 @@
 import asyncio
-import os
 import uvicorn
-import requests
 
-from datetime import datetime
-from json import dump
-from multiprocessing import Process, Queue
-from sqlalchemy import select
+from multiprocessing import Process
 
-
-from config import (
-    LOCK_CHANNEL,
-    API_BASE_URL,
-    REDIS_CLIENT,
-    SERVER_DATA_FOLDER,
-    SYNC_DB_ENGINE,
-)
-from db_models import Base, Markets
-from enums import PredictionCategory, MarketStatus, Side
+from config import SYNC_DB_ENGINE
+from db_models import Base
 from services import SessionPoller
-from utils.db import get_db_session
 
 
 def run_data_pipeline() -> None:
@@ -27,19 +13,12 @@ def run_data_pipeline() -> None:
 
 
 def run_server() -> None:
-    r = requests.get(API_BASE_URL + f"/{datetime.now().year}")
-    d = r.json()
-    dump(
-        d["MRData"]["RaceTable"]["Races"],
-        open(os.path.join(SERVER_DATA_FOLDER, "schedule.json"), "w"),
-    )
-
-    uvicorn.run("server.app:app", host="0.0.0.0", port=8000)
+    uvicorn.run("server.app:app", host="0.0.0.0", port=8000, reload=True)
 
 
 async def main() -> None:
     args = (
-        (run_data_pipeline, (), {}, "data_pipeline"),
+        # (run_data_pipeline, (), {}, "data_pipeline"),
         (run_server, (), {}, "server"),
     )
 
@@ -86,4 +65,5 @@ def wrapped_main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # asyncio.run(main())
+    run_server()

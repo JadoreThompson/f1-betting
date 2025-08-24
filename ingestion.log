@@ -2890,3 +2890,762 @@ DETAIL:  Failing row contains (2, ader, null, null, Walt, Ader, 1913-12-15, Amer
 2025-08-24 00:59:32,254 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/seasons.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/seasons.json?limit=100&offset=0
 2025-08-24 00:59:38,163 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/seasons.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/seasons.json?limit=100&offset=0
 2025-08-24 00:59:49,037 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/seasons.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/seasons.json?limit=100&offset=0
+2025-08-24 15:31:00,885 - INFO - Creating database tables...
+2025-08-24 15:31:01,022 - INFO - Database tables created successfully.
+2025-08-24 15:31:01,022 - INFO - Ingesting seasons...
+2025-08-24 15:31:02,369 - INFO - Ingested 0 new seasons. Total seasons: 76
+2025-08-24 15:31:02,369 - INFO - Ingesting circuits...
+2025-08-24 15:31:03,221 - INFO - Ingested 0 new circuits.
+2025-08-24 15:31:03,222 - INFO - Ingesting statuses...
+2025-08-24 15:31:05,038 - INFO - Ingested 0 new statuses.
+2025-08-24 15:31:05,038 - INFO - Ingesting drivers and constructors for all seasons...
+2025-08-24 15:31:05,055 - INFO - Fetching data for 1950 season...
+2025-08-24 15:31:07,006 - INFO - Fetching data for 1951 season...
+2025-08-24 15:31:08,751 - INFO - Fetching data for 1952 season...
+2025-08-24 15:31:11,529 - INFO - Fetching data for 1953 season...
+2025-08-24 15:31:14,221 - INFO - Fetching data for 1954 season...
+2025-08-24 15:31:16,024 - INFO - Fetching data for 1955 season...
+2025-08-24 15:31:17,922 - INFO - Fetching data for 1956 season...
+2025-08-24 15:31:19,766 - INFO - Fetching data for 1957 season...
+2025-08-24 15:31:21,508 - INFO - Fetching data for 1958 season...
+2025-08-24 15:31:23,257 - INFO - Fetching data for 1959 season...
+2025-08-24 15:31:25,087 - INFO - Fetching data for 1960 season...
+2025-08-24 15:31:26,885 - INFO - Fetching data for 1961 season...
+2025-08-24 15:31:28,834 - INFO - Fetching data for 1962 season...
+2025-08-24 15:31:30,580 - INFO - Fetching data for 1963 season...
+2025-08-24 15:31:32,286 - INFO - Fetching data for 1964 season...
+2025-08-24 15:31:34,220 - INFO - Fetching data for 1965 season...
+2025-08-24 15:31:36,220 - INFO - Fetching data for 1966 season...
+2025-08-24 15:31:38,137 - INFO - Fetching data for 1967 season...
+2025-08-24 15:31:40,278 - INFO - Fetching data for 1968 season...
+2025-08-24 15:31:42,052 - INFO - Fetching data for 1969 season...
+2025-08-24 15:31:43,787 - INFO - Fetching data for 1970 season...
+2025-08-24 15:31:45,504 - INFO - Fetching data for 1971 season...
+2025-08-24 15:31:47,208 - INFO - Fetching data for 1972 season...
+2025-08-24 15:31:49,107 - INFO - Fetching data for 1973 season...
+2025-08-24 15:31:51,022 - INFO - Fetching data for 1974 season...
+2025-08-24 15:31:52,728 - INFO - Fetching data for 1975 season...
+2025-08-24 15:31:54,638 - INFO - Fetching data for 1976 season...
+2025-08-24 15:31:56,346 - INFO - Fetching data for 1977 season...
+2025-08-24 15:31:58,084 - INFO - Fetching data for 1978 season...
+2025-08-24 15:31:59,798 - INFO - Fetching data for 1979 season...
+2025-08-24 15:32:01,549 - INFO - Fetching data for 1980 season...
+2025-08-24 15:32:03,244 - INFO - Fetching data for 1981 season...
+2025-08-24 15:32:04,952 - INFO - Fetching data for 1982 season...
+2025-08-24 15:32:06,741 - INFO - Fetching data for 1983 season...
+2025-08-24 15:32:08,456 - INFO - Fetching data for 1984 season...
+2025-08-24 15:32:10,196 - INFO - Fetching data for 1985 season...
+2025-08-24 15:32:11,956 - INFO - Fetching data for 1986 season...
+2025-08-24 15:32:13,702 - INFO - Fetching data for 1987 season...
+2025-08-24 15:32:15,451 - INFO - Fetching data for 1988 season...
+2025-08-24 15:32:17,156 - INFO - Fetching data for 1989 season...
+2025-08-24 15:32:19,048 - INFO - Fetching data for 1990 season...
+2025-08-24 15:32:19,888 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1990/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1990/drivers.json?limit=100&offset=0
+2025-08-24 15:32:26,572 - INFO - Fetching data for 1991 season...
+2025-08-24 15:32:28,261 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1991/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1991/constructors.json?limit=100&offset=0
+2025-08-24 15:32:34,121 - INFO - Fetching data for 1992 season...
+2025-08-24 15:32:36,088 - INFO - Fetching data for 1993 season...
+2025-08-24 15:32:36,928 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1993/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1993/drivers.json?limit=100&offset=0
+2025-08-24 15:32:44,059 - INFO - Fetching data for 1994 season...
+2025-08-24 15:32:45,719 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1994/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1994/constructors.json?limit=100&offset=0
+2025-08-24 15:32:51,611 - INFO - Fetching data for 1995 season...
+2025-08-24 15:32:53,332 - INFO - Fetching data for 1996 season...
+2025-08-24 15:32:54,194 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1996/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1996/drivers.json?limit=100&offset=0
+2025-08-24 15:33:01,162 - INFO - Fetching data for 1997 season...
+2025-08-24 15:33:02,001 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1997/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1997/drivers.json?limit=100&offset=0
+2025-08-24 15:33:08,998 - INFO - Fetching data for 1998 season...
+2025-08-24 15:33:11,028 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1998/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1998/constructors.json?limit=100&offset=0
+2025-08-24 15:33:16,890 - INFO - Fetching data for 1999 season...
+2025-08-24 15:33:18,787 - INFO - Fetching data for 2000 season...
+2025-08-24 15:33:19,647 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2000/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2000/drivers.json?limit=100&offset=0
+2025-08-24 15:33:26,350 - INFO - Fetching data for 2001 season...
+2025-08-24 15:33:28,027 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2001/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2001/constructors.json?limit=100&offset=0
+2025-08-24 15:33:33,905 - INFO - Fetching data for 2002 season...
+2025-08-24 15:33:35,820 - INFO - Fetching data for 2003 season...
+2025-08-24 15:33:36,641 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2003/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2003/drivers.json?limit=100&offset=0
+2025-08-24 15:33:43,325 - INFO - Fetching data for 2004 season...
+2025-08-24 15:33:44,159 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2004/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2004/drivers.json?limit=100&offset=0
+2025-08-24 15:33:50,860 - INFO - Fetching data for 2005 season...
+2025-08-24 15:33:52,566 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2005/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2005/constructors.json?limit=100&offset=0
+2025-08-24 15:33:58,410 - INFO - Fetching data for 2006 season...
+2025-08-24 15:34:00,112 - INFO - Fetching data for 2007 season...
+2025-08-24 15:34:00,946 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2007/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2007/drivers.json?limit=100&offset=0
+2025-08-24 15:34:07,859 - INFO - Fetching data for 2008 season...
+2025-08-24 15:34:09,751 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2008/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2008/constructors.json?limit=100&offset=0
+2025-08-24 15:34:15,638 - INFO - Fetching data for 2009 season...
+2025-08-24 15:34:17,640 - INFO - Fetching data for 2010 season...
+2025-08-24 15:34:18,478 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2010/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2010/drivers.json?limit=100&offset=0
+2025-08-24 15:34:25,168 - INFO - Fetching data for 2011 season...
+2025-08-24 15:34:26,007 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2011/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2011/drivers.json?limit=100&offset=0
+2025-08-24 15:34:33,116 - INFO - Fetching data for 2012 season...
+2025-08-24 15:34:35,017 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2012/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2012/constructors.json?limit=100&offset=0
+2025-08-24 15:34:40,876 - INFO - Fetching data for 2013 season...
+2025-08-24 15:34:42,797 - INFO - Fetching data for 2014 season...
+2025-08-24 15:34:43,637 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2014/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2014/drivers.json?limit=100&offset=0
+2025-08-24 15:34:50,528 - INFO - Fetching data for 2015 season...
+2025-08-24 15:34:52,275 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2015/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2015/constructors.json?limit=100&offset=0
+2025-08-24 15:34:58,182 - INFO - Fetching data for 2016 season...
+2025-08-24 15:35:00,112 - INFO - Fetching data for 2017 season...
+2025-08-24 15:35:00,983 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2017/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2017/drivers.json?limit=100&offset=0
+2025-08-24 15:35:08,040 - INFO - Fetching data for 2018 season...
+2025-08-24 15:35:09,935 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2018/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2018/constructors.json?limit=100&offset=0
+2025-08-24 15:35:15,818 - INFO - Fetching data for 2019 season...
+2025-08-24 15:35:17,710 - INFO - Fetching data for 2020 season...
+2025-08-24 15:35:18,569 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2020/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2020/drivers.json?limit=100&offset=0
+2025-08-24 15:35:25,306 - INFO - Fetching data for 2021 season...
+2025-08-24 15:35:26,142 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2021/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2021/drivers.json?limit=100&offset=0
+2025-08-24 15:35:32,921 - INFO - Fetching data for 2022 season...
+2025-08-24 15:35:34,595 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2022/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2022/constructors.json?limit=100&offset=0
+2025-08-24 15:35:40,452 - INFO - Fetching data for 2023 season...
+2025-08-24 15:35:42,579 - INFO - Fetching data for 2024 season...
+2025-08-24 15:35:43,521 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2024/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2024/drivers.json?limit=100&offset=0
+2025-08-24 15:35:50,268 - INFO - Fetching data for 2025 season...
+2025-08-24 15:35:52,275 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2025/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2025/constructors.json?limit=100&offset=0
+2025-08-24 15:35:58,137 - INFO - Ingested 0 new drivers.
+2025-08-24 15:35:58,137 - INFO - Ingested 0 new constructors.
+2025-08-24 15:35:58,137 - INFO - Building foreign key maps...
+2025-08-24 15:35:58,147 - INFO - Ingesting races...
+2025-08-24 15:36:00,778 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/races.json?limit=100&offset=0
+2025-08-24 15:36:08,357 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/races.json?limit=100&offset=0
+2025-08-24 15:36:17,127 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/races.json?limit=100&offset=0
+2025-08-24 15:36:25,645 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1960/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1960/races.json?limit=100&offset=0
+2025-08-24 15:36:34,293 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1963/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1963/races.json?limit=100&offset=0
+2025-08-24 15:36:42,828 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1966/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1966/races.json?limit=100&offset=0
+2025-08-24 15:36:51,435 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1969/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1969/races.json?limit=100&offset=0
+2025-08-24 15:36:59,271 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1971/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1971/races.json?limit=100&offset=0
+2025-08-24 15:37:07,774 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1974/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1974/races.json?limit=100&offset=0
+2025-08-24 15:37:16,658 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1977/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1977/races.json?limit=100&offset=0
+2025-08-24 15:37:25,287 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1980/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1980/races.json?limit=100&offset=0
+2025-08-24 15:37:34,121 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1983/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1983/races.json?limit=100&offset=0
+2025-08-24 15:37:42,724 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1986/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1986/races.json?limit=100&offset=0
+2025-08-24 15:37:50,257 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1988/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1988/races.json?limit=100&offset=0
+2025-08-24 15:37:58,849 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1991/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1991/races.json?limit=100&offset=0
+2025-08-24 15:38:07,271 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1994/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1994/races.json?limit=100&offset=0
+2025-08-24 15:38:15,743 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1997/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1997/races.json?limit=100&offset=0
+2025-08-24 15:38:23,278 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1999/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1999/races.json?limit=100&offset=0
+2025-08-24 15:38:31,719 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2002/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2002/races.json?limit=100&offset=0
+2025-08-24 15:38:40,524 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2005/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2005/races.json?limit=100&offset=0
+2025-08-24 15:38:49,118 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2008/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2008/races.json?limit=100&offset=0
+2025-08-24 15:38:58,111 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2011/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2011/races.json?limit=100&offset=0
+2025-08-24 15:39:05,674 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2013/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2013/races.json?limit=100&offset=0
+2025-08-24 15:39:14,323 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2016/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2016/races.json?limit=100&offset=0
+2025-08-24 15:39:22,816 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2019/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2019/races.json?limit=100&offset=0
+2025-08-24 15:39:31,483 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2022/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2022/races.json?limit=100&offset=0
+2025-08-24 15:39:40,143 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2025/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2025/races.json?limit=100&offset=0
+2025-08-24 15:39:45,989 - INFO - Ingesting race-related data (results, qualifying, etc.)...
+2025-08-24 15:39:45,999 - INFO - Fetching data for Race: 1950 Round 1 (British Grand Prix)
+2025-08-24 15:39:48,859 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/1/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/1/qualifying.json?limit=100&offset=0
+2025-08-24 15:39:55,772 - INFO - Fetching data for Race: 1950 Round 2 (Monaco Grand Prix)
+2025-08-24 15:39:56,604 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/2/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/2/results.json?limit=100&offset=0
+2025-08-24 15:40:05,413 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/2/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/2/laps.json?limit=100&offset=0
+2025-08-24 15:40:11,532 - INFO - Fetching data for Race: 1950 Round 3 (Indianapolis 500)
+2025-08-24 15:40:14,221 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:40:21,036 - INFO - Fetching data for Race: 1950 Round 4 (Swiss Grand Prix)
+2025-08-24 15:40:22,787 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/4/sprint.json?limit=100&offset=0
+2025-08-24 15:40:30,750 - INFO - Fetching data for Race: 1950 Round 5 (Belgian Grand Prix)
+2025-08-24 15:40:31,588 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/5/results.json?limit=100&offset=0
+2025-08-24 15:40:40,198 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/5/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/5/laps.json?limit=100&offset=0
+2025-08-24 15:40:46,034 - INFO - Fetching data for Race: 1950 Round 6 (French Grand Prix)
+2025-08-24 15:40:47,773 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/6/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/6/sprint.json?limit=100&offset=0
+2025-08-24 15:40:55,573 - INFO - Fetching data for Race: 1950 Round 7 (Italian Grand Prix)
+2025-08-24 15:40:56,424 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/7/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/7/results.json?limit=100&offset=0
+2025-08-24 15:41:05,004 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/7/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/7/laps.json?limit=100&offset=0
+2025-08-24 15:41:10,893 - INFO - Fetching data for Race: 1951 Round 1 (Swiss Grand Prix)
+2025-08-24 15:41:13,959 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/1/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/1/qualifying.json?limit=100&offset=0
+2025-08-24 15:41:20,878 - INFO - Fetching data for Race: 1951 Round 2 (Indianapolis 500)
+2025-08-24 15:41:22,628 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/2/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/2/sprint.json?limit=100&offset=0
+2025-08-24 15:41:30,239 - INFO - Fetching data for Race: 1951 Round 3 (Belgian Grand Prix)
+2025-08-24 15:41:31,051 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/3/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/3/results.json?limit=100&offset=0
+2025-08-24 15:41:39,957 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/3/laps.json?limit=100&offset=0
+2025-08-24 15:41:46,025 - INFO - Fetching data for Race: 1951 Round 4 (French Grand Prix)
+2025-08-24 15:41:47,796 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/4/sprint.json?limit=100&offset=0
+2025-08-24 15:41:55,630 - INFO - Fetching data for Race: 1951 Round 5 (British Grand Prix)
+2025-08-24 15:41:56,463 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/5/results.json?limit=100&offset=0
+2025-08-24 15:42:05,255 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/5/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/5/laps.json?limit=100&offset=0
+2025-08-24 15:42:11,116 - INFO - Fetching data for Race: 1951 Round 6 (German Grand Prix)
+2025-08-24 15:42:14,183 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/6/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/6/qualifying.json?limit=100&offset=0
+2025-08-24 15:42:21,137 - INFO - Fetching data for Race: 1951 Round 7 (Italian Grand Prix)
+2025-08-24 15:42:23,101 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/7/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/7/sprint.json?limit=100&offset=0
+2025-08-24 15:42:30,763 - INFO - Fetching data for Race: 1951 Round 8 (Spanish Grand Prix)
+2025-08-24 15:42:31,791 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/8/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/8/results.json?limit=100&offset=0
+2025-08-24 15:42:40,666 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/8/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/8/laps.json?limit=100&offset=0
+2025-08-24 15:42:46,735 - INFO - Fetching data for Race: 1952 Round 1 (Swiss Grand Prix)
+2025-08-24 15:42:49,290 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/1/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/1/qualifying.json?limit=100&offset=0
+2025-08-24 15:42:56,193 - INFO - Fetching data for Race: 1952 Round 2 (Indianapolis 500)
+2025-08-24 15:42:57,034 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/2/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/2/results.json?limit=100&offset=0
+2025-08-24 15:43:05,826 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/2/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/2/laps.json?limit=100&offset=0
+2025-08-24 15:43:11,884 - INFO - Fetching data for Race: 1952 Round 3 (Belgian Grand Prix)
+2025-08-24 15:43:14,768 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:43:21,495 - INFO - Fetching data for Race: 1952 Round 4 (French Grand Prix)
+2025-08-24 15:43:23,235 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/4/sprint.json?limit=100&offset=0
+2025-08-24 15:43:31,071 - INFO - Fetching data for Race: 1952 Round 5 (British Grand Prix)
+2025-08-24 15:43:31,897 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/5/results.json?limit=100&offset=0
+2025-08-24 15:43:40,546 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/5/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/5/laps.json?limit=100&offset=0
+2025-08-24 15:43:46,393 - INFO - Fetching data for Race: 1952 Round 6 (German Grand Prix)
+2025-08-24 15:43:49,378 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/6/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/6/qualifying.json?limit=100&offset=0
+2025-08-24 15:43:56,289 - INFO - Fetching data for Race: 1952 Round 7 (Dutch Grand Prix)
+2025-08-24 15:43:57,117 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/7/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/7/results.json?limit=100&offset=0
+2025-08-24 15:44:06,042 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/7/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/7/laps.json?limit=100&offset=0
+2025-08-24 15:44:11,914 - INFO - Fetching data for Race: 1952 Round 8 (Italian Grand Prix)
+2025-08-24 15:44:14,897 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/8/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/8/qualifying.json?limit=100&offset=0
+2025-08-24 15:44:22,056 - INFO - Fetching data for Race: 1953 Round 1 (Argentine Grand Prix)
+2025-08-24 15:44:24,071 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/1/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/1/sprint.json?limit=100&offset=0
+2025-08-24 15:44:31,677 - INFO - Fetching data for Race: 1953 Round 2 (Indianapolis 500)
+2025-08-24 15:44:32,557 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/2/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/2/results.json?limit=100&offset=0
+2025-08-24 15:44:41,111 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/2/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/2/laps.json?limit=100&offset=0
+2025-08-24 15:44:46,981 - INFO - Fetching data for Race: 1953 Round 3 (Dutch Grand Prix)
+2025-08-24 15:44:49,783 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:44:56,504 - INFO - Fetching data for Race: 1953 Round 4 (Belgian Grand Prix)
+2025-08-24 15:44:58,388 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/4/sprint.json?limit=100&offset=0
+2025-08-24 15:45:06,213 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/4/laps.json?limit=100&offset=0
+2025-08-24 15:45:12,132 - INFO - Fetching data for Race: 1953 Round 5 (French Grand Prix)
+2025-08-24 15:45:15,137 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/5/qualifying.json?limit=100&offset=0
+2025-08-24 15:45:21,985 - INFO - Fetching data for Race: 1953 Round 6 (British Grand Prix)
+2025-08-24 15:45:24,173 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/6/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/6/sprint.json?limit=100&offset=0
+2025-08-24 15:45:32,567 - INFO - Fetching data for Race: 1953 Round 7 (German Grand Prix)
+2025-08-24 15:45:34,365 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/7/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/7/sprint.json?limit=100&offset=0
+2025-08-24 15:45:41,899 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/7/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/7/laps.json?limit=100&offset=0
+2025-08-24 15:45:47,963 - INFO - Fetching data for Race: 1953 Round 8 (Swiss Grand Prix)
+2025-08-24 15:45:50,567 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/8/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/8/qualifying.json?limit=100&offset=0
+2025-08-24 15:45:57,274 - INFO - Fetching data for Race: 1953 Round 9 (Italian Grand Prix)
+2025-08-24 15:45:59,150 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/9/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/9/sprint.json?limit=100&offset=0
+2025-08-24 15:46:06,946 - INFO - Fetching data for Race: 1954 Round 1 (Argentine Grand Prix)
+2025-08-24 15:46:07,787 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/1/results.json?limit=100&offset=0
+2025-08-24 15:46:16,772 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/1/laps.json?limit=100&offset=0
+2025-08-24 15:46:22,641 - INFO - Fetching data for Race: 1954 Round 2 (Indianapolis 500)
+2025-08-24 15:46:25,811 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/2/qualifying.json?limit=100&offset=0
+2025-08-24 15:46:32,745 - INFO - Fetching data for Race: 1954 Round 3 (Belgian Grand Prix)
+2025-08-24 15:46:34,487 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/3/sprint.json?limit=100&offset=0
+2025-08-24 15:46:42,223 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/3/laps.json?limit=100&offset=0
+2025-08-24 15:46:48,304 - INFO - Fetching data for Race: 1954 Round 4 (French Grand Prix)
+2025-08-24 15:46:51,186 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/4/qualifying.json?limit=100&offset=0
+2025-08-24 15:46:58,116 - INFO - Fetching data for Race: 1954 Round 5 (British Grand Prix)
+2025-08-24 15:47:00,093 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/5/sprint.json?limit=100&offset=0
+2025-08-24 15:47:07,874 - INFO - Fetching data for Race: 1954 Round 6 (German Grand Prix)
+2025-08-24 15:47:08,766 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/6/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/6/results.json?limit=100&offset=0
+2025-08-24 15:47:17,260 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/6/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/6/laps.json?limit=100&offset=0
+2025-08-24 15:47:23,348 - INFO - Fetching data for Race: 1954 Round 7 (Swiss Grand Prix)
+2025-08-24 15:47:26,340 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/7/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/7/qualifying.json?limit=100&offset=0
+2025-08-24 15:47:33,273 - INFO - Fetching data for Race: 1954 Round 8 (Italian Grand Prix)
+2025-08-24 15:47:35,119 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/8/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/8/sprint.json?limit=100&offset=0
+2025-08-24 15:47:43,532 - INFO - Fetching data for Race: 1954 Round 9 (Spanish Grand Prix)
+2025-08-24 15:47:44,399 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/9/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/9/results.json?limit=100&offset=0
+2025-08-24 15:47:53,040 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/9/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/9/laps.json?limit=100&offset=0
+2025-08-24 15:47:58,897 - INFO - Fetching data for Race: 1955 Round 1 (Argentine Grand Prix)
+2025-08-24 15:48:03,290 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/1/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/1/qualifying.json?limit=100&offset=0
+2025-08-24 15:48:10,235 - INFO - Fetching data for Race: 1955 Round 2 (Monaco Grand Prix)
+2025-08-24 15:48:11,987 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/2/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/2/sprint.json?limit=100&offset=0
+2025-08-24 15:48:19,881 - INFO - Fetching data for Race: 1955 Round 3 (Indianapolis 500)
+2025-08-24 15:48:20,716 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/3/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/3/results.json?limit=100&offset=0
+2025-08-24 15:48:29,379 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/3/laps.json?limit=100&offset=0
+2025-08-24 15:48:35,249 - INFO - Fetching data for Race: 1955 Round 4 (Belgian Grand Prix)
+2025-08-24 15:48:38,112 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/4/qualifying.json?limit=100&offset=0
+2025-08-24 15:48:44,805 - INFO - Fetching data for Race: 1955 Round 5 (Dutch Grand Prix)
+2025-08-24 15:48:46,561 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/5/sprint.json?limit=100&offset=0
+2025-08-24 15:48:54,280 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/5/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/5/laps.json?limit=100&offset=0
+2025-08-24 15:49:00,137 - INFO - Fetching data for Race: 1955 Round 6 (British Grand Prix)
+2025-08-24 15:49:03,033 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/6/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/6/qualifying.json?limit=100&offset=0
+2025-08-24 15:49:09,866 - INFO - Fetching data for Race: 1955 Round 7 (Italian Grand Prix)
+2025-08-24 15:49:11,871 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/7/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/7/sprint.json?limit=100&offset=0
+2025-08-24 15:49:20,004 - INFO - Fetching data for Race: 1956 Round 1 (Argentine Grand Prix)
+2025-08-24 15:49:20,849 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/1/results.json?limit=100&offset=0
+2025-08-24 15:49:29,915 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/1/laps.json?limit=100&offset=0
+2025-08-24 15:49:36,001 - INFO - Fetching data for Race: 1956 Round 2 (Monaco Grand Prix)
+2025-08-24 15:49:38,851 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/2/qualifying.json?limit=100&offset=0
+2025-08-24 15:49:45,809 - INFO - Fetching data for Race: 1956 Round 3 (Indianapolis 500)
+2025-08-24 15:49:47,581 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/3/sprint.json?limit=100&offset=0
+2025-08-24 15:49:55,343 - INFO - Fetching data for Race: 1956 Round 4 (Belgian Grand Prix)
+2025-08-24 15:49:56,161 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/4/results.json?limit=100&offset=0
+2025-08-24 15:50:05,262 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/4/laps.json?limit=100&offset=0
+2025-08-24 15:50:11,146 - INFO - Fetching data for Race: 1956 Round 5 (French Grand Prix)
+2025-08-24 15:50:13,986 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/5/qualifying.json?limit=100&offset=0
+2025-08-24 15:50:21,332 - INFO - Fetching data for Race: 1956 Round 6 (British Grand Prix)
+2025-08-24 15:50:23,091 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/6/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/6/sprint.json?limit=100&offset=0
+2025-08-24 15:50:30,681 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/6/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/6/laps.json?limit=100&offset=0
+2025-08-24 15:50:36,534 - INFO - Fetching data for Race: 1956 Round 7 (German Grand Prix)
+2025-08-24 15:50:39,150 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/7/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/7/qualifying.json?limit=100&offset=0
+2025-08-24 15:50:45,926 - INFO - Fetching data for Race: 1956 Round 8 (Italian Grand Prix)
+2025-08-24 15:50:47,707 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/8/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/8/sprint.json?limit=100&offset=0
+2025-08-24 15:50:56,091 - INFO - Fetching data for Race: 1957 Round 1 (Argentine Grand Prix)
+2025-08-24 15:50:56,933 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/1/results.json?limit=100&offset=0
+2025-08-24 15:51:05,589 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/1/laps.json?limit=100&offset=0
+2025-08-24 15:51:11,899 - INFO - Fetching data for Race: 1957 Round 2 (Monaco Grand Prix)
+2025-08-24 15:51:14,847 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/2/qualifying.json?limit=100&offset=0
+2025-08-24 15:51:21,960 - INFO - Fetching data for Race: 1957 Round 3 (Indianapolis 500)
+2025-08-24 15:51:23,999 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/3/sprint.json?limit=100&offset=0
+2025-08-24 15:51:32,174 - INFO - Fetching data for Race: 1957 Round 4 (French Grand Prix)
+2025-08-24 15:51:32,991 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/4/results.json?limit=100&offset=0
+2025-08-24 15:51:41,665 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/4/laps.json?limit=100&offset=0
+2025-08-24 15:51:47,526 - INFO - Fetching data for Race: 1957 Round 5 (British Grand Prix)
+2025-08-24 15:51:50,134 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/5/qualifying.json?limit=100&offset=0
+2025-08-24 15:51:57,040 - INFO - Fetching data for Race: 1957 Round 6 (German Grand Prix)
+2025-08-24 15:51:58,781 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/6/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/6/sprint.json?limit=100&offset=0
+2025-08-24 15:52:06,323 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/6/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/6/laps.json?limit=100&offset=0
+2025-08-24 15:52:12,445 - INFO - Fetching data for Race: 1957 Round 7 (Pescara Grand Prix)
+2025-08-24 15:52:15,102 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/7/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/7/qualifying.json?limit=100&offset=0
+2025-08-24 15:52:21,838 - INFO - Fetching data for Race: 1957 Round 8 (Italian Grand Prix)
+2025-08-24 15:52:23,571 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/8/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/8/sprint.json?limit=100&offset=0
+2025-08-24 15:52:31,358 - INFO - Fetching data for Race: 1958 Round 1 (Argentine Grand Prix)
+2025-08-24 15:52:32,176 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/1/results.json?limit=100&offset=0
+2025-08-24 15:52:41,400 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/1/laps.json?limit=100&offset=0
+2025-08-24 15:52:47,480 - INFO - Fetching data for Race: 1958 Round 2 (Monaco Grand Prix)
+2025-08-24 15:52:50,353 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/2/qualifying.json?limit=100&offset=0
+2025-08-24 15:52:57,429 - INFO - Fetching data for Race: 1958 Round 3 (Dutch Grand Prix)
+2025-08-24 15:52:59,184 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/sprint.json?limit=100&offset=0
+2025-08-24 15:53:05,857 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:53:11,701 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:53:22,549 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:53:38,416 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:53:59,264 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 15:53:59,264 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json. Aborting.
+2025-08-24 15:54:00,101 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 15:54:05,934 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 15:54:16,756 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 15:54:32,590 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 15:54:53,441 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 15:54:53,442 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json. Aborting.
+2025-08-24 15:54:53,451 - INFO - Fetching data for Race: 1958 Round 4 (Indianapolis 500)
+2025-08-24 15:54:54,336 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 15:55:00,201 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 15:55:11,035 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 15:55:26,884 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 15:55:47,745 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 15:55:47,753 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json. Aborting.
+2025-08-24 15:55:48,634 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 15:55:54,466 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 15:56:05,290 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 15:56:21,140 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 15:56:42,184 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 15:56:42,197 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json. Aborting.
+2025-08-24 15:56:43,034 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:27:16,226 - INFO - Creating database tables...
+2025-08-24 20:27:16,514 - INFO - Database tables created successfully.
+2025-08-24 20:27:16,514 - INFO - Ingesting seasons...
+2025-08-24 20:27:17,425 - INFO - Ingested 76 new seasons. Total seasons: 76
+2025-08-24 20:27:17,425 - INFO - Ingesting circuits...
+2025-08-24 20:27:18,579 - INFO - Ingested 77 new circuits.
+2025-08-24 20:27:18,579 - INFO - Ingesting statuses...
+2025-08-24 20:27:20,665 - INFO - Ingested 136 new statuses.
+2025-08-24 20:27:20,665 - INFO - Ingesting drivers and constructors for all seasons...
+2025-08-24 20:27:20,669 - INFO - Fetching data for 1950 season...
+2025-08-24 20:27:22,380 - INFO - Fetching data for 1951 season...
+2025-08-24 20:27:24,131 - INFO - Fetching data for 1952 season...
+2025-08-24 20:27:26,905 - INFO - Fetching data for 1953 season...
+2025-08-24 20:27:29,497 - INFO - Fetching data for 1954 season...
+2025-08-24 20:27:31,670 - INFO - Fetching data for 1955 season...
+2025-08-24 20:27:33,368 - INFO - Fetching data for 1956 season...
+2025-08-24 20:27:35,288 - INFO - Fetching data for 1957 season...
+2025-08-24 20:27:37,191 - INFO - Fetching data for 1958 season...
+2025-08-24 20:27:38,893 - INFO - Fetching data for 1959 season...
+2025-08-24 20:27:40,609 - INFO - Fetching data for 1960 season...
+2025-08-24 20:27:42,310 - INFO - Fetching data for 1961 season...
+2025-08-24 20:27:44,014 - INFO - Fetching data for 1962 season...
+2025-08-24 20:27:45,715 - INFO - Fetching data for 1963 season...
+2025-08-24 20:27:47,443 - INFO - Fetching data for 1964 season...
+2025-08-24 20:27:49,119 - INFO - Fetching data for 1965 season...
+2025-08-24 20:27:50,806 - INFO - Fetching data for 1966 season...
+2025-08-24 20:27:52,495 - INFO - Fetching data for 1967 season...
+2025-08-24 20:27:54,208 - INFO - Fetching data for 1968 season...
+2025-08-24 20:27:56,104 - INFO - Fetching data for 1969 season...
+2025-08-24 20:27:57,851 - INFO - Fetching data for 1970 season...
+2025-08-24 20:27:59,544 - INFO - Fetching data for 1971 season...
+2025-08-24 20:28:01,235 - INFO - Fetching data for 1972 season...
+2025-08-24 20:28:03,278 - INFO - Fetching data for 1973 season...
+2025-08-24 20:28:04,963 - INFO - Fetching data for 1974 season...
+2025-08-24 20:28:06,628 - INFO - Fetching data for 1975 season...
+2025-08-24 20:28:08,330 - INFO - Fetching data for 1976 season...
+2025-08-24 20:28:10,316 - INFO - Fetching data for 1977 season...
+2025-08-24 20:28:12,011 - INFO - Fetching data for 1978 season...
+2025-08-24 20:28:13,718 - INFO - Fetching data for 1979 season...
+2025-08-24 20:28:15,408 - INFO - Fetching data for 1980 season...
+2025-08-24 20:28:17,147 - INFO - Fetching data for 1981 season...
+2025-08-24 20:28:18,847 - INFO - Fetching data for 1982 season...
+2025-08-24 20:28:20,552 - INFO - Fetching data for 1983 season...
+2025-08-24 20:28:22,276 - INFO - Fetching data for 1984 season...
+2025-08-24 20:28:24,223 - INFO - Fetching data for 1985 season...
+2025-08-24 20:28:25,929 - INFO - Fetching data for 1986 season...
+2025-08-24 20:28:27,600 - INFO - Fetching data for 1987 season...
+2025-08-24 20:28:29,500 - INFO - Fetching data for 1988 season...
+2025-08-24 20:28:31,230 - INFO - Fetching data for 1989 season...
+2025-08-24 20:28:33,135 - INFO - Fetching data for 1990 season...
+2025-08-24 20:28:33,957 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1990/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1990/drivers.json?limit=100&offset=0
+2025-08-24 20:28:40,654 - INFO - Fetching data for 1991 season...
+2025-08-24 20:28:41,484 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1991/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1991/drivers.json?limit=100&offset=0
+2025-08-24 20:28:48,397 - INFO - Fetching data for 1992 season...
+2025-08-24 20:28:50,101 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1992/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1992/constructors.json?limit=100&offset=0
+2025-08-24 20:28:56,612 - INFO - Fetching data for 1993 season...
+2025-08-24 20:28:58,347 - INFO - Fetching data for 1994 season...
+2025-08-24 20:28:59,185 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1994/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1994/drivers.json?limit=100&offset=0
+2025-08-24 20:29:05,882 - INFO - Fetching data for 1995 season...
+2025-08-24 20:29:07,552 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1995/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1995/constructors.json?limit=100&offset=0
+2025-08-24 20:29:13,488 - INFO - Fetching data for 1996 season...
+2025-08-24 20:29:15,744 - INFO - Fetching data for 1997 season...
+2025-08-24 20:29:16,574 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1997/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1997/drivers.json?limit=100&offset=0
+2025-08-24 20:29:23,754 - INFO - Fetching data for 1998 season...
+2025-08-24 20:29:25,474 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1998/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1998/constructors.json?limit=100&offset=0
+2025-08-24 20:29:31,321 - INFO - Fetching data for 1999 season...
+2025-08-24 20:29:33,215 - INFO - Fetching data for 2000 season...
+2025-08-24 20:29:34,041 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2000/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2000/drivers.json?limit=100&offset=0
+2025-08-24 20:29:40,912 - INFO - Fetching data for 2001 season...
+2025-08-24 20:29:42,582 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2001/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2001/constructors.json?limit=100&offset=0
+2025-08-24 20:29:48,653 - INFO - Fetching data for 2002 season...
+2025-08-24 20:29:50,359 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2002/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2002/constructors.json?limit=100&offset=0
+2025-08-24 20:29:56,287 - INFO - Fetching data for 2003 season...
+2025-08-24 20:29:58,162 - INFO - Fetching data for 2004 season...
+2025-08-24 20:29:58,983 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2004/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2004/drivers.json?limit=100&offset=0
+2025-08-24 20:30:05,713 - INFO - Fetching data for 2005 season...
+2025-08-24 20:30:07,370 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2005/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2005/constructors.json?limit=100&offset=0
+2025-08-24 20:30:13,225 - INFO - Fetching data for 2006 season...
+2025-08-24 20:30:15,165 - INFO - Fetching data for 2007 season...
+2025-08-24 20:30:16,130 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2007/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2007/drivers.json?limit=100&offset=0
+2025-08-24 20:30:22,840 - INFO - Fetching data for 2008 season...
+2025-08-24 20:30:24,884 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2008/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2008/constructors.json?limit=100&offset=0
+2025-08-24 20:30:30,739 - INFO - Fetching data for 2009 season...
+2025-08-24 20:30:32,617 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2009/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2009/constructors.json?limit=100&offset=0
+2025-08-24 20:30:38,463 - INFO - Fetching data for 2010 season...
+2025-08-24 20:30:40,166 - INFO - Fetching data for 2011 season...
+2025-08-24 20:30:41,006 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2011/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2011/drivers.json?limit=100&offset=0
+2025-08-24 20:30:47,912 - INFO - Fetching data for 2012 season...
+2025-08-24 20:30:49,570 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2012/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2012/constructors.json?limit=100&offset=0
+2025-08-24 20:30:55,417 - INFO - Fetching data for 2013 season...
+2025-08-24 20:30:57,405 - INFO - Fetching data for 2014 season...
+2025-08-24 20:30:58,353 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2014/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2014/drivers.json?limit=100&offset=0
+2025-08-24 20:31:05,376 - INFO - Fetching data for 2015 season...
+2025-08-24 20:31:07,336 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2015/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2015/constructors.json?limit=100&offset=0
+2025-08-24 20:31:13,386 - INFO - Fetching data for 2016 season...
+2025-08-24 20:31:15,172 - INFO - Fetching data for 2017 season...
+2025-08-24 20:31:15,997 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2017/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2017/drivers.json?limit=100&offset=0
+2025-08-24 20:31:22,914 - INFO - Fetching data for 2018 season...
+2025-08-24 20:31:23,745 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2018/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2018/drivers.json?limit=100&offset=0
+2025-08-24 20:31:30,494 - INFO - Fetching data for 2019 season...
+2025-08-24 20:31:32,165 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2019/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2019/constructors.json?limit=100&offset=0
+2025-08-24 20:31:38,024 - INFO - Fetching data for 2020 season...
+2025-08-24 20:31:39,979 - INFO - Fetching data for 2021 season...
+2025-08-24 20:31:40,835 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2021/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2021/drivers.json?limit=100&offset=0
+2025-08-24 20:31:47,920 - INFO - Fetching data for 2022 season...
+2025-08-24 20:31:49,587 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2022/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2022/constructors.json?limit=100&offset=0
+2025-08-24 20:31:55,698 - INFO - Fetching data for 2023 season...
+2025-08-24 20:31:57,406 - INFO - Fetching data for 2024 season...
+2025-08-24 20:31:58,223 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2024/drivers.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2024/drivers.json?limit=100&offset=0
+2025-08-24 20:32:05,132 - INFO - Fetching data for 2025 season...
+2025-08-24 20:32:06,836 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2025/constructors.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2025/constructors.json?limit=100&offset=0
+2025-08-24 20:32:12,775 - INFO - Ingested 864 new drivers.
+2025-08-24 20:32:12,776 - INFO - Ingested 211 new constructors.
+2025-08-24 20:32:12,777 - INFO - Building foreign key maps...
+2025-08-24 20:32:12,789 - INFO - Ingesting races...
+2025-08-24 20:32:13,662 - INFO - Ingested 7 new races for 1950 season.
+2025-08-24 20:32:14,490 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/races.json?limit=100&offset=0
+2025-08-24 20:32:20,552 - INFO - Ingested 8 new races for 1951 season.
+2025-08-24 20:32:21,626 - INFO - Ingested 8 new races for 1952 season.
+2025-08-24 20:32:22,707 - INFO - Ingested 9 new races for 1953 season.
+2025-08-24 20:32:23,545 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/races.json?limit=100&offset=0
+2025-08-24 20:32:29,603 - INFO - Ingested 9 new races for 1954 season.
+2025-08-24 20:32:30,788 - INFO - Ingested 7 new races for 1955 season.
+2025-08-24 20:32:31,662 - INFO - Ingested 8 new races for 1956 season.
+2025-08-24 20:32:32,492 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/races.json?limit=100&offset=0
+2025-08-24 20:32:38,349 - INFO - Ingested 8 new races for 1957 season.
+2025-08-24 20:32:39,223 - INFO - Ingested 11 new races for 1958 season.
+2025-08-24 20:32:40,277 - INFO - Ingested 9 new races for 1959 season.
+2025-08-24 20:32:41,099 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1960/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1960/races.json?limit=100&offset=0
+2025-08-24 20:32:46,974 - INFO - Ingested 10 new races for 1960 season.
+2025-08-24 20:32:48,035 - INFO - Ingested 8 new races for 1961 season.
+2025-08-24 20:32:48,891 - INFO - Ingested 9 new races for 1962 season.
+2025-08-24 20:32:49,713 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1963/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1963/races.json?limit=100&offset=0
+2025-08-24 20:32:55,774 - INFO - Ingested 10 new races for 1963 season.
+2025-08-24 20:32:56,653 - INFO - Ingested 10 new races for 1964 season.
+2025-08-24 20:32:57,541 - INFO - Ingested 10 new races for 1965 season.
+2025-08-24 20:32:58,361 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1966/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1966/races.json?limit=100&offset=0
+2025-08-24 20:33:04,241 - INFO - Ingested 9 new races for 1966 season.
+2025-08-24 20:33:05,101 - INFO - Ingested 11 new races for 1967 season.
+2025-08-24 20:33:05,991 - INFO - Ingested 12 new races for 1968 season.
+2025-08-24 20:33:06,827 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1969/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1969/races.json?limit=100&offset=0
+2025-08-24 20:33:12,696 - INFO - Ingested 11 new races for 1969 season.
+2025-08-24 20:33:13,780 - INFO - Ingested 13 new races for 1970 season.
+2025-08-24 20:33:14,607 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1971/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1971/races.json?limit=100&offset=0
+2025-08-24 20:33:20,484 - INFO - Ingested 11 new races for 1971 season.
+2025-08-24 20:33:21,573 - INFO - Ingested 12 new races for 1972 season.
+2025-08-24 20:33:22,625 - INFO - Ingested 15 new races for 1973 season.
+2025-08-24 20:33:23,457 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1974/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1974/races.json?limit=100&offset=0
+2025-08-24 20:33:29,324 - INFO - Ingested 15 new races for 1974 season.
+2025-08-24 20:33:30,414 - INFO - Ingested 14 new races for 1975 season.
+2025-08-24 20:33:31,449 - INFO - Ingested 16 new races for 1976 season.
+2025-08-24 20:33:32,261 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1977/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1977/races.json?limit=100&offset=0
+2025-08-24 20:33:38,134 - INFO - Ingested 17 new races for 1977 season.
+2025-08-24 20:33:39,024 - INFO - Ingested 16 new races for 1978 season.
+2025-08-24 20:33:39,876 - INFO - Ingested 15 new races for 1979 season.
+2025-08-24 20:33:40,687 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1980/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1980/races.json?limit=100&offset=0
+2025-08-24 20:33:46,743 - INFO - Ingested 14 new races for 1980 season.
+2025-08-24 20:33:47,620 - INFO - Ingested 15 new races for 1981 season.
+2025-08-24 20:33:48,839 - INFO - Ingested 16 new races for 1982 season.
+2025-08-24 20:33:49,661 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1983/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1983/races.json?limit=100&offset=0
+2025-08-24 20:33:55,517 - INFO - Ingested 15 new races for 1983 season.
+2025-08-24 20:33:56,384 - INFO - Ingested 16 new races for 1984 season.
+2025-08-24 20:33:57,574 - INFO - Ingested 16 new races for 1985 season.
+2025-08-24 20:33:58,391 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1986/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1986/races.json?limit=100&offset=0
+2025-08-24 20:34:04,262 - INFO - Ingested 16 new races for 1986 season.
+2025-08-24 20:34:05,472 - INFO - Ingested 16 new races for 1987 season.
+2025-08-24 20:34:06,616 - INFO - Ingested 16 new races for 1988 season.
+2025-08-24 20:34:07,448 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1989/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1989/races.json?limit=100&offset=0
+2025-08-24 20:34:13,304 - INFO - Ingested 16 new races for 1989 season.
+2025-08-24 20:34:14,440 - INFO - Ingested 16 new races for 1990 season.
+2025-08-24 20:34:15,328 - INFO - Ingested 16 new races for 1991 season.
+2025-08-24 20:34:16,152 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1992/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1992/races.json?limit=100&offset=0
+2025-08-24 20:34:22,022 - INFO - Ingested 16 new races for 1992 season.
+2025-08-24 20:34:23,082 - INFO - Ingested 16 new races for 1993 season.
+2025-08-24 20:34:23,957 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1994/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1994/races.json?limit=100&offset=0
+2025-08-24 20:34:29,837 - INFO - Ingested 16 new races for 1994 season.
+2025-08-24 20:34:30,696 - INFO - Ingested 17 new races for 1995 season.
+2025-08-24 20:34:31,563 - INFO - Ingested 16 new races for 1996 season.
+2025-08-24 20:34:32,387 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1997/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1997/races.json?limit=100&offset=0
+2025-08-24 20:34:38,460 - INFO - Ingested 17 new races for 1997 season.
+2025-08-24 20:34:39,351 - INFO - Ingested 16 new races for 1998 season.
+2025-08-24 20:34:40,223 - INFO - Ingested 16 new races for 1999 season.
+2025-08-24 20:34:41,058 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2000/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2000/races.json?limit=100&offset=0
+2025-08-24 20:34:47,134 - INFO - Ingested 17 new races for 2000 season.
+2025-08-24 20:34:48,247 - INFO - Ingested 17 new races for 2001 season.
+2025-08-24 20:34:49,098 - INFO - Ingested 17 new races for 2002 season.
+2025-08-24 20:34:49,911 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2003/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2003/races.json?limit=100&offset=0
+2025-08-24 20:34:55,774 - INFO - Ingested 16 new races for 2003 season.
+2025-08-24 20:34:56,865 - INFO - Ingested 18 new races for 2004 season.
+2025-08-24 20:34:57,934 - INFO - Ingested 19 new races for 2005 season.
+2025-08-24 20:34:58,763 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2006/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2006/races.json?limit=100&offset=0
+2025-08-24 20:35:04,624 - INFO - Ingested 18 new races for 2006 season.
+2025-08-24 20:35:05,501 - INFO - Ingested 17 new races for 2007 season.
+2025-08-24 20:35:06,429 - INFO - Ingested 18 new races for 2008 season.
+2025-08-24 20:35:07,237 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2009/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2009/races.json?limit=100&offset=0
+2025-08-24 20:35:13,122 - INFO - Ingested 17 new races for 2009 season.
+2025-08-24 20:35:14,003 - INFO - Ingested 19 new races for 2010 season.
+2025-08-24 20:35:15,018 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2011/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2011/races.json?limit=100&offset=0
+2025-08-24 20:35:20,950 - INFO - Ingested 19 new races for 2011 season.
+2025-08-24 20:35:22,035 - INFO - Ingested 20 new races for 2012 season.
+2025-08-24 20:35:22,903 - INFO - Ingested 19 new races for 2013 season.
+2025-08-24 20:35:23,747 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2014/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2014/races.json?limit=100&offset=0
+2025-08-24 20:35:29,610 - INFO - Ingested 19 new races for 2014 season.
+2025-08-24 20:35:30,487 - INFO - Ingested 19 new races for 2015 season.
+2025-08-24 20:35:31,374 - INFO - Ingested 21 new races for 2016 season.
+2025-08-24 20:35:32,204 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2017/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2017/races.json?limit=100&offset=0
+2025-08-24 20:35:38,080 - INFO - Ingested 20 new races for 2017 season.
+2025-08-24 20:35:38,961 - INFO - Ingested 21 new races for 2018 season.
+2025-08-24 20:35:40,033 - INFO - Ingested 21 new races for 2019 season.
+2025-08-24 20:35:40,858 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2020/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2020/races.json?limit=100&offset=0
+2025-08-24 20:35:46,732 - INFO - Ingested 17 new races for 2020 season.
+2025-08-24 20:35:47,812 - INFO - Ingested 22 new races for 2021 season.
+2025-08-24 20:35:48,861 - INFO - Ingested 22 new races for 2022 season.
+2025-08-24 20:35:49,730 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/2023/races.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/2023/races.json?limit=100&offset=0
+2025-08-24 20:35:55,632 - INFO - Ingested 22 new races for 2023 season.
+2025-08-24 20:35:56,507 - INFO - Ingested 24 new races for 2024 season.
+2025-08-24 20:35:57,632 - INFO - Ingested 24 new races for 2025 season.
+2025-08-24 20:35:57,632 - INFO - Ingesting race-related data (results, qualifying, etc.)...
+2025-08-24 20:35:57,643 - INFO - Fetching data for Race: 1950 Round 1 (British Grand Prix)
+2025-08-24 20:35:58,482 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/1/results.json?limit=100&offset=0
+2025-08-24 20:36:07,193 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/1/laps.json?limit=100&offset=0
+2025-08-24 20:36:13,503 - INFO - Fetching data for Race: 1950 Round 2 (Monaco Grand Prix)
+2025-08-24 20:36:16,307 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/2/qualifying.json?limit=100&offset=0
+2025-08-24 20:36:23,036 - INFO - Fetching data for Race: 1950 Round 3 (Indianapolis 500)
+2025-08-24 20:36:23,943 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/3/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/3/results.json?limit=100&offset=0
+2025-08-24 20:36:32,545 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/3/laps.json?limit=100&offset=0
+2025-08-24 20:36:38,418 - INFO - Fetching data for Race: 1950 Round 4 (Swiss Grand Prix)
+2025-08-24 20:36:41,090 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:36:47,819 - INFO - Fetching data for Race: 1950 Round 5 (Belgian Grand Prix)
+2025-08-24 20:36:49,811 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/5/sprint.json?limit=100&offset=0
+2025-08-24 20:36:57,576 - INFO - Fetching data for Race: 1950 Round 6 (French Grand Prix)
+2025-08-24 20:36:58,416 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/6/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/6/results.json?limit=100&offset=0
+2025-08-24 20:37:06,180 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/6/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/6/qualifying.json?limit=100&offset=0
+2025-08-24 20:37:13,344 - INFO - Fetching data for Race: 1950 Round 7 (Italian Grand Prix)
+2025-08-24 20:37:16,414 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1950/7/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1950/7/qualifying.json?limit=100&offset=0
+2025-08-24 20:37:23,174 - INFO - Fetching data for Race: 1951 Round 1 (Swiss Grand Prix)
+2025-08-24 20:37:24,219 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/1/results.json?limit=100&offset=0
+2025-08-24 20:37:32,692 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/1/laps.json?limit=100&offset=0
+2025-08-24 20:37:38,752 - INFO - Fetching data for Race: 1951 Round 2 (Indianapolis 500)
+2025-08-24 20:37:41,348 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/2/qualifying.json?limit=100&offset=0
+2025-08-24 20:37:48,149 - INFO - Fetching data for Race: 1951 Round 3 (Belgian Grand Prix)
+2025-08-24 20:37:50,039 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/3/sprint.json?limit=100&offset=0
+2025-08-24 20:37:57,620 - INFO - Fetching data for Race: 1951 Round 4 (French Grand Prix)
+2025-08-24 20:37:58,448 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/4/results.json?limit=100&offset=0
+2025-08-24 20:38:06,124 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:38:12,954 - INFO - Fetching data for Race: 1951 Round 5 (British Grand Prix)
+2025-08-24 20:38:14,931 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/5/sprint.json?limit=100&offset=0
+2025-08-24 20:38:23,091 - INFO - Fetching data for Race: 1951 Round 6 (German Grand Prix)
+2025-08-24 20:38:23,953 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/6/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/6/results.json?limit=100&offset=0
+2025-08-24 20:38:32,891 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/6/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/6/laps.json?limit=100&offset=0
+2025-08-24 20:38:38,739 - INFO - Fetching data for Race: 1951 Round 7 (Italian Grand Prix)
+2025-08-24 20:38:41,576 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/7/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/7/qualifying.json?limit=100&offset=0
+2025-08-24 20:38:48,488 - INFO - Fetching data for Race: 1951 Round 8 (Spanish Grand Prix)
+2025-08-24 20:38:50,192 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1951/8/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1951/8/sprint.json?limit=100&offset=0
+2025-08-24 20:38:57,765 - INFO - Fetching data for Race: 1952 Round 1 (Swiss Grand Prix)
+2025-08-24 20:38:58,610 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/1/results.json?limit=100&offset=0
+2025-08-24 20:39:06,234 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/1/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/1/qualifying.json?limit=100&offset=0
+2025-08-24 20:39:12,996 - INFO - Fetching data for Race: 1952 Round 2 (Indianapolis 500)
+2025-08-24 20:39:14,726 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/2/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/2/sprint.json?limit=100&offset=0
+2025-08-24 20:39:22,408 - INFO - Fetching data for Race: 1952 Round 3 (Belgian Grand Prix)
+2025-08-24 20:39:23,259 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/3/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/3/results.json?limit=100&offset=0
+2025-08-24 20:39:32,014 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/3/laps.json?limit=100&offset=0
+2025-08-24 20:39:38,058 - INFO - Fetching data for Race: 1952 Round 4 (French Grand Prix)
+2025-08-24 20:39:40,872 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:39:47,861 - INFO - Fetching data for Race: 1952 Round 5 (British Grand Prix)
+2025-08-24 20:39:49,801 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/5/sprint.json?limit=100&offset=0
+2025-08-24 20:39:57,355 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/5/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/5/laps.json?limit=100&offset=0
+2025-08-24 20:40:03,241 - INFO - Fetching data for Race: 1952 Round 6 (German Grand Prix)
+2025-08-24 20:40:07,728 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/6/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/6/laps.json?limit=100&offset=0
+2025-08-24 20:40:13,586 - INFO - Fetching data for Race: 1952 Round 7 (Dutch Grand Prix)
+2025-08-24 20:40:15,483 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/7/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/7/sprint.json?limit=100&offset=0
+2025-08-24 20:40:23,145 - INFO - Fetching data for Race: 1952 Round 8 (Italian Grand Prix)
+2025-08-24 20:40:24,041 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/8/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/8/results.json?limit=100&offset=0
+2025-08-24 20:40:32,718 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1952/8/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1952/8/laps.json?limit=100&offset=0
+2025-08-24 20:40:38,575 - INFO - Fetching data for Race: 1953 Round 1 (Argentine Grand Prix)
+2025-08-24 20:40:41,416 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/1/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/1/qualifying.json?limit=100&offset=0
+2025-08-24 20:40:48,196 - INFO - Fetching data for Race: 1953 Round 2 (Indianapolis 500)
+2025-08-24 20:40:50,164 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/2/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/2/sprint.json?limit=100&offset=0
+2025-08-24 20:40:58,009 - INFO - Fetching data for Race: 1953 Round 3 (Dutch Grand Prix)
+2025-08-24 20:40:58,870 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/3/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/3/results.json?limit=100&offset=0
+2025-08-24 20:41:07,502 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/3/laps.json?limit=100&offset=0
+2025-08-24 20:41:13,418 - INFO - Fetching data for Race: 1953 Round 4 (Belgian Grand Prix)
+2025-08-24 20:41:15,399 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/4/sprint.json?limit=100&offset=0
+2025-08-24 20:41:23,161 - INFO - Fetching data for Race: 1953 Round 5 (French Grand Prix)
+2025-08-24 20:41:24,064 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/5/results.json?limit=100&offset=0
+2025-08-24 20:41:33,104 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/5/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/5/laps.json?limit=100&offset=0
+2025-08-24 20:41:38,979 - INFO - Fetching data for Race: 1953 Round 6 (British Grand Prix)
+2025-08-24 20:41:41,871 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/6/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/6/qualifying.json?limit=100&offset=0
+2025-08-24 20:41:48,974 - INFO - Fetching data for Race: 1953 Round 7 (German Grand Prix)
+2025-08-24 20:41:51,021 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/7/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/7/sprint.json?limit=100&offset=0
+2025-08-24 20:41:58,802 - INFO - Fetching data for Race: 1953 Round 8 (Swiss Grand Prix)
+2025-08-24 20:41:59,655 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/8/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/8/results.json?limit=100&offset=0
+2025-08-24 20:42:08,183 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/8/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/8/laps.json?limit=100&offset=0
+2025-08-24 20:42:14,110 - INFO - Fetching data for Race: 1953 Round 9 (Italian Grand Prix)
+2025-08-24 20:42:15,007 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/9/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/9/results.json?limit=100&offset=0
+2025-08-24 20:42:23,987 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1953/9/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1953/9/laps.json?limit=100&offset=0
+2025-08-24 20:42:29,879 - INFO - Fetching data for Race: 1954 Round 1 (Argentine Grand Prix)
+2025-08-24 20:42:32,698 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/1/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/1/qualifying.json?limit=100&offset=0
+2025-08-24 20:42:39,465 - INFO - Fetching data for Race: 1954 Round 2 (Indianapolis 500)
+2025-08-24 20:42:41,383 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/2/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/2/sprint.json?limit=100&offset=0
+2025-08-24 20:42:49,385 - INFO - Fetching data for Race: 1954 Round 3 (Belgian Grand Prix)
+2025-08-24 20:42:50,211 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/3/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/3/results.json?limit=100&offset=0
+2025-08-24 20:42:59,904 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/3/laps.json?limit=100&offset=0
+2025-08-24 20:43:05,960 - INFO - Fetching data for Race: 1954 Round 4 (French Grand Prix)
+2025-08-24 20:43:08,548 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:43:15,521 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/4/laps.json?limit=100&offset=0
+2025-08-24 20:43:21,587 - INFO - Fetching data for Race: 1954 Round 5 (British Grand Prix)
+2025-08-24 20:43:24,519 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/5/qualifying.json?limit=100&offset=0
+2025-08-24 20:43:31,493 - INFO - Fetching data for Race: 1954 Round 6 (German Grand Prix)
+2025-08-24 20:43:33,279 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/6/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/6/sprint.json?limit=100&offset=0
+2025-08-24 20:43:41,079 - INFO - Fetching data for Race: 1954 Round 7 (Swiss Grand Prix)
+2025-08-24 20:43:42,026 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/7/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/7/results.json?limit=100&offset=0
+2025-08-24 20:43:50,873 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/7/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/7/laps.json?limit=100&offset=0
+2025-08-24 20:43:56,741 - INFO - Fetching data for Race: 1954 Round 8 (Italian Grand Prix)
+2025-08-24 20:43:59,735 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/8/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/8/qualifying.json?limit=100&offset=0
+2025-08-24 20:44:06,435 - INFO - Fetching data for Race: 1954 Round 9 (Spanish Grand Prix)
+2025-08-24 20:44:08,191 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/9/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/9/sprint.json?limit=100&offset=0
+2025-08-24 20:44:15,747 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1954/9/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1954/9/laps.json?limit=100&offset=0
+2025-08-24 20:44:21,717 - INFO - Fetching data for Race: 1955 Round 1 (Argentine Grand Prix)
+2025-08-24 20:44:26,587 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/1/laps.json?limit=100&offset=0
+2025-08-24 20:44:32,659 - INFO - Fetching data for Race: 1955 Round 2 (Monaco Grand Prix)
+2025-08-24 20:44:35,823 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/2/qualifying.json?limit=100&offset=0
+2025-08-24 20:44:43,473 - INFO - Fetching data for Race: 1955 Round 3 (Indianapolis 500)
+2025-08-24 20:44:47,141 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/3/qualifying.json?limit=100&offset=0
+2025-08-24 20:44:54,004 - INFO - Fetching data for Race: 1955 Round 4 (Belgian Grand Prix)
+2025-08-24 20:44:54,935 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/4/results.json?limit=100&offset=0
+2025-08-24 20:45:07,002 - INFO - Fetching data for Race: 1955 Round 5 (Dutch Grand Prix)
+2025-08-24 20:45:09,706 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/5/sprint.json?limit=100&offset=0
+2025-08-24 20:45:17,285 - INFO - Fetching data for Race: 1955 Round 6 (British Grand Prix)
+2025-08-24 20:45:18,286 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/6/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/6/results.json?limit=100&offset=0
+2025-08-24 20:45:26,947 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/6/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/6/laps.json?limit=100&offset=0
+2025-08-24 20:45:32,900 - INFO - Fetching data for Race: 1955 Round 7 (Italian Grand Prix)
+2025-08-24 20:45:35,587 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1955/7/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1955/7/qualifying.json?limit=100&offset=0
+2025-08-24 20:45:42,370 - INFO - Fetching data for Race: 1956 Round 1 (Argentine Grand Prix)
+2025-08-24 20:45:44,342 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/1/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/1/sprint.json?limit=100&offset=0
+2025-08-24 20:45:52,194 - INFO - Fetching data for Race: 1956 Round 2 (Monaco Grand Prix)
+2025-08-24 20:45:53,024 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/2/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/2/results.json?limit=100&offset=0
+2025-08-24 20:46:00,883 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/2/qualifying.json?limit=100&offset=0
+2025-08-24 20:46:08,015 - INFO - Fetching data for Race: 1956 Round 3 (Indianapolis 500)
+2025-08-24 20:46:09,969 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/3/sprint.json?limit=100&offset=0
+2025-08-24 20:46:17,984 - INFO - Fetching data for Race: 1956 Round 4 (Belgian Grand Prix)
+2025-08-24 20:46:18,823 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/4/results.json?limit=100&offset=0
+2025-08-24 20:46:27,445 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/4/laps.json?limit=100&offset=0
+2025-08-24 20:46:33,346 - INFO - Fetching data for Race: 1956 Round 5 (French Grand Prix)
+2025-08-24 20:46:36,227 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/5/qualifying.json?limit=100&offset=0
+2025-08-24 20:46:42,967 - INFO - Fetching data for Race: 1956 Round 6 (British Grand Prix)
+2025-08-24 20:46:44,918 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/6/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/6/sprint.json?limit=100&offset=0
+2025-08-24 20:46:52,475 - INFO - Fetching data for Race: 1956 Round 7 (German Grand Prix)
+2025-08-24 20:46:53,287 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/7/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/7/results.json?limit=100&offset=0
+2025-08-24 20:47:00,965 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/7/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/7/qualifying.json?limit=100&offset=0
+2025-08-24 20:47:07,752 - INFO - Fetching data for Race: 1956 Round 8 (Italian Grand Prix)
+2025-08-24 20:47:09,482 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1956/8/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1956/8/sprint.json?limit=100&offset=0
+2025-08-24 20:47:17,526 - INFO - Fetching data for Race: 1957 Round 1 (Argentine Grand Prix)
+2025-08-24 20:47:18,376 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/1/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/1/results.json?limit=100&offset=0
+2025-08-24 20:47:26,879 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/1/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/1/laps.json?limit=100&offset=0
+2025-08-24 20:47:33,040 - INFO - Fetching data for Race: 1957 Round 2 (Monaco Grand Prix)
+2025-08-24 20:47:36,147 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/2/qualifying.json?limit=100&offset=0
+2025-08-24 20:47:43,373 - INFO - Fetching data for Race: 1957 Round 3 (Indianapolis 500)
+2025-08-24 20:47:45,400 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/3/sprint.json?limit=100&offset=0
+2025-08-24 20:47:53,177 - INFO - Fetching data for Race: 1957 Round 4 (French Grand Prix)
+2025-08-24 20:47:54,122 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/4/results.json?limit=100&offset=0
+2025-08-24 20:48:03,153 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/4/laps.json?limit=100&offset=0
+2025-08-24 20:48:09,097 - INFO - Fetching data for Race: 1957 Round 5 (British Grand Prix)
+2025-08-24 20:48:12,084 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/5/qualifying.json?limit=100&offset=0
+2025-08-24 20:48:19,076 - INFO - Fetching data for Race: 1957 Round 6 (German Grand Prix)
+2025-08-24 20:48:20,868 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/6/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/6/sprint.json?limit=100&offset=0
+2025-08-24 20:48:28,702 - INFO - Fetching data for Race: 1957 Round 7 (Pescara Grand Prix)
+2025-08-24 20:48:29,534 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/7/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/7/results.json?limit=100&offset=0
+2025-08-24 20:48:38,370 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/7/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/7/laps.json?limit=100&offset=0
+2025-08-24 20:48:44,400 - INFO - Fetching data for Race: 1957 Round 8 (Italian Grand Prix)
+2025-08-24 20:48:47,246 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1957/8/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1957/8/qualifying.json?limit=100&offset=0
+2025-08-24 20:48:54,478 - INFO - Fetching data for Race: 1958 Round 1 (Argentine Grand Prix)
+2025-08-24 20:48:56,254 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/1/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/1/sprint.json?limit=100&offset=0
+2025-08-24 20:49:04,384 - INFO - Fetching data for Race: 1958 Round 2 (Monaco Grand Prix)
+2025-08-24 20:49:05,198 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/2/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/2/results.json?limit=100&offset=0
+2025-08-24 20:49:12,811 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/2/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/2/qualifying.json?limit=100&offset=0
+2025-08-24 20:49:19,771 - INFO - Fetching data for Race: 1958 Round 3 (Dutch Grand Prix)
+2025-08-24 20:49:21,564 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/sprint.json?limit=100&offset=0
+2025-08-24 20:49:28,267 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 20:49:34,122 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 20:49:45,697 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 20:50:01,758 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 20:50:22,741 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json?limit=100&offset=0
+2025-08-24 20:50:22,745 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/3/qualifying.json. Aborting.
+2025-08-24 20:50:23,625 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 20:50:29,493 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 20:50:40,359 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 20:50:56,246 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 20:51:17,105 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/3/laps.json?limit=100&offset=0
+2025-08-24 20:51:17,105 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/3/laps.json. Aborting.
+2025-08-24 20:51:17,116 - INFO - Fetching data for Race: 1958 Round 4 (Indianapolis 500)
+2025-08-24 20:51:18,390 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 20:51:24,505 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 20:51:35,382 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 20:51:51,402 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 20:52:12,302 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/results.json?limit=100&offset=0
+2025-08-24 20:52:12,302 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/4/results.json. Aborting.
+2025-08-24 20:52:13,169 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 20:52:19,015 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 20:52:29,949 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 20:52:45,788 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 20:53:06,620 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/sprint.json?limit=100&offset=0
+2025-08-24 20:53:06,620 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/4/sprint.json. Aborting.
+2025-08-24 20:53:07,492 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:53:13,335 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:53:24,415 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:53:40,290 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:54:01,160 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json?limit=100&offset=0
+2025-08-24 20:54:01,161 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/4/qualifying.json. Aborting.
+2025-08-24 20:54:02,017 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/laps.json?limit=100&offset=0
+2025-08-24 20:54:07,891 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/laps.json?limit=100&offset=0
+2025-08-24 20:54:18,787 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/laps.json?limit=100&offset=0
+2025-08-24 20:54:34,625 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/laps.json?limit=100&offset=0
+2025-08-24 20:54:55,473 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/4/laps.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/4/laps.json?limit=100&offset=0
+2025-08-24 20:54:55,473 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/4/laps.json. Aborting.
+2025-08-24 20:54:55,480 - INFO - Fetching data for Race: 1958 Round 5 (Belgian Grand Prix)
+2025-08-24 20:54:56,303 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/results.json?limit=100&offset=0
+2025-08-24 20:55:02,164 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/results.json?limit=100&offset=0
+2025-08-24 20:55:13,059 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/results.json?limit=100&offset=0
+2025-08-24 20:55:28,911 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/results.json?limit=100&offset=0
+2025-08-24 20:55:49,756 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/results.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/results.json?limit=100&offset=0
+2025-08-24 20:55:49,756 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/5/results.json. Aborting.
+2025-08-24 20:55:50,609 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/sprint.json?limit=100&offset=0
+2025-08-24 20:55:56,432 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/sprint.json?limit=100&offset=0
+2025-08-24 20:56:07,299 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/sprint.json?limit=100&offset=0
+2025-08-24 20:56:23,142 - ERROR - Attempt 4/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/sprint.json?limit=100&offset=0
+2025-08-24 20:56:44,016 - ERROR - Attempt 5/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/sprint.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/sprint.json?limit=100&offset=0
+2025-08-24 20:56:44,016 - CRITICAL - All retry attempts failed for https://api.jolpi.ca/ergast/f1/1958/5/sprint.json. Aborting.
+2025-08-24 20:56:45,345 - ERROR - Attempt 1/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/qualifying.json?limit=100&offset=0
+2025-08-24 20:56:51,526 - ERROR - Attempt 2/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/qualifying.json?limit=100&offset=0
+2025-08-24 20:57:02,371 - ERROR - Attempt 3/5 failed for https://api.jolpi.ca/ergast/f1/1958/5/qualifying.json: 429 Client Error: Too Many Requests for url: https://api.jolpi.ca/ergast/f1/1958/5/qualifying.json?limit=100&offset=0

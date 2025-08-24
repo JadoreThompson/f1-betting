@@ -1,0 +1,1 @@
+from .base.route import route as base_route

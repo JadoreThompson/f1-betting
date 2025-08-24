@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from clean import get_clean_df
+from .clean import get_clean_df
 
 
 def drop_temp_cols(df: pd.DataFrame) -> pd.DataFrame:
@@ -10,15 +10,15 @@ def drop_temp_cols(df: pd.DataFrame) -> pd.DataFrame:
 
 def append_elo(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adds a 'grid_points' column for each driver in each race based on grid position
+    Adds an 'elo' column for each driver in each race based on grid position
     and finishing position. Points are calculated as:
         points = (n_drivers - grid) + (n_drivers - position)
 
     Args:
-        df: DataFrame with columns 'raceId', 'driverId', 'grid', 'position'
+        df: DataFrame with columns 'race_id', 'driver_id', 'grid', 'position'
 
     Returns:
-        DataFrame with a new 'grid_points' column.
+        DataFrame with a new 'elo' column.
     """
     df = df.copy()
     df = df.sort_values(["year", "round"])
@@ -31,7 +31,7 @@ def append_elo(df: pd.DataFrame) -> pd.DataFrame:
         group["elo"] = (n_drivers - group["grid"]) + (n_drivers - positions)
         return group
 
-    df = df.groupby("raceId", group_keys=False).apply(compute_points)
+    df = df.groupby("race_id", group_keys=False).apply(compute_points)
     df["elo"] = df["elo"].shift(1)
     return df
 
@@ -40,10 +40,10 @@ def append_prev_wins(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df = df.sort_values(["year", "round"])
 
-    df["winFlag"] = (df["position"] == 1).astype(int)
-    df["prevWins"] = df.groupby("driverId")["winFlag"].cumsum().shift(1)
+    df["win_flag"] = (df["position"] == 1).astype(int)
+    df["prev_wins"] = df.groupby("driver_id")["win_flag"].cumsum().shift(1)
 
-    df = df.drop(columns=["winFlag"])
+    df = df.drop(columns=["win_flag"])
     return df
 
 
@@ -51,18 +51,18 @@ def append_prev_season_wins(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df = df.sort_values(["year", "round"])
 
-    df["winFlag"] = (df["position"] == 1).astype(int)
-    df["prevWins"] = df.groupby(["driverId", "year"])["winFlag"].cumsum().shift(1)
+    df["win_flag"] = (df["position"] == 1).astype(int)
+    df["prev_wins"] = df.groupby(["driver_id", "year"])["win_flag"].cumsum().shift(1)
 
-    df = df.drop(columns=["winFlag"])
+    df = df.drop(columns=["win_flag"])
     return df
 
 
 def get_features_df(df: pd.DataFrame | None = None):
-    if not df:
+    if df is None:
         df = get_clean_df()
         
-    df = df[df["year"] >= 2017]
+    df = df[df["year"] >= 2017].copy()
 
     df = append_elo(df)
     df = append_prev_wins(df)
@@ -71,15 +71,17 @@ def get_features_df(df: pd.DataFrame | None = None):
     df = df.drop(
         axis=1,
         columns=[
-            "constructorStandingsId",
-            "constructorId",
-            "qualifyId",
-            "circuitId",
-            "driverId",
-            "raceId",
-            "resultId",
-            "statusId",
-            "driverRef",
+            "constructor_standings_id",
+            "constructor_id",
+            'constructor_ref',
+            "qualify_id",
+            "circuit_id",
+            "driver_id",
+            "race_id",
+            "result_id",
+            "status_id",
+            "driver_ref",
+            'laps',
             "time",
             "date",
             "quali_date",
@@ -93,18 +95,18 @@ def get_features_df(df: pd.DataFrame | None = None):
             "fp1_date",
             "fp2_date",
             "fp3_date",
-            "fastestLap",
+            "fastest_lap",
             "quali_time",
             "sprint_time",
             "milliseconds",
             "points",
             "position",
-            "positionOrder",
-            "constructorPoints",
-            "constructorPosition",
-            "constructorPositionText",
-            "fastestLapSpeed",
-            "fastestLapTime",
+            "position_order",
+            "constructor_points",
+            "constructor_position",
+            "constructor_position_text",
+            "fastest_lap_speed",
+            "fastest_lap_time",
             "grid",
             "code",
             "dob",

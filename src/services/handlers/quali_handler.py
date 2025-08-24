@@ -4,7 +4,7 @@ from typing import Any, Iterable, Optional, TYPE_CHECKING
 
 from sqlalchemy.dialects.postgresql import insert as ps_insert
 
-from db_models import QualiResults
+from db_models import Qualifyings
 from services.market_generator import MarketGenerator
 from utils.db import get_db_session
 from utils.utils import get_datetime
@@ -76,7 +76,7 @@ class QualifyingResultHandler(SessionHandler):
 
         async with get_db_session() as sess:
             await sess.execute(
-                ps_insert(QualiResults).values(data).on_conflict_do_nothing()
+                ps_insert(Qualifyings).values(data).on_conflict_do_nothing()
             )
             await sess.commit()
 

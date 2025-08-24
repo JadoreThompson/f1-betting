@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Union
-from sqlalchemy import DateTime, Integer, String, Float, ForeignKey, Date, Time
+from sqlalchemy import DateTime, Integer, String, Float, ForeignKey, Date, Time, func
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 
 from utils.utils import get_datetime
@@ -102,7 +102,9 @@ class DriverStandings(Base):
 
     driver_standings_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     race_id: Mapped[int] = mapped_column(ForeignKey("races.race_id"), nullable=True)
-    driver_id: Mapped[int] = mapped_column(ForeignKey("drivers.driver_id"), nullable=True)
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=True
+    )
     points: Mapped[float] = mapped_column(Float, nullable=True)
     position: Mapped[int] = mapped_column(Integer, nullable=True)
     position_text: Mapped[str] = mapped_column(String, nullable=True)
@@ -150,15 +152,20 @@ class Qualifyings(Base):
 
     qualify_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     race_id: Mapped[int] = mapped_column(ForeignKey("races.race_id"), nullable=True)
-    driver_id: Mapped[int] = mapped_column(ForeignKey("drivers.driver_id"), nullable=True)
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=True
+    )
     constructor_id: Mapped[int] = mapped_column(
         ForeignKey("constructors.constructor_id"), nullable=True
     )
-    number: Mapped[int] = mapped_column(Integer, nullable=True)
-    position: Mapped[int] = mapped_column(Integer, nullable=True)
+    number: Mapped[int] = mapped_column(String, nullable=True)
+    position: Mapped[int] = mapped_column(String, nullable=True)
     q1: Mapped[str] = mapped_column(String, nullable=True)
     q2: Mapped[str] = mapped_column(String, nullable=True)
     q3: Mapped[str] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=get_datetime, server_default=func.now()
+    )
 
     race = relationship("Races", back_populates="qualifying")
     driver = relationship("Drivers", back_populates="qualifying")
@@ -171,7 +178,9 @@ class Races(Base):
     race_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     year: Mapped[int] = mapped_column(ForeignKey("seasons.year"), nullable=True)
     round: Mapped[int] = mapped_column(Integer, nullable=True)
-    circuit_id: Mapped[int] = mapped_column(ForeignKey("circuits.circuit_id"), nullable=True)
+    circuit_id: Mapped[int] = mapped_column(
+        ForeignKey("circuits.circuit_id"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=True)
     date: Mapped[Date] = mapped_column(Date, nullable=True)
     time: Mapped[Time] = mapped_column(Time, nullable=True)
@@ -202,7 +211,9 @@ class Results(Base):
 
     result_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     race_id: Mapped[int] = mapped_column(ForeignKey("races.race_id"), nullable=True)
-    driver_id: Mapped[int] = mapped_column(ForeignKey("drivers.driver_id"), nullable=True)
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=True
+    )
     constructor_id: Mapped[int] = mapped_column(
         ForeignKey("constructors.constructor_id"), nullable=True
     )
@@ -219,7 +230,9 @@ class Results(Base):
     rank: Mapped[int] = mapped_column(Integer, nullable=True)
     fastest_lap_time: Mapped[str] = mapped_column(String, nullable=True)
     fastest_lap_speed: Mapped[str] = mapped_column(String, nullable=True)
-    status_id: Mapped[int] = mapped_column(ForeignKey("status.status_id"), nullable=True)
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey("status.status_id"), nullable=True
+    )
 
     race = relationship("Races", back_populates="results")
     driver = relationship("Drivers", back_populates="results")
@@ -241,7 +254,9 @@ class SprintResults(Base):
 
     result_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     race_id: Mapped[int] = mapped_column(ForeignKey("races.race_id"), nullable=True)
-    driver_id: Mapped[int] = mapped_column(ForeignKey("drivers.driver_id"), nullable=True)
+    driver_id: Mapped[int] = mapped_column(
+        ForeignKey("drivers.driver_id"), nullable=True
+    )
     constructor_id: Mapped[int] = mapped_column(
         ForeignKey("constructors.constructor_id"), nullable=True
     )
@@ -256,7 +271,9 @@ class SprintResults(Base):
     milliseconds: Mapped[int] = mapped_column(Integer, nullable=True)
     fastest_lap: Mapped[int] = mapped_column(Integer, nullable=True)
     fastest_lap_time: Mapped[str] = mapped_column(String, nullable=True)
-    status_id: Mapped[int] = mapped_column(ForeignKey("status.status_id"), nullable=True)
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey("status.status_id"), nullable=True
+    )
 
     race = relationship("Races", back_populates="sprint_results")
     driver = relationship("Drivers", back_populates="sprint_results")
@@ -284,9 +301,10 @@ class Predictions(Base):
         ForeignKey("constructors.constructor_id"), index=True, nullable=True
     )
 
-    predicted_position: Mapped[int] = mapped_column(Integer, nullable=False)
+    predicted_position: Mapped[str] = mapped_column(String, nullable=False)
     predicted_probability: Mapped[float] = mapped_column(Float, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=get_datetime)
+    status: Mapped[str] = mapped_column(String, nullable=False)  # OPEN or CLOSED
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=get_datetime)
 
     race: Mapped["Races"] = relationship(back_populates="predictions")
     driver: Mapped["Drivers"] = relationship(back_populates="predictions")
