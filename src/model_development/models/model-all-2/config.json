@@ -1,0 +1,1 @@
+{"params": {"iterations": 500, "learning_rate": 0.1, "depth": 10, "verbose": 100, "cat_features": []}, "features": ["constructor_wins", "qualifying_position", "year", "elo", "prev_wins"], "classes": ["1", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "2", "20", "3", "4", "5", "6", "7", "8", "9", "D", "R", "W"], "stats": {"accuracy": 0.298, "precision": 0.221}}

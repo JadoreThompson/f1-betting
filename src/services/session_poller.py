@@ -289,7 +289,7 @@ class SessionPoller:
                 insert(Drivers)
                 .values(
                     driver_ref=driver.driver_ref,
-                    number=driver.permanent_number,  # Fixed: was permanent_number
+                    number=driver.permanent_number,
                     code=driver.code,
                     nationality=driver.nationality,
                     dob=driver.dob,
@@ -303,7 +303,6 @@ class SessionPoller:
     @classmethod
     async def _persist_driver_standings(cls, year: int, round_: int) -> None:
         async with get_db_session() as sess:
-            # Get the race_id for this year and round to properly link standings
             race_res = await sess.execute(
                 select(Races.race_id).where(Races.year == year, Races.round == round_)
             )
@@ -312,7 +311,6 @@ class SessionPoller:
                 print(f"No race found for year {year}, round {round_}")
                 return
 
-            # Check if standings for this race already exist
             existing_res = await sess.execute(
                 select(DriverStandings.driver_standings_id)
                 .where(DriverStandings.race_id == race_id)
@@ -407,7 +405,6 @@ class SessionPoller:
     @classmethod
     async def _persist_constructor_standings(cls, year: int, round_: int) -> None:
         async with get_db_session() as sess:
-            # Get the race_id for this year and round
             race_res = await sess.execute(
                 select(Races.race_id).where(Races.year == year, Races.round == round_)
             )
@@ -416,7 +413,6 @@ class SessionPoller:
                 print(f"No race found for year {year}, round {round_}")
                 return
 
-            # Check if constructor standings for this race already exist
             existing_res = await sess.execute(
                 select(ConstructorStandings.constructor_standings_id)
                 .where(ConstructorStandings.race_id == race_id)
@@ -425,7 +421,6 @@ class SessionPoller:
             if existing_res.scalar_one_or_none():
                 return
 
-            # Calculate constructor points by summing their drivers' points up to this round
             # Subquery for GP points
             gp_points_subq = (
                 select(

@@ -15,4 +15,5 @@ class F1ModelStats(BaseModel):
 class F1ModelConfig(BaseModel):
     params: dict[str, Any]
     features: list[str]
+    classes: list[str]
     stats: F1ModelStats

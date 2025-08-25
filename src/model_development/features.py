@@ -61,19 +61,20 @@ def append_prev_season_wins(df: pd.DataFrame) -> pd.DataFrame:
 def get_features_df(df: pd.DataFrame | None = None):
     if df is None:
         df = get_clean_df()
-        
+
     df = df[df["year"] >= 2017].copy()
 
     df = append_elo(df)
     df = append_prev_wins(df)
     df = append_prev_season_wins(df)
+    df["target"] = df["position_text"]
 
     df = df.drop(
         axis=1,
         columns=[
             "constructor_standings_id",
             "constructor_id",
-            'constructor_ref',
+            "constructor_ref",
             "qualify_id",
             "circuit_id",
             "driver_id",
@@ -81,7 +82,77 @@ def get_features_df(df: pd.DataFrame | None = None):
             "result_id",
             "status_id",
             "driver_ref",
-            'laps',
+            "laps",
+            "time",
+            "date",
+            'round',
+            "quali_date",
+            "sprint_date",
+            "q1",
+            "q2",
+            "q3",
+            "fp1_time",
+            "fp2_time",
+            "fp3_time",
+            "fp1_date",
+            "fp2_date",
+            "fp3_date",
+            "fastest_lap",
+            "quali_time",
+            "sprint_time",
+            "milliseconds",
+            "points",
+            "position",
+            "position_text",
+            "position_order",
+            "constructor_points",
+            "constructor_position",
+            "constructor_position_text",
+            "fastest_lap_speed",
+            "fastest_lap_time",
+            "grid",
+            "code",
+            "dob",
+            "name",
+            "forename",
+            "surname",
+            "nationality",
+            "url",
+            "rank",
+            "number",
+        ],
+    )
+    return df
+
+
+def get_features_top3_df(df: pd.DataFrame | None = None) -> pd.DataFrame:
+    if df is None:
+        df = get_clean_df()
+
+    df = df[df["year"] >= 2017].copy()
+
+    df = append_elo(df)
+    df = append_prev_wins(df)
+    df = append_prev_season_wins(df)
+    df["target"] = df["position_text"].apply(
+        lambda x: "1" if x in ["1", "2", "3"] else "0"
+    )
+
+    df = df.drop(
+        axis=1,
+        columns=[
+            "constructor_standings_id",
+            "constructor_id",
+            "constructor_ref",
+            'constructor_wins',
+            "qualify_id",
+            "circuit_id",
+            "driver_id",
+            "race_id",
+            "result_id",
+            "status_id",
+            "driver_ref",
+            "laps",
             "time",
             "date",
             "quali_date",
@@ -101,6 +172,75 @@ def get_features_df(df: pd.DataFrame | None = None):
             "milliseconds",
             "points",
             "position",
+            "position_text",
+            "position_order",
+            "constructor_points",
+            "constructor_position",
+            "constructor_position_text",
+            "fastest_lap_speed",
+            "fastest_lap_time",
+            "grid",
+            "code",
+            "dob",
+            "name",
+            "forename",
+            "surname",
+            "nationality",
+            "url",
+            "rank",
+            "number",
+        ],
+    )
+    return df
+
+def get_features_winner_df(df: pd.DataFrame | None = None) -> pd.DataFrame:
+    if df is None:
+        df = get_clean_df()
+
+    df = df[df["year"] >= 2017].copy()
+
+    df = append_elo(df)
+    df = append_prev_wins(df)
+    df = append_prev_season_wins(df)
+    df["target"] = df["position_text"].apply(
+        lambda x: "1" if x == "1" else "0"
+    )
+
+    df = df.drop(
+        axis=1,
+        columns=[
+            "constructor_standings_id",
+            "constructor_id",
+            "constructor_ref",
+            'constructor_wins',
+            "qualify_id",
+            "circuit_id",
+            "driver_id",
+            "race_id",
+            "result_id",
+            "status_id",
+            "driver_ref",
+            "laps",
+            "time",
+            "date",
+            "quali_date",
+            "sprint_date",
+            "q1",
+            "q2",
+            "q3",
+            "fp1_time",
+            "fp2_time",
+            "fp3_time",
+            "fp1_date",
+            "fp2_date",
+            "fp3_date",
+            "fastest_lap",
+            "quali_time",
+            "sprint_time",
+            "milliseconds",
+            "points",
+            "position",
+            "position_text",
             "position_order",
             "constructor_points",
             "constructor_position",

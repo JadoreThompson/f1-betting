@@ -1,0 +1,1 @@
+{"params": {"iterations": 500, "learning_rate": 0.1, "depth": 10, "verbose": 100, "cat_features": []}, "features": ["round", "qualifying_position", "year", "elo", "prev_wins"], "stats": {"accuracy": 0.976, "precision": 0.892}}

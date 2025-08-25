@@ -80,7 +80,6 @@ class Drivers(Base):
 
     driver_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     driver_ref: Mapped[str] = mapped_column(String, nullable=True)
-    number: Mapped[int] = mapped_column(Integer, nullable=True)
     code: Mapped[str] = mapped_column(String, nullable=True)
     forename: Mapped[str] = mapped_column(String, nullable=True)
     surname: Mapped[str] = mapped_column(String, nullable=True)
@@ -193,6 +192,8 @@ class Races(Base):
     fp3_time: Mapped[Time] = mapped_column(Time, nullable=True)
     quali_date: Mapped[Date] = mapped_column(Date, nullable=True)
     sprint_date: Mapped[Date] = mapped_column(Date, nullable=True)
+    quali_time: Mapped[str] = mapped_column(String, nullable=True)
+    sprint_time: Mapped[str] = mapped_column(String, nullable=True)
 
     circuit = relationship("Circuits", back_populates="races")
     season = relationship("Seasons", back_populates="races")
@@ -303,6 +304,7 @@ class Predictions(Base):
 
     predicted_position: Mapped[str] = mapped_column(String, nullable=False)
     predicted_probability: Mapped[float] = mapped_column(Float, nullable=False)
+    outcome_class: Mapped[str] = mapped_column(String, nullable=False)  # ALL, TOP3, WINNER
     status: Mapped[str] = mapped_column(String, nullable=False)  # OPEN or CLOSED
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=get_datetime)
 
