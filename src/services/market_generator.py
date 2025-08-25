@@ -33,7 +33,7 @@ class MarketGenerator:
 
         folder = os.path.join(BASE_PATH, "model_development")
         cls._model = CatBoostClassifier().load_model(
-            os.path.join(folder, "models", "model-1")
+            os.path.join(folder, "models", "model-1", "model")
         )
         cls._model_classes = cls._model.classes_
 

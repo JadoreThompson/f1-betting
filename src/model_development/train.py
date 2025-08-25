@@ -1,6 +1,11 @@
+import json
 import os
+from dataclasses import asdict
+
 from catboost import CatBoostClassifier
 from sklearn.metrics import accuracy_score, classification_report
+
+from core.typing import F1ModelConfig, F1ModelStats
 
 from .features import get_features_df
 
@@ -21,7 +26,7 @@ def train():
     )
 
     model = CatBoostClassifier(
-        iterations=500,
+        iterations=1,
         learning_rate=0.1,
         depth=10,
         verbose=100,
@@ -32,13 +37,21 @@ def train():
     y_pred = model.predict(X_test)
 
     # Metrics
-    print("Accuracy:", accuracy_score(y_test, y_pred))
-    print(classification_report(y_test, y_pred))
+    # print("Accuracy:", accuracy_score(y_test, y_pred))
+    report = classification_report(y_test, y_pred, output_dict=True)
+    folder = os.path.join(os.path.dirname(__file__), "models", "model-1")
 
-    model.save_model(os.path.join(os.path.dirname(__file__), "models", "model-1"))
-    # print(X_test.columns)
-    # X_test.info()
+    os.makedirs(folder, exist_ok=True)
 
+    conf = F1ModelConfig(
+        params=model.get_params(),
+        features=list(X_test.columns),
+        stats=F1ModelStats(
+            accuracy=report["accuracy"], precision=report["macro avg"]["precision"]
+        ),
+    )
+    json.dump(asdict(conf), open(os.path.join(folder, "config.json"), "w"))
+    model.save_model(os.path.join(folder, "model"))
 
 if __name__ == "__main__":
     train()

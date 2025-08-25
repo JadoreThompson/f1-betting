@@ -1,16 +1,19 @@
+from io import BytesIO
+import json
 import os
 from datetime import datetime
 from json import load
 
+import aiofiles
 from fastapi import APIRouter, Depends
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import DATA_FOLDER
+from config import BASE_PATH
+from core.typing import F1ModelConfig
 from db_models import Constructors, Drivers, Predictions, Qualifyings
 from enums import PredictionStatus
 from server.dependencies import depends_db_session
-from utils.utils import get_datetime
 from .models import Driver, PredictionsResponse
 
 
@@ -32,7 +35,6 @@ async def get_predictions_simple(db_sess: AsyncSession = Depends(depends_db_sess
 
     res = await db_sess.execute(query)
     preds = res.all()
-    print(preds[0][0].predicted_probability)
 
     return [
         PredictionsResponse(
@@ -46,3 +48,18 @@ async def get_predictions_simple(db_sess: AsyncSession = Depends(depends_db_sess
         )
         for pred, driver, constructor in preds
     ]
+
+
+@route.get("/model-config")
+async def get_model_config():
+    res = None
+
+    fp = os.path.join(
+        BASE_PATH, "model_development", "models", "model-1", "config.json"
+    )
+    if os.path.exists(fp):
+        async with aiofiles.open(fp, "rb") as f:
+            data = await f.read()
+            data = json.load(BytesIO(data)) # TODO: make awaitable
+            res = F1ModelConfig(**data)
+    return res
