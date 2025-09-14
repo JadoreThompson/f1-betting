@@ -1,9 +1,4 @@
-venv
 __pycache__
-node_modules
-.pytest_cache
+uv.lock
 
-# Private
-.env
-msc
-rec.py
+node_modules
